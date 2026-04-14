@@ -78,3 +78,16 @@
 - [x] Show classification label on inbound messages in conversation thread (stored in DB, visible in future thread update)
 - [x] Vitest: AI classification prompt structure test (8 classifier tests)
 - [x] Vitest: flow rule lookup logic test (13 flow tests total, 41 passing)
+
+## Auto-Flow Enhancement (Smarter Triggers)
+- [ ] Strengthen AI classifier system prompt with soft-positive examples (yes, that works, sounds good, sure, absolutely, let's do it, I'm in)
+- [ ] Strengthen AI classifier with soft-negative/opt-out examples (no, not now, not interested, STOP, remove me, unsubscribe, don't text me)
+- [ ] Auto-enable autoSend=true for "Interested" flow rule during seedFlowRules
+- [ ] Auto-enable autoSend=true for "Not Interested" flow rule during seedFlowRules
+- [ ] Auto-enable autoSend=true for "Unsubscribe" flow rule during seedFlowRules
+- [ ] Update default "Interested" template: warm confirmation + Calendly link
+- [ ] Update default "Not Interested" template: graceful opt-out acknowledgment
+- [ ] Update default "Unsubscribe" template: STOP confirmation (no further texts)
+- [ ] Add "Auto-Flow Active" visual badge on Library page for categories with autoSend enabled
+- [ ] Vitest: classifier correctly maps soft-positive phrases to Interested
+- [ ] Vitest: classifier correctly maps STOP/opt-out phrases to Unsubscribe

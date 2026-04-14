@@ -18,17 +18,17 @@ import { getDb } from "./db";
 const DEFAULT_TEMPLATES: Record<ReplyCategory, { name: string; body: string }> = {
   Interested: {
     name: "Interested — Schedule Call",
-    body: `Hi {{name}}, that's great to hear! I'd love to set up a quick call to walk you through everything.
+    body: `Hi {{name}}, awesome — so glad to hear that! 🎉
 
-Feel free to grab a time that works for you here: {{link}}
+Let's get something on the calendar. You can grab a time that works best for you right here: {{link}}
 
-Looking forward to speaking with you!`,
+Looking forward to connecting with you soon!`,
   },
   "Not Interested": {
     name: "Not Interested — Graceful Exit",
-    body: `Hi {{name}}, no worries at all — I completely understand!
+    body: `Hi {{name}}, totally understood — no pressure at all!
 
-If anything changes down the road or you'd like to revisit, don't hesitate to reach out. Wishing you all the best!`,
+If your situation changes or you'd ever like to revisit, don't hesitate to reach out. Wishing you all the best!`,
   },
   "Wants More Info": {
     name: "Wants More Info — Send Details",
@@ -46,9 +46,7 @@ If there's anything I can help you with or if you'd like to explore additional o
   },
   Unsubscribe: {
     name: "Unsubscribe — Opt-Out Confirmation",
-    body: `Hi {{name}}, you've been removed from our outreach list and won't receive any further messages from us.
-
-If you ever change your mind, feel free to get back in touch. Take care!`,
+    body: `You've been removed from our list and will receive no further messages. Reply START anytime if you'd like to reconnect. Take care!`,
   },
   Other: {
     name: "Other — General Follow-Up",
@@ -150,6 +148,13 @@ export async function upsertFlowRule(data: {
   return getFlowRuleByCategory(data.category);
 }
 
+// Categories that should have auto-send ON by default
+const AUTO_SEND_DEFAULTS: Partial<Record<ReplyCategory, boolean>> = {
+  Interested: true,
+  "Not Interested": true,
+  Unsubscribe: true,
+};
+
 /** Ensure all 6 categories have a default flow rule row */
 export async function seedFlowRules(): Promise<void> {
   const db = await getDb();
@@ -158,7 +163,8 @@ export async function seedFlowRules(): Promise<void> {
   for (const category of REPLY_CATEGORIES) {
     const existing = await getFlowRuleByCategory(category);
     if (!existing) {
-      await db.insert(flowRules).values({ category, templateId: null, autoSend: 0 });
+      const autoSend = AUTO_SEND_DEFAULTS[category] ? 1 : 0;
+      await db.insert(flowRules).values({ category, templateId: null, autoSend });
     }
   }
 }
@@ -173,13 +179,17 @@ export async function seedDefaultTemplates(): Promise<void> {
     if (existing.length === 0) {
       const { name, body } = DEFAULT_TEMPLATES[category];
       const inserted = await createFlowTemplate({ name, category, body, isActive: 1 });
-      // Auto-assign to the flow rule for this category
+      // Auto-assign to the flow rule and enable auto-send for priority categories
       if (inserted) {
-        await upsertFlowRule({ category, templateId: inserted.id, autoSend: false });
+        const autoSend = AUTO_SEND_DEFAULTS[category] ?? false;
+        await upsertFlowRule({ category, templateId: inserted.id, autoSend });
       }
     }
   }
 }
+
+// Export for testing purposes
+export { DEFAULT_TEMPLATES as DEFAULT_TEMPLATE_BODIES, AUTO_SEND_DEFAULTS };
 
 // ─── Message Classifications ──────────────────────────────────────────────────
 

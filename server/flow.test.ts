@@ -10,6 +10,65 @@ import { classifyReply } from "./replyClassifier";
 
 // ─── Reply Classifier Tests ───────────────────────────────────────────────────
 
+describe("classifyReply — soft-positive and opt-out phrases", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const softPositivePhrases = [
+    "yes",
+    "sure",
+    "that works",
+    "sounds good",
+    "ok",
+    "yeah",
+    "absolutely",
+    "let's do it",
+    "I'm in",
+  ];
+
+  softPositivePhrases.forEach((phrase) => {
+    it(`classifies "${phrase}" as Interested`, async () => {
+      (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ category: "Interested", confidence: "high", reasoning: "positive signal" }) } }],
+      });
+      const result = await classifyReply(phrase, "TestLead");
+      expect(result.category).toBe("Interested");
+    });
+  });
+
+  const optOutPhrases = [
+    "STOP",
+    "stop",
+    "unsubscribe",
+    "remove me",
+    "don't text me",
+    "take me off your list",
+  ];
+
+  optOutPhrases.forEach((phrase) => {
+    it(`classifies "${phrase}" as Unsubscribe`, async () => {
+      (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ category: "Unsubscribe", confidence: "high", reasoning: "opt-out signal" }) } }],
+      });
+      const result = await classifyReply(phrase, "TestLead");
+      expect(result.category).toBe("Unsubscribe");
+    });
+  });
+
+  const notInterestedPhrases = ["no thanks", "not interested", "not for us"];
+
+  notInterestedPhrases.forEach((phrase) => {
+    it(`classifies "${phrase}" as Not Interested`, async () => {
+      (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        choices: [{ message: { content: JSON.stringify({ category: "Not Interested", confidence: "high", reasoning: "refusal" }) } }],
+      });
+      const result = await classifyReply(phrase, "TestLead");
+      expect(result.category).toBe("Not Interested");
+    });
+  });
+});
+
 describe("classifyReply", () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -528,6 +528,8 @@ export default function LibraryPage() {
             {CATEGORIES.map((cat) => {
               const meta = CATEGORY_META[cat];
               const count = allTemplates.filter((t) => t.category === cat).length;
+              const rule = flowRules.find((r) => r.category === cat);
+              const isAutoActive = rule?.autoSend === 1 && !!rule?.templateId;
               return (
                 <button
                   key={cat}
@@ -542,9 +544,16 @@ export default function LibraryPage() {
                     <span>{meta.icon}</span>
                     <span className="truncate">{cat}</span>
                   </span>
-                  {count > 0 && (
-                    <span className="text-xs bg-muted/50 px-1.5 py-0.5 rounded-full">{count}</span>
-                  )}
+                  <span className="flex items-center gap-1">
+                    {isAutoActive && (
+                      <span title="Auto-flow active" className="flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
+                        <Zap className="h-2 w-2" /> ON
+                      </span>
+                    )}
+                    {count > 0 && (
+                      <span className="text-xs bg-muted/50 px-1.5 py-0.5 rounded-full">{count}</span>
+                    )}
+                  </span>
                 </button>
               );
             })}
@@ -612,7 +621,10 @@ export default function LibraryPage() {
               <p>
                 When a lead replies to your outreach SMS, QuoteNudge uses AI to classify the reply
                 into one of the categories below. If <strong className="text-foreground">Auto-send</strong> is
-                enabled for a category, the assigned template is automatically sent back.
+                enabled for a category, the assigned template is automatically sent back — instantly and automatically.
+              </p>
+              <p className="mt-1.5 text-xs">
+                <strong className="text-emerald-400">Interested</strong>, <strong className="text-rose-400">Not Interested</strong>, and <strong className="text-slate-400">Unsubscribe</strong> have auto-send <strong className="text-foreground">enabled by default</strong> — replies like "yes", "that works", "sounds good", "no thanks", or "STOP" will trigger an automatic response.
               </p>
               <p className="mt-1.5 text-xs">
                 Toggle <strong className="text-foreground">Auto-send</strong> off to receive a notification
