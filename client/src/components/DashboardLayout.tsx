@@ -60,24 +60,31 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
-            </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
-            </p>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-8 p-8 max-w-sm w-full">
+          <div className="flex flex-col items-center gap-5">
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
+              alt="QuoteNudge"
+              className="h-16 w-16 rounded-2xl shadow-lg"
+            />
+            <div className="text-center">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                QuoteNudge
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1.5 max-w-xs">
+                Sign in to manage your leads and automate SMS outreach.
+              </p>
+            </div>
           </div>
           <Button
             onClick={() => {
               window.location.href = getLoginUrl();
             }}
             size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg hover:shadow-xl transition-all"
           >
-            Sign in
+            Sign in to continue
           </Button>
         </div>
       </div>
@@ -172,12 +179,24 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <MessageSquare className="h-4 w-4 text-primary shrink-0" />
-                  <span className="font-semibold tracking-tight truncate text-foreground">
-                    Lead Outreach
+                  <img
+                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
+                    alt="QuoteNudge"
+                    className="h-6 w-6 rounded-md shrink-0 object-cover"
+                  />
+                  <span className="font-semibold tracking-tight truncate text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                    QuoteNudge
                   </span>
                 </div>
-              ) : null}
+              ) : (
+                <div className="flex items-center justify-center w-full">
+                  <img
+                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
+                    alt="QuoteNudge"
+                    className="h-6 w-6 rounded-md object-cover"
+                  />
+                </div>
+              )}
             </div>
           </SidebarHeader>
 

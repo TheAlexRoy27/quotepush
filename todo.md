@@ -52,3 +52,12 @@
 - [x] Add "Webhook" nav item to sidebar
 - [x] Vitest: field mapping extraction logic
 - [x] Vitest: webhook endpoint integration test (extractValue + mapPayloadToLead, 17 tests)
+
+## Rebranding to QuoteNudge
+- [x] Generate QuoteNudge app icon (AI image generation)
+- [x] Upload icon to CDN and create favicon.ico
+- [x] Update VITE_APP_TITLE to "QuoteNudge" (via index.html title tag)
+- [x] Update VITE_APP_LOGO to new icon CDN URL (hardcoded in components)
+- [x] Update sidebar branding text from "Lead Outreach" to "QuoteNudge"
+- [x] Update login screen title/branding
+- [x] Update page title in client/index.html
