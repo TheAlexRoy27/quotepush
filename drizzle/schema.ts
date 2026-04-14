@@ -40,6 +40,20 @@ export const emailCredentials = mysqlTable("email_credentials", {
 export type EmailCredential = typeof emailCredentials.$inferSelect;
 export type InsertEmailCredential = typeof emailCredentials.$inferInsert;
 
+// ─── Phone Credentials (password-based phone login) ─────────────────────────
+
+export const phoneCredentials = mysqlTable("phone_credentials", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  phone: varchar("phone", { length: 32 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PhoneCredential = typeof phoneCredentials.$inferSelect;
+export type InsertPhoneCredential = typeof phoneCredentials.$inferInsert;
+
 // ─── Phone OTP ────────────────────────────────────────────────────────────────
 
 export const phoneOtp = mysqlTable("phone_otp", {

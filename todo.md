@@ -250,3 +250,15 @@
 - [x] Replace getLoginUrl() with /auth in main.tsx global error handler
 - [x] Replace getLoginUrl() with /auth in useAuth.ts redirect default
 - [x] Remove unused getLoginUrl imports from Home.tsx, DashboardLayout.tsx, useAuth.ts, main.tsx
+
+## OTP Login Fix
+- [ ] Return OTP code in sendOtp response when Twilio is not configured (simulation mode), so it can be shown on-screen
+- [ ] Show the OTP code on-screen in AuthPage when simulated=true (with a clear "Twilio not configured" notice)
+- [ ] Prompt user to enter Twilio credentials via secrets card
+
+## Phone + Password Auth (No OTP)
+- [x] Add phone_credentials table: phone (unique), passwordHash, userId (FK to users)
+- [x] Run migration for phone_credentials table
+- [x] Add customAuth.registerPhone procedure: creates user + hashes password
+- [x] Add customAuth.loginPhonePassword procedure: verifies phone + password, issues session
+- [x] Add Phone+Password tab to AuthPage as default tab (Sign Up: phone+name+org+password; Sign In: phone+password)

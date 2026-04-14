@@ -236,6 +236,73 @@ const customAuthRouter = router({
       return { success: true };
     }),
 
+  // Phone + password registration (no OTP needed)
+  registerPhone: publicProcedure
+    .input(z.object({
+      phone: z.string().min(7),
+      password: z.string().min(8),
+      name: z.string().min(1),
+      orgName: z.string().min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const normalizedPhone = input.phone.replace(/\D/g, "");
+      const existing = await findUserByPhone(normalizedPhone);
+      if (existing) throw new TRPCError({ code: "CONFLICT", message: "Phone number already registered" });
+
+      const user = await createUserWithPhone(normalizedPhone, input.name);
+      const org = await createOrganization(input.orgName, user.id);
+      await seedFlowRules(org.id);
+      await seedDefaultTemplates(org.id);
+
+      // Store phone credential
+      const hash = await bcrypt.hash(input.password, 12);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const { phoneCredentials } = await import("../drizzle/schema");
+      await db.insert(phoneCredentials).values({ userId: user.id, phone: normalizedPhone, passwordHash: hash });
+
+      const secret = new TextEncoder().encode(ENV.jwtSecret);
+      const token = await new SignJWT({ userId: user.id, orgId: org.id })
+        .setProtectedHeader({ alg: "HS256" })
+        .setExpirationTime("30d")
+        .sign(secret);
+
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 30 * 24 * 60 * 60 * 1000 });
+      return { success: true, user: { id: user.id, name: user.name, phone: user.phone }, org };
+    }),
+
+  // Phone + password login (no OTP needed)
+  loginPhonePassword: publicProcedure
+    .input(z.object({ phone: z.string().min(7), password: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const normalizedPhone = input.phone.replace(/\D/g, "");
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const { phoneCredentials } = await import("../drizzle/schema");
+      const [cred] = await db.select().from(phoneCredentials).where(eq(phoneCredentials.phone, normalizedPhone)).limit(1);
+      if (!cred) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid phone number or password" });
+
+      const valid = await bcrypt.compare(input.password, cred.passwordHash);
+      if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid phone number or password" });
+
+      const user = await findUserByPhone(normalizedPhone);
+      if (!user) throw new TRPCError({ code: "UNAUTHORIZED", message: "Account not found" });
+
+      await updateUserLastSignedIn(user.id);
+      const membership = await getOrgMembership(user.id);
+
+      const secret = new TextEncoder().encode(ENV.jwtSecret);
+      const token = await new SignJWT({ userId: user.id, orgId: membership?.orgId ?? null })
+        .setProtectedHeader({ alg: "HS256" })
+        .setExpirationTime("30d")
+        .sign(secret);
+
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 30 * 24 * 60 * 60 * 1000 });
+      return { success: true, user: { id: user.id, name: user.name, phone: user.phone }, org: membership?.org ?? null };
+    }),
+
   // Phone OTP login/register (combined)
   loginPhone: publicProcedure
     .input(z.object({ phone: z.string().min(7), code: z.string().length(6), name: z.string().optional(), orgName: z.string().optional() }))
