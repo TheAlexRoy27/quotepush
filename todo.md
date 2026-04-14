@@ -39,3 +39,16 @@
 - [x] Vitest: leads CRUD procedures
 - [x] Vitest: template render with variable substitution
 - [x] Vitest: status enum validation
+
+## CRM Webhook Integration
+- [x] Add `webhook_configs` table: id, name, secret, fieldMappings (JSON), autoSend, schedulingLink, createdAt
+- [x] Run migration and apply SQL
+- [x] tRPC: webhook.getConfig / webhook.saveConfig
+- [x] POST /api/webhooks/crm/:secret — universal inbound endpoint that parses any JSON payload
+- [x] Field mapping engine: extract name/phone/company/email from arbitrary JSON using dot-notation paths
+- [x] Auto-create lead from mapped fields on webhook receipt
+- [x] Auto-trigger SMS send if autoSend is enabled
+- [x] Webhook Settings UI page with: live webhook URL display, secret key, field mapping form, auto-send toggle, scheduling link, test payload panel
+- [x] Add "Webhook" nav item to sidebar
+- [x] Vitest: field mapping extraction logic
+- [x] Vitest: webhook endpoint integration test (extractValue + mapPayloadToLead, 17 tests)

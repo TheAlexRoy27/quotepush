@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import LeadsPage from "./pages/LeadsPage";
 import TemplatePage from "./pages/TemplatePage";
 import SettingsPage from "./pages/SettingsPage";
+import WebhookPage from "./pages/WebhookPage";
 import DashboardLayout from "./components/DashboardLayout";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
         <Route path={"/leads"} component={LeadsPage} />
         <Route path={"/template"} component={TemplatePage} />
         <Route path={"/settings"} component={SettingsPage} />
+        <Route path={"/webhook"} component={WebhookPage} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
       </Switch>

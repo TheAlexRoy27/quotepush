@@ -19,6 +19,12 @@ import { notifyOwner } from "./_core/notification";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { systemRouter } from "./_core/systemRouter";
 import { isTwilioConfigured, renderTemplate, sendSms } from "./twilio";
+import {
+  getOrCreateWebhookConfig,
+  getWebhookLogs,
+  regenerateSecret,
+  updateWebhookConfig,
+} from "./webhookEngine";
 
 const LeadStatusEnum = z.enum(["Pending", "Sent", "Replied", "Scheduled"]);
 
@@ -246,6 +252,39 @@ const smsRouter = router({
     }),
 });
 
+// ─── Webhook Router ──────────────────────────────────────────────────────────
+
+const webhookRouter = router({
+  getConfig: protectedProcedure.query(() => getOrCreateWebhookConfig()),
+
+  saveConfig: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().min(1).optional(),
+        fieldMappings: z.string().min(1),
+        autoSend: z.boolean(),
+        schedulingLink: z.string().optional(),
+      })
+    )
+    .mutation(({ input }) =>
+      updateWebhookConfig(input.id, {
+        name: input.name,
+        fieldMappings: input.fieldMappings,
+        autoSend: input.autoSend ? 1 : 0,
+        schedulingLink: input.schedulingLink ?? null,
+      })
+    ),
+
+  regenerateSecret: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => regenerateSecret(input.id)),
+
+  getLogs: protectedProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
+    .query(({ input }) => getWebhookLogs(input?.limit ?? 20)),
+});
+
 // ─── App Router ───────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -261,6 +300,7 @@ export const appRouter = router({
   leads: leadsRouter,
   templates: templatesRouter,
   sms: smsRouter,
+  webhook: webhookRouter,
 });
 
 export type AppRouter = typeof appRouter;

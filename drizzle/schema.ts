@@ -67,3 +67,34 @@ export const smsTemplates = mysqlTable("sms_templates", {
 
 export type SmsTemplate = typeof smsTemplates.$inferSelect;
 export type InsertSmsTemplate = typeof smsTemplates.$inferInsert;
+
+// ─── Webhook Config ───────────────────────────────────────────────────────────
+
+export const webhookConfigs = mysqlTable("webhook_configs", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull().default("CRM Webhook"),
+  secret: varchar("secret", { length: 64 }).notNull(),
+  // JSON string: { name: string, phone: string, company?: string, email?: string }
+  fieldMappings: text("fieldMappings").notNull(),
+  autoSend: int("autoSend").notNull().default(1), // 1 = true, 0 = false
+  schedulingLink: varchar("schedulingLink", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WebhookConfig = typeof webhookConfigs.$inferSelect;
+export type InsertWebhookConfig = typeof webhookConfigs.$inferInsert;
+
+// ─── Webhook Logs ─────────────────────────────────────────────────────────────
+
+export const webhookLogs = mysqlTable("webhook_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  status: mysqlEnum("status", ["success", "error", "skipped"]).notNull(),
+  payload: text("payload"),
+  message: text("message"),
+  leadId: int("leadId"),
+  receivedAt: timestamp("receivedAt").defaultNow().notNull(),
+});
+
+export type WebhookLog = typeof webhookLogs.$inferSelect;
+export type InsertWebhookLog = typeof webhookLogs.$inferInsert;

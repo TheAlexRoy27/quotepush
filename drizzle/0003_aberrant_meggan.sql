@@ -1,0 +1,1 @@
+ALTER TABLE `webhook_configs` MODIFY COLUMN `fieldMappings` text NOT NULL;
