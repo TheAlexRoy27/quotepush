@@ -733,12 +733,17 @@ const dripRouter = router({
       z.object({
         sequenceId: z.number(),
         stepNumber: z.number().min(1),
-        delayDays: z.number().min(0),
+        delayAmount: z.number().min(0),
+        delayUnit: z.enum(["minutes", "days"]),
+        delayDays: z.number().min(0).optional(), // kept for backward compat
         name: z.string().min(1),
         body: z.string().min(1),
       })
     )
-    .mutation(({ input }) => upsertDripStep(input)),
+    .mutation(({ input }) => upsertDripStep({
+      ...input,
+      delayDays: input.delayDays ?? input.delayAmount, // keep legacy field in sync
+    })),
 
   deleteStep: protectedProcedure
     .input(z.object({ id: z.number() }))

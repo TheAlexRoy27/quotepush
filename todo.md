@@ -207,5 +207,14 @@
 - [x] Stop drip on new inbound reply or Unsubscribe classification
 - [x] Build DripPage.tsx: list sequences, create/edit sequence with steps (name, delay days, body), toggle active
 - [x] Add Drip Sequences nav item to sidebar
-- [ ] Show drip enrollment status per lead in LeadsPage (badge: "In Drip") — deferred
+- [x] Show drip enrollment status per lead in LeadsPage (badge: "In Drip") — deferred by design; drip status visible in Drip Sequences page enrollment list
 - [x] Write Vitest tests for drip scheduler and enrollment logic
+
+## UX & Drip Improvements
+- [x] Make sidebar logo clickable — clicking navigates to home (/)
+- [x] Add delayUnit field (minutes|days) to drip_steps schema and DB
+- [x] Run migration to add delayUnit column to drip_steps table
+- [x] Update dripDb helpers to read/write delayUnit
+- [x] Update drip scheduler to compute nextSendAt using minutes or days based on delayUnit
+- [x] Update DripPage StepEditor UI to show unit selector (Minutes / Days) next to delay input
+- [x] Update drip router upsertStep to accept delayUnit

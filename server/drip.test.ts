@@ -27,8 +27,8 @@ vi.mock("./dripDb", () => ({
     return undefined;
   }),
   listDripSteps: vi.fn(async (sequenceId: number) => [
-    { id: 10, sequenceId, stepNumber: 1, delayDays: 3, name: "Day 3", body: "Hi {{firstName}}, following up!" },
-    { id: 11, sequenceId, stepNumber: 2, delayDays: 7, name: "Day 7", body: "Hi {{firstName}}, last follow-up!" },
+    { id: 10, sequenceId, stepNumber: 1, delayDays: 3, delayAmount: 3, delayUnit: "days", name: "Day 3", body: "Hi {{firstName}}, following up!" },
+    { id: 11, sequenceId, stepNumber: 2, delayDays: 7, delayAmount: 7, delayUnit: "days", name: "Day 7", body: "Hi {{firstName}}, last follow-up!" },
   ]),
   advanceEnrollment: vi.fn(async (enrollmentId: number, nextStep: number, delayDays: number) => {
     if (mockEnrollments[enrollmentId]) {
@@ -38,6 +38,17 @@ vi.mock("./dripDb", () => ({
       mockEnrollments[enrollmentId].nextSendAt = next;
       mockEnrollments[enrollmentId].lastSentAt = new Date();
     }
+  }),
+  advanceEnrollmentWithDelay: vi.fn(async (enrollmentId: number, nextStep: number, amount: number, unit: string) => {
+    if (mockEnrollments[enrollmentId]) {
+      mockEnrollments[enrollmentId].currentStep = nextStep;
+      const delayMs = unit === "minutes" ? amount * 60 * 1000 : amount * 24 * 60 * 60 * 1000;
+      mockEnrollments[enrollmentId].nextSendAt = new Date(Date.now() + delayMs);
+      mockEnrollments[enrollmentId].lastSentAt = new Date();
+    }
+  }),
+  delayToMs: vi.fn((amount: number, unit: string) => {
+    return unit === "minutes" ? amount * 60 * 1000 : amount * 24 * 60 * 60 * 1000;
   }),
   completeEnrollment: vi.fn(async (enrollmentId: number) => {
     if (mockEnrollments[enrollmentId]) {
@@ -206,8 +217,10 @@ describe("Drip Scheduler Tick", () => {
     expect(call.direction).toBe("outbound");
     expect(call.body).toContain("Alice"); // renderTemplate replaces {{firstName}}
 
-    const { advanceEnrollment } = await import("./dripDb");
-    expect(advanceEnrollment).toHaveBeenCalledWith(1, 2, 7); // step 2, 7-day delay
+    const { advanceEnrollmentWithDelay } = await import("./dripDb");
+    expect(advanceEnrollmentWithDelay).toHaveBeenCalledWith(1, 2, 7, "days"); // step 2, 7 days
+    const { completeEnrollment } = await import("./dripDb");
+    expect(completeEnrollment).not.toHaveBeenCalled();
   });
 
   it("completes enrollment after the last step", async () => {
@@ -244,6 +257,26 @@ describe("Drip Scheduler Tick", () => {
 
     const { completeEnrollment } = await import("./dripDb");
     expect(completeEnrollment).toHaveBeenCalledWith(1);
+  });
+
+  it("advances with minute-based delay when delayUnit is minutes", async () => {
+    const pastDate = new Date(Date.now() - 1000);
+    mockEnrollments[1] = {
+      id: 1, leadId: 42, orgId: 1, sequenceId: 99, currentStep: 1,
+      status: "active", nextSendAt: pastDate, lastSentAt: null, stoppedReason: null,
+    };
+
+    // Override listDripSteps to return minute-based step 2
+    const { listDripSteps } = await import("./dripDb");
+    (listDripSteps as ReturnType<typeof vi.fn>).mockImplementationOnce(async () => [
+      { id: 10, sequenceId: 99, stepNumber: 1, delayDays: 0, delayAmount: 5, delayUnit: "minutes", name: "5 min", body: "Quick follow-up" },
+      { id: 11, sequenceId: 99, stepNumber: 2, delayDays: 0, delayAmount: 10, delayUnit: "minutes", name: "10 min", body: "Second follow-up" },
+    ]);
+
+    await runDripSchedulerTick();
+
+    const { advanceEnrollmentWithDelay } = await import("./dripDb");
+    expect(advanceEnrollmentWithDelay).toHaveBeenCalledWith(1, 2, 10, "minutes");
   });
 
   it("skips enrollments that are not yet due", async () => {

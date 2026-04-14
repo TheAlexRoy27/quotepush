@@ -39,6 +39,8 @@ type DripStep = {
   sequenceId: number;
   stepNumber: number;
   delayDays: number;
+  delayAmount: number;
+  delayUnit: "minutes" | "days";
   name: string;
   body: string;
 };
@@ -72,7 +74,8 @@ function StepEditor({
   const isNew = !step || step.id === 0;
   const [name, setName] = useState(isNew ? "" : step.name);
   const [body, setBody] = useState(isNew ? "" : step.body);
-  const [delayDays, setDelayDays] = useState(isNew ? 3 : step.delayDays);
+  const [delayAmount, setDelayAmount] = useState(isNew ? 3 : (step.delayAmount ?? step.delayDays ?? 3));
+  const [delayUnit, setDelayUnit] = useState<"minutes" | "days">(isNew ? "days" : (step.delayUnit ?? "days"));
   const stepNumber = isNew ? (nextStepNumber ?? 1) : step!.stepNumber;
 
   const utils = trpc.useUtils();
@@ -106,14 +109,25 @@ function StepEditor({
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Send After (days)</Label>
-          <Input
-            type="number"
-            min={0}
-            value={delayDays}
-            onChange={(e) => setDelayDays(parseInt(e.target.value) || 0)}
-            className="h-8 text-sm"
-          />
+          <Label className="text-xs">Send After</Label>
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              min={0}
+              value={delayAmount}
+              onChange={(e) => setDelayAmount(parseInt(e.target.value) || 0)}
+              className="h-8 text-sm w-20"
+            />
+            <Select value={delayUnit} onValueChange={(v) => setDelayUnit(v as "minutes" | "days")}>
+              <SelectTrigger className="h-8 text-sm flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="minutes">Minutes</SelectItem>
+                <SelectItem value="days">Days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       <div className="space-y-1.5">
@@ -147,7 +161,7 @@ function StepEditor({
           className="ml-auto h-7"
           disabled={!name || !body || upsert.isPending}
           onClick={() =>
-            upsert.mutate({ sequenceId, stepNumber, delayDays, name, body })
+            upsert.mutate({ sequenceId, stepNumber, delayAmount, delayUnit, name, body })
           }
         >
           {upsert.isPending ? "Saving…" : isNew ? "Add Step" : "Save"}
@@ -264,7 +278,7 @@ function SequenceCard({
                         </p>
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          Day {step.delayDays}
+                          {step.delayAmount ?? step.delayDays} {step.delayUnit ?? "days"}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">

@@ -5,7 +5,7 @@
  */
 import { getLeadById } from "./db";
 import {
-  advanceEnrollment,
+  advanceEnrollmentWithDelay,
   completeEnrollment,
   getDueEnrollments,
   getDripSequenceById,
@@ -109,9 +109,11 @@ async function processDripEnrollment(
   const nextStep = allSteps.find((s) => s.stepNumber === currentStep + 1);
 
   if (nextStep) {
-    await advanceEnrollment(enrollmentId, nextStep.stepNumber, nextStep.delayDays);
+    const unit = nextStep.delayUnit ?? "days";
+    const amount = nextStep.delayAmount ?? nextStep.delayDays ?? 3;
+    await advanceEnrollmentWithDelay(enrollmentId, nextStep.stepNumber, amount, unit);
     console.log(
-      `[DripScheduler] Enrollment ${enrollmentId} advanced to step ${nextStep.stepNumber} (in ${nextStep.delayDays} day(s))`
+      `[DripScheduler] Enrollment ${enrollmentId} advanced to step ${nextStep.stepNumber} (in ${amount} ${unit})`
     );
   } else {
     await completeEnrollment(enrollmentId);

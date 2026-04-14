@@ -257,11 +257,17 @@ export type InsertDripSequence = typeof dripSequences.$inferInsert;
 // ─── Drip Steps ───────────────────────────────────────────────────────────────
 // Each step in a sequence: a message body sent after N days of silence
 
+export const DRIP_DELAY_UNITS = ["minutes", "days"] as const;
+export type DripDelayUnit = (typeof DRIP_DELAY_UNITS)[number];
+
 export const dripSteps = mysqlTable("drip_steps", {
   id: int("id").autoincrement().primaryKey(),
   sequenceId: int("sequenceId").notNull(),
   stepNumber: int("stepNumber").notNull(), // 1-based ordering
-  delayDays: int("delayDays").notNull().default(3), // days after previous step
+  delayAmount: int("delayAmount").notNull().default(3), // numeric delay value
+  delayUnit: mysqlEnum("delayUnit", DRIP_DELAY_UNITS).notNull().default("days"), // minutes or days
+  /** @deprecated use delayAmount + delayUnit instead */
+  delayDays: int("delayDays").notNull().default(3), // kept for backward compat
   name: varchar("name", { length: 255 }).notNull(),
   body: text("body").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

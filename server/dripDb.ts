@@ -1,5 +1,6 @@
 import { and, eq, lte } from "drizzle-orm";
 import {
+  DripDelayUnit,
   DripEnrollmentStatus,
   DripSequence,
   DripStep,
@@ -110,6 +111,12 @@ export async function getDripStepByNumber(
   return result[0];
 }
 
+/** Compute milliseconds from a delay amount + unit */
+export function delayToMs(amount: number, unit: DripDelayUnit): number {
+  if (unit === "minutes") return amount * 60 * 1000;
+  return amount * 24 * 60 * 60 * 1000; // days
+}
+
 export async function upsertDripStep(data: InsertDripStep): Promise<DripStep | undefined> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -122,6 +129,23 @@ export async function upsertDripStep(data: InsertDripStep): Promise<DripStep | u
   const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId;
   const rows = await db.select().from(dripSteps).where(eq(dripSteps.id, insertId)).limit(1);
   return rows[0];
+}
+
+/** Advance an enrollment to the next step, computing nextSendAt from delayAmount + delayUnit */
+export async function advanceEnrollmentWithDelay(
+  enrollmentId: number,
+  nextStepNumber: number,
+  delayAmount: number,
+  delayUnit: DripDelayUnit
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const delayMs = delayToMs(delayAmount, delayUnit);
+  const nextSendAt = new Date(Date.now() + delayMs);
+  await db
+    .update(leadDripEnrollments)
+    .set({ currentStep: nextStepNumber, nextSendAt, lastSentAt: new Date() })
+    .where(eq(leadDripEnrollments.id, enrollmentId));
 }
 
 export async function deleteDripStep(id: number): Promise<{ success: boolean }> {
@@ -164,7 +188,8 @@ export async function enrollLeadInSequence(
   leadId: number,
   orgId: number,
   sequenceId: number,
-  firstStepDelayDays: number = 0
+  firstStepDelayAmount: number = 0,
+  firstStepDelayUnit: DripDelayUnit = "days"
 ): Promise<LeadDripEnrollment | undefined> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -177,8 +202,8 @@ export async function enrollLeadInSequence(
       and(eq(leadDripEnrollments.leadId, leadId), eq(leadDripEnrollments.status, "active"))
     );
 
-  const nextSendAt = new Date();
-  nextSendAt.setDate(nextSendAt.getDate() + firstStepDelayDays);
+  const delayMs = delayToMs(firstStepDelayAmount, firstStepDelayUnit);
+  const nextSendAt = new Date(Date.now() + delayMs);
 
   const values: InsertLeadDripEnrollment = {
     leadId,

@@ -213,7 +213,11 @@ function DashboardLayoutContent({
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
+                <button
+                  onClick={() => setLocation("/")}
+                  className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+                  aria-label="Go to home"
+                >
                   <img
                     src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
                     alt="QuoteNudge"
@@ -222,15 +226,19 @@ function DashboardLayoutContent({
                   <span className="font-semibold tracking-tight truncate text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     QuoteNudge
                   </span>
-                </div>
+                </button>
               ) : (
-                <div className="flex items-center justify-center w-full">
+                <button
+                  onClick={() => setLocation("/")}
+                  className="flex items-center justify-center w-full hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+                  aria-label="Go to home"
+                >
                   <img
                     src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
                     alt="QuoteNudge"
                     className="h-6 w-6 rounded-md object-cover"
                   />
-                </div>
+                </button>
               )}
             </div>
           </SidebarHeader>

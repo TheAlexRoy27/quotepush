@@ -154,9 +154,11 @@ async function startServer() {
           );
           if (seq) {
             const steps = await listDripSteps(seq.id);
-            const firstDelay = steps[0]?.delayDays ?? 3;
-            await enrollLeadInSequence(lead.id, lead.orgId, seq.id, firstDelay);
-            console.log(`[Drip] Enrolled lead ${lead.id} in sequence "${seq.name}" (step 1 in ${firstDelay} day(s))`);
+            const firstStep = steps[0];
+            const firstAmount = firstStep?.delayAmount ?? firstStep?.delayDays ?? 3;
+            const firstUnit = firstStep?.delayUnit ?? "days";
+            await enrollLeadInSequence(lead.id, lead.orgId, seq.id, firstAmount, firstUnit);
+            console.log(`[Drip] Enrolled lead ${lead.id} in sequence "${seq.name}" (step 1 in ${firstAmount} ${firstUnit})`);
           }
         }
       } catch (dripErr) {
