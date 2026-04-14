@@ -19,7 +19,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import { BookOpen, Building2, CreditCard, FileText, LogOut, MessageSquare, PanelLeft, Settings, Shield, Users, Webhook, Zap } from "lucide-react";
@@ -112,14 +111,7 @@ export default function DashboardLayout({
             >
               Sign in with Phone or Email
             </Button>
-            <Button
-              onClick={() => { window.location.href = getLoginUrl(); }}
-              size="lg"
-              variant="outline"
-              className="w-full"
-            >
-              Sign in with Manus
-            </Button>
+
           </div>
         </div>
       </div>

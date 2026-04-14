@@ -238,3 +238,15 @@
 - [x] Build `/owner-login` page: phone + password form, links to regular login
 - [x] Add route in App.tsx for /owner-login
 - [x] Owner must sign in with Manus OAuth once first to create user record, then set password via Admin Panel — documented in delivery message
+
+## Remove Manus OAuth Login
+- [x] Remove "Sign in with Manus" button from AuthPage.tsx (was never present — AuthPage already used phone/email only)
+- [x] Remove Manus OAuth login link from DashboardLayout (getLoginUrl usage removed)
+- [x] Remove Manus OAuth login link from OnboardingPage if present (not present)
+- [x] Remove Manus OAuth login link from AcceptInvitePage if present (not present)
+- [x] Keep /api/oauth/callback route but redirect to / (framework route preserved, no UI entry point)
+- [x] Update OwnerLoginPage first-time setup note (now says phone/email instead of Manus OAuth)
+- [x] Ensure owner can still set master password via Admin Panel without Manus OAuth
+- [x] Replace getLoginUrl() with /auth in main.tsx global error handler
+- [x] Replace getLoginUrl() with /auth in useAuth.ts redirect default
+- [x] Remove unused getLoginUrl imports from Home.tsx, DashboardLayout.tsx, useAuth.ts, main.tsx

@@ -111,10 +111,10 @@ export default function OwnerLoginPage() {
         <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-300 space-y-1">
           <p className="font-medium">First-time setup?</p>
           <p>
-            You must sign in with Manus OAuth at least once first (via{" "}
-            <a href="/auth" className="underline hover:text-amber-200">/auth</a>) to create your
-            owner account. Then go to <strong>Admin Panel → Set Master Password</strong> to save
-            your phone + password credentials.
+            Sign in at <a href="/auth" className="underline hover:text-amber-200">/auth</a> with
+            your phone or email first to create your owner account. Then go to{" "}
+            <strong>Admin Panel → Set Master Password</strong> to save your phone + password
+            credentials for this page.
           </p>
         </div>
         <p className="text-center text-xs text-muted-foreground">
