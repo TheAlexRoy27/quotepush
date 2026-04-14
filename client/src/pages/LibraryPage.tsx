@@ -449,7 +449,7 @@ function FlowRuleCard({
               <div className="h-px w-4 bg-border" />
               <ArrowRight className="h-3 w-3" />
               <span className="text-[10px] uppercase tracking-wide font-medium">
-                {isAutoSend ? "QuoteNudge auto-sends" : "Suggested reply (manual)"}
+                {isAutoSend ? "QuotePush.io auto-sends" : "Suggested reply (manual)"}
               </span>
               <div className="h-px w-4 bg-border" />
             </div>
@@ -684,7 +684,7 @@ export default function LibraryPage() {
             <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="text-sm text-muted-foreground">
               <p>
-                When a lead replies, QuoteNudge uses AI to classify the intent and — if <strong className="text-foreground">Auto</strong> is on — instantly sends the assigned template back. Click the <strong className="text-foreground">↓ arrow</strong> on any row to see the full trigger phrases and template preview.
+                When a lead replies, QuotePush.io uses AI to classify the intent and — if <strong className="text-foreground">Auto</strong> is on — instantly sends the assigned template back. Click the <strong className="text-foreground">↓ arrow</strong> on any row to see the full trigger phrases and template preview.
               </p>
               <p className="mt-1.5 text-xs">
                 <strong className="text-emerald-400">Interested</strong>, <strong className="text-rose-400">Not Interested</strong>, and <strong className="text-slate-400">Unsubscribe</strong> have auto-send <strong className="text-foreground">enabled by default</strong>.

@@ -54,11 +54,11 @@ export default function AcceptInvitePage() {
         <div className="text-center mb-8">
           <img
             src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
-            alt="QuoteNudge"
+            alt="QuotePush.io"
             className="h-14 w-14 rounded-2xl shadow-lg mx-auto mb-4"
           />
           <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            QuoteNudge
+            QuotePush.io
           </h1>
         </div>
 

@@ -103,7 +103,7 @@ const customAuthRouter = router({
       // Try to send via Twilio if configured
       if (isTwilioConfigured()) {
         try {
-          await sendSms(input.phone, `Your QuoteNudge verification code is: ${code}. Valid for 10 minutes.`);
+          await sendSms(input.phone, `Your QuotePush.io verification code is: ${code}. Valid for 10 minutes.`);
         } catch (e) {
           console.error("[OTP] Failed to send SMS:", e);
         }

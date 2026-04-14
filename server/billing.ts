@@ -41,7 +41,7 @@ export async function createCheckoutSession(opts: {
         price_data: {
           currency: "usd",
           product_data: {
-            name: `QuoteNudge ${plan.name} Plan`,
+            name: `QuotePush.io ${plan.name} Plan`,
             description: plan.description,
           },
           unit_amount: plan.price,

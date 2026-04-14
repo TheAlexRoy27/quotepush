@@ -37,7 +37,7 @@ export default function BillingPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success")) {
-      toast.success("Subscription activated! Welcome to QuoteNudge.");
+      toast.success("Subscription activated! Welcome to QuotePush.io.");
       refetch();
     } else if (params.get("canceled")) {
       toast.info("Checkout canceled. You can subscribe anytime.");
@@ -82,7 +82,7 @@ export default function BillingPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Billing & Plans</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage your QuoteNudge subscription. Cancel anytime.
+          Manage your QuotePush.io subscription. Cancel anytime.
         </p>
       </div>
 

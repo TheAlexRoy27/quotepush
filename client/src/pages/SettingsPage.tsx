@@ -97,10 +97,10 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2 mb-1">
           <img
             src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
-            alt="QuoteNudge"
+            alt="QuotePush.io"
             className="h-5 w-5 rounded"
           />
-          <h2 className="text-sm font-semibold text-foreground">About QuoteNudge</h2>
+          <h2 className="text-sm font-semibold text-foreground">About QuotePush.io</h2>
         </div>
         <div className="space-y-2 text-xs text-muted-foreground">
           <div className="flex justify-between">

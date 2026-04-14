@@ -167,7 +167,7 @@ export default function AdminPage() {
               <Shield className="h-4 w-4 text-violet-400" />
             </div>
             <div>
-              <span className="font-semibold text-foreground">QuoteNudge</span>
+              <span className="font-semibold text-foreground">QuotePush.io</span>
               <span className="ml-2 text-xs font-medium text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">
                 Admin
               </span>

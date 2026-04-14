@@ -1,4 +1,4 @@
-// ─── QuoteNudge Subscription Plans ───────────────────────────────────────────
+// ─── QuotePush.io Subscription Plans ───────────────────────────────────────────
 // Base:  $199/month — 1 seat, cancel anytime
 // Elite: $249/month — unlimited seats, cancel anytime
 

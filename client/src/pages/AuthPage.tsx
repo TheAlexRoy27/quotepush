@@ -63,7 +63,7 @@ export default function AuthPage() {
         orgName: phoneOrgName.trim() || undefined,
       });
       if (result.success) {
-        toast.success(result.isNew ? "Welcome to QuoteNudge!" : "Welcome back!");
+        toast.success(result.isNew ? "Welcome to QuotePush.io!" : "Welcome back!");
         utils.auth.me.invalidate();
         navigate("/");
       }
@@ -98,7 +98,7 @@ export default function AuthPage() {
         orgName: emailOrgName.trim(),
       });
       if (result.success) {
-        toast.success("Account created! Welcome to QuoteNudge.");
+        toast.success("Account created! Welcome to QuotePush.io.");
         utils.auth.me.invalidate();
         navigate("/");
       }
@@ -115,7 +115,7 @@ export default function AuthPage() {
           <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 mx-auto">
             <MessageSquare className="h-7 w-7 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">QuoteNudge</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">QuotePush.io</h1>
           <p className="text-sm text-muted-foreground">
             {mode === "login" ? "Sign in to your account" : "Create your organization"}
           </p>
@@ -304,7 +304,7 @@ export default function AuthPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          By continuing, you agree to QuoteNudge's Terms of Service and Privacy Policy.
+          By continuing, you agree to QuotePush.io's Terms of Service and Privacy Policy.
         </p>
       </div>
     </div>

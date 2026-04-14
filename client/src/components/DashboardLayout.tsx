@@ -92,12 +92,12 @@ export default function DashboardLayout({
           <div className="flex flex-col items-center gap-5">
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
-              alt="QuoteNudge"
+              alt="QuotePush.io"
               className="h-16 w-16 rounded-2xl shadow-lg"
             />
             <div className="text-center">
               <h1 className="text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                QuoteNudge
+                QuotePush.io
               </h1>
               <p className="text-sm text-muted-foreground mt-1.5 max-w-xs">
                 Sign in to manage your leads and automate SMS outreach.
@@ -220,11 +220,11 @@ function DashboardLayoutContent({
                 >
                   <img
                     src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
-                    alt="QuoteNudge"
+                    alt="QuotePush.io"
                     className="h-6 w-6 rounded-md shrink-0 object-cover"
                   />
                   <span className="font-semibold tracking-tight truncate text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                    QuoteNudge
+                    QuotePush.io
                   </span>
                 </button>
               ) : (
@@ -235,7 +235,7 @@ function DashboardLayoutContent({
                 >
                   <img
                     src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
-                    alt="QuoteNudge"
+                    alt="QuotePush.io"
                     className="h-6 w-6 rounded-md object-cover"
                   />
                 </button>

@@ -14,7 +14,7 @@ export default function OnboardingPage() {
 
   const createOrg = trpc.org.createForCurrentUser.useMutation({
     onSuccess: () => {
-      toast.success("Organization created! Welcome to QuoteNudge.");
+      toast.success("Organization created! Welcome to QuotePush.io.");
       setLocation("/");
       window.location.reload();
     },
@@ -38,7 +38,7 @@ export default function OnboardingPage() {
             <div className="relative">
               <img
                 src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotenudge-icon-cKbhektFvrauqCx5id6HxR.webp"
-                alt="QuoteNudge"
+                alt="QuotePush.io"
                 className="h-16 w-16 rounded-2xl shadow-lg"
               />
               <div className="absolute -top-1 -right-1 h-5 w-5 bg-indigo-500 rounded-full flex items-center justify-center">
@@ -48,7 +48,7 @@ export default function OnboardingPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-              Welcome to QuoteNudge
+              Welcome to QuotePush.io
             </h1>
             <p className="text-sm text-muted-foreground mt-1.5">
               Let's set up your organization to get started.
