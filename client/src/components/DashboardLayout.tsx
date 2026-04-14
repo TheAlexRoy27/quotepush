@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { FileText, LogOut, MessageSquare, PanelLeft, Settings, Users, Webhook } from "lucide-react";
+import { BookOpen, FileText, LogOut, MessageSquare, PanelLeft, Settings, Users, Webhook } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -30,6 +30,7 @@ import { Button } from "./ui/button";
 const menuItems = [
   { icon: Users, label: "Leads", path: "/" },
   { icon: FileText, label: "SMS Template", path: "/template" },
+  { icon: BookOpen, label: "Template Library", path: "/library" },
   { icon: Webhook, label: "CRM Webhook", path: "/webhook" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];

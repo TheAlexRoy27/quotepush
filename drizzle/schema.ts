@@ -98,3 +98,61 @@ export const webhookLogs = mysqlTable("webhook_logs", {
 
 export type WebhookLog = typeof webhookLogs.$inferSelect;
 export type InsertWebhookLog = typeof webhookLogs.$inferInsert;
+
+// ─── Reply Categories ─────────────────────────────────────────────────────────
+
+export const REPLY_CATEGORIES = [
+  "Interested",
+  "Not Interested",
+  "Wants More Info",
+  "Already a Customer",
+  "Unsubscribe",
+  "Other",
+] as const;
+
+export type ReplyCategory = (typeof REPLY_CATEGORIES)[number];
+
+// ─── Flow Templates ───────────────────────────────────────────────────────────
+
+export const flowTemplates = mysqlTable("flow_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: mysqlEnum("category", REPLY_CATEGORIES).notNull(),
+  body: text("body").notNull(),
+  isActive: int("isActive").notNull().default(1), // 1 = active, 0 = inactive
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FlowTemplate = typeof flowTemplates.$inferSelect;
+export type InsertFlowTemplate = typeof flowTemplates.$inferInsert;
+
+// ─── Flow Rules ───────────────────────────────────────────────────────────────
+// One rule per category: when a reply is classified as category X,
+// optionally auto-send the linked template.
+
+export const flowRules = mysqlTable("flow_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  category: mysqlEnum("category", REPLY_CATEGORIES).notNull().unique(),
+  templateId: int("templateId"), // FK to flow_templates.id (nullable = no template assigned)
+  autoSend: int("autoSend").notNull().default(0), // 1 = auto-send, 0 = manual only
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FlowRule = typeof flowRules.$inferSelect;
+export type InsertFlowRule = typeof flowRules.$inferInsert;
+
+// ─── Message Classification ───────────────────────────────────────────────────
+// Stores the AI-classified category for each inbound message.
+
+export const messageClassifications = mysqlTable("message_classifications", {
+  id: int("id").autoincrement().primaryKey(),
+  messageId: int("messageId").notNull().unique(),
+  category: mysqlEnum("category", REPLY_CATEGORIES).notNull(),
+  confidence: varchar("confidence", { length: 16 }), // "high" | "medium" | "low"
+  classifiedAt: timestamp("classifiedAt").defaultNow().notNull(),
+});
+
+export type MessageClassification = typeof messageClassifications.$inferSelect;
+export type InsertMessageClassification = typeof messageClassifications.$inferInsert;

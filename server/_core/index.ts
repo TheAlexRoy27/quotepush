@@ -11,6 +11,14 @@ import { createLead, createMessage, getDefaultTemplate, getLeadById, listLeads, 
 import { getOrCreateWebhookConfig, logWebhookEvent, mapPayloadToLead } from "../webhookEngine";
 import { isTwilioConfigured, renderTemplate, sendSms } from "../twilio";
 import { notifyOwner } from "./notification";
+import { classifyReply } from "../replyClassifier";
+import {
+  createMessageClassification,
+  getFlowRuleByCategory,
+  getFlowTemplateById,
+  seedDefaultTemplates,
+  seedFlowRules,
+} from "../flowDb";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -41,14 +49,14 @@ async function startServer() {
 
   // ─── Twilio Inbound SMS Webhook ───────────────────────────────────────────
   app.post("/api/webhooks/twilio/sms", async (req, res) => {
+    // Respond immediately to Twilio (must be within 15s)
+    res.status(200).type("text/xml").send("<Response></Response>");
+
     try {
       const from: string = req.body?.From ?? "";
       const body: string = req.body?.Body ?? "";
 
-      if (!from || !body) {
-        res.status(200).send("<Response></Response>");
-        return;
-      }
+      if (!from || !body) return;
 
       // Normalize phone number for matching (strip non-digits, compare last 10)
       const normalize = (p: string) => p.replace(/\D/g, "").slice(-10);
@@ -57,29 +65,91 @@ async function startServer() {
       const allLeads = await listLeads();
       const lead = allLeads.find((l) => normalize(l.phone) === fromNorm);
 
-      if (lead) {
-        await createMessage({
-          leadId: lead.id,
-          direction: "inbound",
-          body,
-          twilioSid: req.body?.MessageSid ?? null,
-          twilioStatus: "received",
-        });
-
-        if (lead.status === "Sent") {
-          await updateLead(lead.id, { status: "Replied" });
-        }
-
-        await notifyOwner({
-          title: `New reply from ${lead.name}`,
-          content: `Lead ${lead.name} (${lead.company ?? "—"}) replied: "${body}"`,
-        });
+      if (!lead) {
+        console.log(`[Twilio Webhook] No lead found for phone ${from}`);
+        return;
       }
 
-      res.status(200).type("text/xml").send("<Response></Response>");
+      // 1. Store the inbound message
+      const savedMsg = await createMessage({
+        leadId: lead.id,
+        direction: "inbound",
+        body,
+        twilioSid: req.body?.MessageSid ?? null,
+        twilioStatus: "received",
+      });
+
+      // 2. Update lead status to Replied
+      if (lead.status === "Sent" || lead.status === "Pending") {
+        await updateLead(lead.id, { status: "Replied" });
+      }
+
+      // 3. AI classification (async, non-blocking on errors)
+      let category = "Other" as import("../../drizzle/schema").ReplyCategory;
+      let confidence = "low" as "high" | "medium" | "low";
+      try {
+        const classification = await classifyReply(body, lead.name);
+        category = classification.category;
+        confidence = classification.confidence;
+        console.log(`[Twilio Webhook] Classified reply from ${lead.name} as: ${category} (${confidence})`);
+
+        // Store classification
+        if (savedMsg) {
+          await createMessageClassification({
+            messageId: savedMsg.id,
+            category,
+            confidence,
+          });
+        }
+      } catch (classErr) {
+        console.error("[Twilio Webhook] Classification error:", classErr);
+      }
+
+      // 4. Auto-flow: look up rule for this category and auto-send if enabled
+      try {
+        const rule = await getFlowRuleByCategory(category);
+        if (rule && rule.autoSend && rule.templateId) {
+          const flowTemplate = await getFlowTemplateById(rule.templateId);
+          if (flowTemplate && flowTemplate.isActive) {
+            const replyBody = renderTemplate(flowTemplate.body, {
+              name: lead.name,
+              company: lead.company,
+              link: undefined,
+            });
+
+            if (isTwilioConfigured()) {
+              const result = await sendSms(lead.phone, replyBody);
+              await createMessage({
+                leadId: lead.id,
+                direction: "outbound",
+                body: replyBody,
+                twilioSid: result.sid ?? null,
+                twilioStatus: result.status ?? "sent",
+              });
+            } else {
+              console.log(`[Auto-Flow] Simulation — auto-reply to ${lead.phone}: ${replyBody}`);
+              await createMessage({
+                leadId: lead.id,
+                direction: "outbound",
+                body: replyBody,
+                twilioSid: null,
+                twilioStatus: "simulated",
+              });
+            }
+            console.log(`[Auto-Flow] Sent "${category}" template to ${lead.name}`);
+          }
+        }
+      } catch (flowErr) {
+        console.error("[Auto-Flow] Error sending auto-reply:", flowErr);
+      }
+
+      // 5. Notify owner
+      await notifyOwner({
+        title: `New reply from ${lead.name} [${category}]`,
+        content: `Lead ${lead.name} (${lead.company ?? "—"}) replied: "${body}"\n\nClassified as: ${category} (${confidence} confidence)`,
+      });
     } catch (err) {
       console.error("[Twilio Webhook] Error:", err);
-      res.status(200).type("text/xml").send("<Response></Response>");
     }
   });
 

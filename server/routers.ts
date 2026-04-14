@@ -25,6 +25,18 @@ import {
   regenerateSecret,
   updateWebhookConfig,
 } from "./webhookEngine";
+import {
+  createFlowTemplate,
+  deleteFlowTemplate,
+  getClassificationByMessageId,
+  listFlowRules,
+  listFlowTemplates,
+  seedDefaultTemplates,
+  seedFlowRules,
+  updateFlowTemplate,
+  upsertFlowRule,
+} from "./flowDb";
+import { REPLY_CATEGORIES } from "../drizzle/schema";
 
 const LeadStatusEnum = z.enum(["Pending", "Sent", "Replied", "Scheduled"]);
 
@@ -285,7 +297,87 @@ const webhookRouter = router({
     .query(({ input }) => getWebhookLogs(input?.limit ?? 20)),
 });
 
-// ─── App Router ───────────────────────────────────────────────────────────────
+// ─── Flow Templates Router ──────────────────────────────────────────────────
+
+const ReplyCategoryEnum = z.enum(REPLY_CATEGORIES);
+
+const flowTemplatesRouter = router({
+  list: protectedProcedure
+    .input(z.object({ category: ReplyCategoryEnum.optional() }).optional())
+    .query(({ input }) => listFlowTemplates(input?.category)),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        category: ReplyCategoryEnum,
+        body: z.string().min(1),
+        isActive: z.boolean().optional(),
+      })
+    )
+    .mutation(({ input }) =>
+      createFlowTemplate({
+        name: input.name,
+        category: input.category,
+        body: input.body,
+        isActive: input.isActive === false ? 0 : 1,
+      })
+    ),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().min(1).optional(),
+        category: ReplyCategoryEnum.optional(),
+        body: z.string().min(1).optional(),
+        isActive: z.boolean().optional(),
+      })
+    )
+    .mutation(({ input }) => {
+      const { id, isActive, ...rest } = input;
+      return updateFlowTemplate(id, {
+        ...rest,
+        ...(isActive !== undefined ? { isActive: isActive ? 1 : 0 } : {}),
+      });
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteFlowTemplate(input.id)),
+
+  seed: protectedProcedure.mutation(async () => {
+    await seedFlowRules();
+    await seedDefaultTemplates();
+    return { success: true };
+  }),
+});
+
+// ─── Flow Rules Router ────────────────────────────────────────────────────────
+
+const flowRulesRouter = router({
+  list: protectedProcedure.query(() => listFlowRules()),
+
+  upsert: protectedProcedure
+    .input(
+      z.object({
+        category: ReplyCategoryEnum,
+        templateId: z.number().nullable().optional(),
+        autoSend: z.boolean(),
+      })
+    )
+    .mutation(({ input }) =>
+      upsertFlowRule({
+        category: input.category,
+        templateId: input.templateId ?? null,
+        autoSend: input.autoSend,
+      })
+    ),
+
+  categories: protectedProcedure.query(() => REPLY_CATEGORIES),
+});
+
+// ─── App Router ─────────────────────────────────────────────────────────────
 
 export const appRouter = router({
   system: systemRouter,
@@ -301,6 +393,8 @@ export const appRouter = router({
   templates: templatesRouter,
   sms: smsRouter,
   webhook: webhookRouter,
+  flowTemplates: flowTemplatesRouter,
+  flowRules: flowRulesRouter,
 });
 
 export type AppRouter = typeof appRouter;
