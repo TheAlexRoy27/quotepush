@@ -16,6 +16,7 @@ import {
   createMessageClassification,
   getFlowRuleByCategory,
   getFlowTemplateById,
+  reconcileFlowDefaults,
   seedDefaultTemplates,
   seedFlowRules,
 } from "../flowDb";
@@ -291,6 +292,11 @@ async function startServer() {
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
+
+  // Seed and reconcile flow defaults on startup (idempotent)
+  seedFlowRules().catch((e) => console.warn("[Startup] seedFlowRules failed:", e));
+  seedDefaultTemplates().catch((e) => console.warn("[Startup] seedDefaultTemplates failed:", e));
+  reconcileFlowDefaults().catch((e) => console.warn("[Startup] reconcileFlowDefaults failed:", e));
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);

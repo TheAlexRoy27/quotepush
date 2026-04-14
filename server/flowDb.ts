@@ -188,6 +188,47 @@ export async function seedDefaultTemplates(): Promise<void> {
   }
 }
 
+/**
+ * Reconcile existing flow rules and templates to match current defaults.
+ * - Ensures Interested, Not Interested, and Unsubscribe have autoSend=true if they have a template assigned.
+ * - Updates default template bodies for those three categories if the template name matches the default.
+ * This is idempotent and safe to call on every server startup.
+ */
+export async function reconcileFlowDefaults(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // 1. Ensure auto-send is enabled for priority categories that have a template assigned
+  for (const [category, shouldAutoSend] of Object.entries(AUTO_SEND_DEFAULTS)) {
+    if (!shouldAutoSend) continue;
+    const rule = await getFlowRuleByCategory(category as ReplyCategory);
+    if (rule && rule.autoSend !== 1 && rule.templateId) {
+      // Only enable if they have a template — don't force-enable empty rules
+      await db
+        .update(flowRules)
+        .set({ autoSend: 1 })
+        .where(eq(flowRules.category, category as ReplyCategory));
+    }
+  }
+
+  // 2. Update default template bodies for priority categories if the template name matches the default name
+  // This ensures the improved copy is applied without overwriting user-customized templates
+  const priorityCategories: ReplyCategory[] = ["Interested", "Not Interested", "Unsubscribe"];
+  for (const category of priorityCategories) {
+    const { name: defaultName, body: defaultBody } = DEFAULT_TEMPLATES[category];
+    const templates = await listFlowTemplates(category);
+    for (const t of templates) {
+      if (t.name === defaultName) {
+        // Only update if the name matches the default — user-renamed templates are left alone
+        await db
+          .update(flowTemplates)
+          .set({ body: defaultBody })
+          .where(eq(flowTemplates.id, t.id));
+      }
+    }
+  }
+}
+
 // Export for testing purposes
 export { DEFAULT_TEMPLATES as DEFAULT_TEMPLATE_BODIES, AUTO_SEND_DEFAULTS };
 

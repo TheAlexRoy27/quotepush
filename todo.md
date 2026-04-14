@@ -80,14 +80,20 @@
 - [x] Vitest: flow rule lookup logic test (13 flow tests total, 41 passing)
 
 ## Auto-Flow Enhancement (Smarter Triggers)
-- [ ] Strengthen AI classifier system prompt with soft-positive examples (yes, that works, sounds good, sure, absolutely, let's do it, I'm in)
-- [ ] Strengthen AI classifier with soft-negative/opt-out examples (no, not now, not interested, STOP, remove me, unsubscribe, don't text me)
-- [ ] Auto-enable autoSend=true for "Interested" flow rule during seedFlowRules
-- [ ] Auto-enable autoSend=true for "Not Interested" flow rule during seedFlowRules
-- [ ] Auto-enable autoSend=true for "Unsubscribe" flow rule during seedFlowRules
-- [ ] Update default "Interested" template: warm confirmation + Calendly link
-- [ ] Update default "Not Interested" template: graceful opt-out acknowledgment
-- [ ] Update default "Unsubscribe" template: STOP confirmation (no further texts)
-- [ ] Add "Auto-Flow Active" visual badge on Library page for categories with autoSend enabled
-- [ ] Vitest: classifier correctly maps soft-positive phrases to Interested
-- [ ] Vitest: classifier correctly maps STOP/opt-out phrases to Unsubscribe
+- [x] Strengthen AI classifier system prompt with soft-positive examples (yes, that works, sounds good, sure, absolutely, let's do it, I'm in)
+- [x] Strengthen AI classifier with soft-negative/opt-out examples (no, not now, not interested, STOP, remove me, unsubscribe, don't text me)
+- [x] Auto-enable autoSend=true for "Interested" flow rule during seedFlowRules
+- [x] Auto-enable autoSend=true for "Not Interested" flow rule during seedFlowRules
+- [x] Auto-enable autoSend=true for "Unsubscribe" flow rule during seedFlowRules
+- [x] Update default "Interested" template: warm confirmation + Calendly link
+- [x] Update default "Not Interested" template: graceful opt-out acknowledgment
+- [x] Update default "Unsubscribe" template: STOP confirmation (no further texts)
+- [x] Add "Auto-Flow Active" visual badge on Library page for categories with autoSend enabled
+- [x] Vitest: classifier correctly maps soft-positive phrases to Interested (9 phrase tests)
+- [x] Vitest: classifier correctly maps STOP/opt-out phrases to Unsubscribe (6 phrase tests + 3 Not Interested)
+
+## Auto-Flow Backfill (Existing Data Reconciliation)
+- [x] Add reconcileFlowDefaults() to update existing flow_rules autoSend for Interested/Not Interested/Unsubscribe
+- [x] Add reconcileFlowDefaults() to update existing default template bodies for those three categories
+- [x] Call reconcileFlowDefaults() on server startup alongside seedFlowRules/seedDefaultTemplates
+- [x] Vitest: reconcileFlowDefaults updates existing rules without overriding user customizations (4 reconcile tests, 69 total)

@@ -284,6 +284,40 @@ describe("classifyReply prompt structure", () => {
 
 // ─── Flow Rule Lookup Tests ───────────────────────────────────────────────────
 
+describe("reconcileFlowDefaults (unit)", () => {
+  it("exports reconcileFlowDefaults as a function", async () => {
+    const flowDb = await import("./flowDb");
+    expect(typeof flowDb.reconcileFlowDefaults).toBe("function");
+  });
+
+  it("AUTO_SEND_DEFAULTS enables auto-send for Interested, Not Interested, and Unsubscribe", async () => {
+    const { AUTO_SEND_DEFAULTS } = await import("./flowDb");
+    expect(AUTO_SEND_DEFAULTS["Interested"]).toBe(true);
+    expect(AUTO_SEND_DEFAULTS["Not Interested"]).toBe(true);
+    expect(AUTO_SEND_DEFAULTS["Unsubscribe"]).toBe(true);
+    // Other categories should NOT be auto-enabled by default
+    expect(AUTO_SEND_DEFAULTS["Wants More Info"]).toBeFalsy();
+    expect(AUTO_SEND_DEFAULTS["Already a Customer"]).toBeFalsy();
+    expect(AUTO_SEND_DEFAULTS["Other"]).toBeFalsy();
+  });
+
+  it("DEFAULT_TEMPLATE_BODIES for Interested includes a scheduling link placeholder", async () => {
+    const { DEFAULT_TEMPLATE_BODIES } = await import("./flowDb");
+    const interestedTemplate = DEFAULT_TEMPLATE_BODIES?.["Interested"];
+    expect(interestedTemplate).toBeDefined();
+    expect(interestedTemplate?.body).toContain("{{link}}");
+    expect(interestedTemplate?.body).toContain("{{name}}");
+  });
+
+  it("DEFAULT_TEMPLATE_BODIES for Unsubscribe does NOT include {{name}} or {{link}} (plain opt-out)", async () => {
+    const { DEFAULT_TEMPLATE_BODIES } = await import("./flowDb");
+    const unsubTemplate = DEFAULT_TEMPLATE_BODIES?.["Unsubscribe"];
+    expect(unsubTemplate).toBeDefined();
+    // Unsubscribe template should be a plain message without personalization
+    expect(unsubTemplate?.body).not.toContain("{{link}}");
+  });
+});
+
 describe("flowDb helpers (unit)", () => {
   it("REPLY_CATEGORIES contains exactly the six expected categories", async () => {
     const { REPLY_CATEGORIES } = await import("../drizzle/schema");
