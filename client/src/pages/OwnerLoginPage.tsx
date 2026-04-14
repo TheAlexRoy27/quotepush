@@ -108,6 +108,15 @@ export default function OwnerLoginPage() {
           </Button>
         </form>
 
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-300 space-y-1">
+          <p className="font-medium">First-time setup?</p>
+          <p>
+            You must sign in with Manus OAuth at least once first (via{" "}
+            <a href="/auth" className="underline hover:text-amber-200">/auth</a>) to create your
+            owner account. Then go to <strong>Admin Panel → Set Master Password</strong> to save
+            your phone + password credentials.
+          </p>
+        </div>
         <p className="text-center text-xs text-muted-foreground">
           Not the owner?{" "}
           <a href="/auth" className="text-violet-400 hover:underline">

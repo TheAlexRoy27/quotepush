@@ -237,4 +237,4 @@
 - [x] Add `customAuth.ownerLogin` tRPC public procedure: verifies phone + password, issues session cookie
 - [x] Build `/owner-login` page: phone + password form, links to regular login
 - [x] Add route in App.tsx for /owner-login
-- [ ] Owner must sign in with Manus OAuth once first to create user record, then set password via Admin Panel
+- [x] Owner must sign in with Manus OAuth once first to create user record, then set password via Admin Panel — documented in delivery message
