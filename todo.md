@@ -168,3 +168,11 @@
 - [x] Include all lead fields: name, phone, company, email, status, notes, createdAt
 - [x] Filename includes current date and active filter (e.g. quotenudge_leads_pending_2026-04-14.csv)
 - [x] Show row count in button label (e.g. "Export 24 Leads")
+
+## {{firstName}} Variable & Name Capitalization
+- [x] Add {{firstName}} variable: extracts first word of lead name, title-cased (e.g. "adam smith" → "Adam")
+- [x] Auto title-case {{name}} when rendering (e.g. "adam smith" → "Adam Smith")
+- [x] Update renderTemplate() in server/twilio.ts with toTitleCase + extractFirstName helpers
+- [x] Update the Template editor UI variable hint chips to show {{firstName}}
+- [x] Update the flow template editor and live preview to show {{firstName}}
+- [x] Update the default outreach template body to use {{firstName}} instead of {{name}}

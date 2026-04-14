@@ -107,7 +107,8 @@ const CATEGORY_META: Record<
 };
 
 const VARIABLE_HINTS = [
-  { tag: "{{name}}", desc: "Lead's full name" },
+  { tag: "{{firstName}}", desc: "Lead's first name (auto-capitalized)" },
+  { tag: "{{name}}", desc: "Lead's full name (auto-capitalized)" },
   { tag: "{{company}}", desc: "Lead's company" },
   { tag: "{{link}}", desc: "Scheduling / Calendly link" },
 ];
@@ -286,7 +287,7 @@ function TemplateEditorModal({
               value={form.body}
               onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
               rows={6}
-              placeholder="Hi {{name}}, thanks for getting back to me! ..."
+              placeholder="Hi {{firstName}}, thanks for getting back to me! ..."
               className="bg-background border-border font-mono text-sm resize-none"
             />
             <p className="text-xs text-muted-foreground">

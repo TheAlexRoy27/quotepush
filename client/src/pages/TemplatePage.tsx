@@ -7,22 +7,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save, Eye, Info, Loader2, RotateCcw } from "lucide-react";
 
-const DEFAULT_BODY = `Hi {{name}}, I came across {{company}} and wanted to reach out personally.
+const DEFAULT_BODY = `Hi {{firstName}}, I came across {{company}} and wanted to reach out personally.
 
 I'd love to schedule a quick 15-minute call to explore how we might be able to help you. Feel free to grab a time that works for you here: {{link}}
 
 Looking forward to connecting!`;
 
 const VARIABLES = [
-  { token: "{{name}}", description: "Lead's full name" },
+  { token: "{{firstName}}", description: "Lead's first name (auto-capitalized)" },
+  { token: "{{name}}", description: "Lead's full name (auto-capitalized)" },
   { token: "{{company}}", description: "Lead's company name" },
   { token: "{{link}}", description: "Scheduling / Calendly link" },
 ];
 
+function toTitleCase(str: string) {
+  return str.toLowerCase().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
 function renderPreview(body: string, name = "Jane Smith", company = "Acme Corp", link = "https://calendly.com/your-link") {
+  const firstName = toTitleCase(name.trim().split(/\s+/)[0] ?? name);
   return body
-    .replace(/\{\{name\}\}/g, name)
-    .replace(/\{\{company\}\}/g, company)
+    .replace(/\{\{firstName\}\}/g, firstName)
+    .replace(/\{\{name\}\}/g, toTitleCase(name))
+    .replace(/\{\{company\}\}/g, toTitleCase(company))
     .replace(/\{\{link\}\}/g, link);
 }
 

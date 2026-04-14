@@ -18,7 +18,7 @@ import { getDb } from "./db";
 const DEFAULT_TEMPLATES: Record<ReplyCategory, { name: string; body: string }> = {
   Interested: {
     name: "Interested — Schedule Call",
-    body: `Hi {{name}}, awesome — so glad to hear that!
+    body: `Hi {{firstName}}, awesome — so glad to hear that!
 
 Let's get something on the calendar. You can grab a time that works best for you right here: {{link}}
 
@@ -26,13 +26,13 @@ Looking forward to connecting with you soon!`,
   },
   "Not Interested": {
     name: "Not Interested — Graceful Exit",
-    body: `Hi {{name}}, totally understood — no pressure at all!
+    body: `Hi {{firstName}}, totally understood — no pressure at all!
 
 If your situation changes or you'd ever like to revisit, don't hesitate to reach out. Wishing you all the best!`,
   },
   "Wants More Info": {
     name: "Wants More Info — Send Details",
-    body: `Hi {{name}}, happy to share more!
+    body: `Hi {{firstName}}, happy to share more!
 
 Here's a quick overview of what we offer and how it could benefit {{company}}. Would a short call work to go over the details? You can book a time here: {{link}}
 
@@ -40,7 +40,7 @@ Let me know what questions you have!`,
   },
   "Already a Customer": {
     name: "Already a Customer — Acknowledge",
-    body: `Hi {{name}}, wonderful — glad to have you on board already!
+    body: `Hi {{firstName}}, wonderful — glad to have you on board already!
 
 If there's anything I can help you with or if you'd like to explore additional options, feel free to reach out anytime. We're here for you!`,
   },
@@ -50,7 +50,7 @@ If there's anything I can help you with or if you'd like to explore additional o
   },
   Other: {
     name: "Other — General Follow-Up",
-    body: `Hi {{name}}, thanks for getting back to me!
+    body: `Hi {{firstName}}, thanks for getting back to me!
 
 I'd love to connect and learn more about what you're looking for. Would a quick call work? You can book a time here: {{link}}
 

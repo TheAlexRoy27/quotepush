@@ -306,7 +306,8 @@ describe("reconcileFlowDefaults (unit)", () => {
     const interestedTemplate = DEFAULT_TEMPLATE_BODIES?.["Interested"];
     expect(interestedTemplate).toBeDefined();
     expect(interestedTemplate?.body).toContain("{{link}}");
-    expect(interestedTemplate?.body).toContain("{{name}}");
+    // Templates now use {{firstName}} for personalization instead of {{name}}
+    expect(interestedTemplate?.body).toMatch(/\{\{firstName\}\}|\{\{name\}\}/);
   });
 
   it("DEFAULT_TEMPLATE_BODIES for Unsubscribe does NOT include {{name}} or {{link}} (plain opt-out)", async () => {
@@ -363,14 +364,26 @@ describe("renderTemplate (via twilio helper)", () => {
 
   it("replaces {{company}} placeholder", async () => {
     const { renderTemplate } = await import("./twilio");
-    const result = renderTemplate("I see you work at {{company}}.", { company: "Acme Corp" });
+    const result = renderTemplate("I see you work at {{company}}.", { name: "Test User", company: "Acme Corp" });
     expect(result).toBe("I see you work at Acme Corp.");
   });
 
   it("replaces {{link}} placeholder", async () => {
     const { renderTemplate } = await import("./twilio");
-    const result = renderTemplate("Book here: {{link}}", { link: "https://calendly.com/demo" });
+    const result = renderTemplate("Book here: {{link}}", { name: "Test User", link: "https://calendly.com/demo" });
     expect(result).toBe("Book here: https://calendly.com/demo");
+  });
+
+  it("replaces {{firstName}} placeholder with first word title-cased", async () => {
+    const { renderTemplate } = await import("./twilio");
+    const result = renderTemplate("Hi {{firstName}}, welcome!", { name: "adam smith" });
+    expect(result).toBe("Hi Adam, welcome!");
+  });
+
+  it("auto title-cases {{name}} regardless of input casing", async () => {
+    const { renderTemplate } = await import("./twilio");
+    const result = renderTemplate("Hi {{name}}!", { name: "adam smith" });
+    expect(result).toBe("Hi Adam Smith!");
   });
 
   it("uses default scheduling link when link value is undefined", async () => {

@@ -198,7 +198,7 @@ export async function getMessageByTwilioSid(twilioSid: string) {
 
 // ─── SMS Templates ────────────────────────────────────────────────────────────
 
-const DEFAULT_TEMPLATE_BODY = `Hi {{name}}, I came across {{company}} and wanted to reach out personally.
+const DEFAULT_TEMPLATE_BODY = `Hi {{firstName}}, I came across {{company}} and wanted to reach out personally.
 
 I'd love to schedule a quick 15-minute call to explore how we might be able to help you. Feel free to grab a time that works for you here: {{link}}
 

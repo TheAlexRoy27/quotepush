@@ -24,12 +24,27 @@ export async function sendSms(to: string, body: string) {
   return { sid: message.sid, status: message.status };
 }
 
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function extractFirstName(fullName: string): string {
+  return toTitleCase(fullName.trim().split(/\s+/)[0] ?? fullName);
+}
+
 export function renderTemplate(
   template: string,
   vars: { name: string; company?: string | null; link?: string }
 ): string {
+  const titleName = toTitleCase(vars.name);
+  const firstName = extractFirstName(vars.name);
   return template
-    .replace(/\{\{name\}\}/g, vars.name)
+    .replace(/\{\{firstName\}\}/g, firstName)
+    .replace(/\{\{name\}\}/g, titleName)
     .replace(/\{\{company\}\}/g, vars.company ?? "your company")
     .replace(/\{\{link\}\}/g, vars.link ?? "https://calendly.com/your-link");
 }
