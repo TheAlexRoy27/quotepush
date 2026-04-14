@@ -148,3 +148,6 @@
 - [x] All webhook configs scoped to orgId
 - [x] All flow templates and rules scoped to orgId
 - [x] Seed defaults (templates, flow rules) per org on first login
+
+## Bug Fixes
+- [x] Fix: /onboarding page throws "No organization found" error — DashboardLayout now blocks children rendering until org.me resolves, preventing leads.stats and sms.isConfigured from firing before the redirect

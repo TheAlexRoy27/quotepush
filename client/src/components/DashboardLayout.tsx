@@ -54,19 +54,29 @@ export default function DashboardLayout({
   });
   const { loading, user } = useAuth();
   const [, setLocation] = useLocation();
-  const orgQuery = trpc.org.me.useQuery(undefined, { enabled: !!user });
+  const orgQuery = trpc.org.me.useQuery(undefined, {
+    enabled: !!user,
+    retry: false,
+    // Don't throw on error — FORBIDDEN just means the user needs onboarding
+    throwOnError: false,
+  });
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
+  // Redirect to onboarding if user has no org — do this before rendering children
+  const needsOnboarding = user && !orgQuery.isLoading && orgQuery.data === null;
+
   useEffect(() => {
-    if (user && !orgQuery.isLoading && orgQuery.data === null) {
+    if (needsOnboarding) {
       setLocation("/onboarding");
     }
-  }, [user, orgQuery.isLoading, orgQuery.data, setLocation]);
+  }, [needsOnboarding, setLocation]);
 
-  if (loading || (user && orgQuery.isLoading)) {
+  // Block rendering children until we know whether the user has an org.
+  // This prevents child pages from firing org-scoped queries before the redirect.
+  if (loading || (user && orgQuery.isLoading) || needsOnboarding) {
     return <DashboardLayoutSkeleton />
   }
 
