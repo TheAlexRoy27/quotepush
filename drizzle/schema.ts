@@ -316,3 +316,16 @@ export const orgTwilioConfigs = mysqlTable("org_twilio_configs", {
 
 export type OrgTwilioConfig = typeof orgTwilioConfigs.$inferSelect;
 export type InsertOrgTwilioConfig = typeof orgTwilioConfigs.$inferInsert;
+
+// ─── Owner Credentials (Master Login) ────────────────────────────────────────
+
+export const ownerCredentials = mysqlTable("owner_credentials", {
+  id: int("id").autoincrement().primaryKey(),
+  phone: varchar("phone", { length: 32 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OwnerCredential = typeof ownerCredentials.$inferSelect;
+export type InsertOwnerCredential = typeof ownerCredentials.$inferInsert;

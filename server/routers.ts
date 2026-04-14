@@ -80,6 +80,10 @@ import {
 import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES } from "../drizzle/schema";
 import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
+import bcrypt from "bcryptjs";
+import { getDb } from "./db";
+import { ownerCredentials } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 const LeadStatusEnum = z.enum(["Pending", "Sent", "Replied", "Scheduled"]);
 const ReplyCategoryEnum = z.enum(REPLY_CATEGORIES);
@@ -175,6 +179,61 @@ const customAuthRouter = router({
       ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 30 * 24 * 60 * 60 * 1000 });
 
       return { success: true, user: { id: user.id, name: user.name, email: user.email }, org: membership?.org ?? null };
+    }),
+
+  // Owner master login (phone + password)
+  ownerLogin: publicProcedure
+    .input(z.object({ phone: z.string().min(7), password: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      // Normalize phone: strip non-digits for comparison
+      const normalizedInput = input.phone.replace(/\D/g, "");
+
+      // Find owner credential by phone
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const [cred] = await db
+        .select()
+        .from(ownerCredentials)
+        .where(eq(ownerCredentials.phone, normalizedInput))
+        .limit(1);
+
+      if (!cred) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid phone or password" });
+
+      const valid = await bcrypt.compare(input.password, cred.passwordHash);
+      if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid phone or password" });
+
+      // Find or create the owner user record
+      let user = await findUserByPhone(normalizedInput);
+      if (!user) throw new TRPCError({ code: "UNAUTHORIZED", message: "Owner account not found. Please sign in with Manus OAuth first." });
+
+      await updateUserLastSignedIn(user.id);
+      const membership = await getOrgMembership(user.id);
+
+      const secret = new TextEncoder().encode(ENV.jwtSecret);
+      const token = await new SignJWT({ userId: user.id, orgId: membership?.orgId ?? null })
+        .setProtectedHeader({ alg: "HS256" })
+        .setExpirationTime("30d")
+        .sign(secret);
+
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 30 * 24 * 60 * 60 * 1000 });
+
+      return { success: true, user: { id: user.id, name: user.name, phone: user.phone }, org: membership?.org ?? null };
+    }),
+
+  // Owner set/update password (admin-only, called once to initialize)
+  ownerSetPassword: adminProcedure
+    .input(z.object({ phone: z.string().min(7), password: z.string().min(8) }))
+    .mutation(async ({ input }) => {
+      const normalizedPhone = input.phone.replace(/\D/g, "");
+      const hash = await bcrypt.hash(input.password, 12);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db
+        .insert(ownerCredentials)
+        .values({ phone: normalizedPhone, passwordHash: hash })
+        .onDuplicateKeyUpdate({ set: { passwordHash: hash } });
+      return { success: true };
     }),
 
   // Phone OTP login/register (combined)

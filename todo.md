@@ -228,3 +228,13 @@
 - [x] Add a "Quick Start" template picker: pre-fill sequences with 3-step follow-up, 5-day nurture, or quick minute drip
 - [x] Show total sequence duration (e.g. "Spans 14 days") in the sequence card header
 - [x] Add variable insertion buttons ({{firstName}}, {{company}}, {{link}}) so users don't have to type them manually
+
+## Owner Master Login (Phone + Password)
+- [x] Add `owner_credentials` table: phone (unique), passwordHash, createdAt, updatedAt
+- [x] Run migration for owner_credentials table
+- [x] Install bcryptjs for password hashing
+- [x] Add `customAuth.ownerSetPassword` tRPC procedure (admin-only): hashes password and upserts into owner_credentials
+- [x] Add `customAuth.ownerLogin` tRPC public procedure: verifies phone + password, issues session cookie
+- [x] Build `/owner-login` page: phone + password form, links to regular login
+- [x] Add route in App.tsx for /owner-login
+- [ ] Owner must sign in with Manus OAuth once first to create user record, then set password via Admin Panel

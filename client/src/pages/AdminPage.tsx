@@ -15,9 +15,99 @@ import {
   AlertTriangle,
   XCircle,
   LogOut,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+// ─── Set Master Password Card ─────────────────────────────────────────────────
+
+function SetMasterPasswordCard() {
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPw, setShowPw] = useState(false);
+
+  const setPassword_mut = trpc.customAuth.ownerSetPassword.useMutation({
+    onSuccess: () => {
+      toast.success("Master password saved. You can now sign in at /owner-login.");
+      setPhone("");
+      setPassword("");
+      setConfirm("");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (password !== confirm) { toast.error("Passwords do not match"); return; }
+    if (password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    setPassword_mut.mutate({ phone, password });
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-6 space-y-4 max-w-lg">
+      <div className="flex items-center gap-2">
+        <KeyRound className="h-4 w-4 text-violet-400" />
+        <h2 className="font-semibold text-foreground">Set Master Password</h2>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Set or update the owner master login credentials. Once saved, you can sign in at{" "}
+        <a href="/owner-login" className="text-violet-400 hover:underline">/owner-login</a>{" "}
+        using your phone number and this password.
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="space-y-1">
+          <Label htmlFor="op-phone">Mobile Number</Label>
+          <Input
+            id="op-phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Digits only, e.g. 7605184325"
+            autoComplete="off"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="op-password">New Password</Label>
+          <div className="relative">
+            <Input
+              id="op-password"
+              type={showPw ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Min 8 characters"
+              className="pr-10"
+              autoComplete="new-password"
+            />
+            <button type="button" onClick={() => setShowPw((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="op-confirm">Confirm Password</Label>
+          <Input
+            id="op-confirm"
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Re-enter password"
+            autoComplete="new-password"
+          />
+        </div>
+        <Button type="submit" disabled={!phone || !password || !confirm || setPassword_mut.isPending}>
+          {setPassword_mut.isPending ? "Saving…" : "Save Master Password"}
+        </Button>
+      </form>
+    </div>
+  );
+}
 
 // ─── Plan & Status Helpers ────────────────────────────────────────────────────
 
@@ -316,6 +406,9 @@ export default function AdminPage() {
         <p className="text-xs text-muted-foreground text-center">
           Showing {filtered.length} of {totalOrgs} account{totalOrgs !== 1 ? "s" : ""}
         </p>
+
+        {/* Set Master Password */}
+        <SetMasterPasswordCard />
       </main>
     </div>
   );
