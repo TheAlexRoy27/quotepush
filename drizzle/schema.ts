@@ -186,9 +186,7 @@ export const REPLY_CATEGORIES = [
   "Interested",
   "Not Interested",
   "Wants More Info",
-  "Already a Customer",
   "Unsubscribe",
-  "Other",
 ] as const;
 
 export type ReplyCategory = (typeof REPLY_CATEGORIES)[number];

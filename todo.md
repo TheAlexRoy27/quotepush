@@ -176,3 +176,12 @@
 - [x] Update the Template editor UI variable hint chips to show {{firstName}}
 - [x] Update the flow template editor and live preview to show {{firstName}}
 - [x] Update the default outreach template body to use {{firstName}} instead of {{name}}
+
+## Template System Improvements
+- [x] Remove "Already a Customer" and "Other" from REPLY_CATEGORIES enum in drizzle/schema.ts
+- [x] Remove "Already a Customer" and "Other" from DEFAULT_TEMPLATES in flowDb.ts
+- [x] Remove "Already a Customer" and "Other" from CATEGORY_META in LibraryPage.tsx
+- [x] Remove "Already a Customer" and "Other" from classifier prompt in replyClassifier.ts
+- [x] Add "Save to Library" button on SMS Template page with category selector modal
+- [x] Redesign Auto-Flow Rules panel: show trigger phrase examples, assigned template name + body preview, and enable/disable toggle per category
+- [x] Show a visual flow card per category: "Lead replies with [examples] → QuoteNudge sends [template preview]"

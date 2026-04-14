@@ -24,18 +24,11 @@ const CATEGORY_DESCRIPTIONS: Record<ReplyCategory, string> = {
     'This includes: "what is this about?", "can you tell me more?", "how much does it cost?", ' +
     '"what do you offer?", "how does it work?", "send me info", "what are your rates?", ' +
     '"tell me more", or any reply that shows curiosity but not yet commitment.',
-  "Already a Customer":
-    'The lead is already a customer, client, or user of the product/service. ' +
-    'This includes: "I\'m already a customer", "we already use you", "I have an account", ' +
-    '"we\'re already signed up", "I know your product", or similar.',
   Unsubscribe:
     'The lead explicitly wants to stop receiving messages and opt out. ' +
     'This includes: "STOP", "stop", "unsubscribe", "remove me", "take me off your list", ' +
     '"don\'t text me", "don\'t contact me", "please stop", "opt out", "leave me alone", ' +
     '"stop texting me", "remove my number", or any clear request to cease all communication.',
-  Other:
-    "The reply doesn't clearly fit any of the above categories, is ambiguous, " +
-    'is a greeting without clear intent, or is unrelated to the outreach.',
 };
 
 // Few-shot examples to anchor the model's judgment
@@ -57,8 +50,8 @@ Examples:
 - "Unsubscribe" → Unsubscribe
 - "How much does it cost?" → Wants More Info
 - "What exactly do you offer?" → Wants More Info
-- "I'm already a client of yours" → Already a Customer
-- "Hey" → Other
+- "I'm already a client of yours" → Wants More Info
+- "Hey" → Wants More Info
 `.trim();
 
 /**
@@ -138,8 +131,8 @@ Classify this reply into exactly one category.`;
 
     // Validate category is one of the known values
     if (!REPLY_CATEGORIES.includes(parsed.category as ReplyCategory)) {
-      console.warn(`[Classifier] Unknown category returned: ${parsed.category}, defaulting to Other`);
-      return { category: "Other", confidence: "low", reasoning: "Unknown category from LLM" };
+      console.warn(`[Classifier] Unknown category returned: ${parsed.category}, defaulting to Wants More Info`);
+      return { category: "Wants More Info", confidence: "low", reasoning: "Unknown category from LLM" };
     }
 
     return parsed;
@@ -147,9 +140,9 @@ Classify this reply into exactly one category.`;
     console.error("[Classifier] LLM classification failed:", err);
     // Graceful fallback — don't break the webhook flow
     return {
-      category: "Other",
+      category: "Wants More Info",
       confidence: "low",
-      reasoning: "Classification failed — defaulted to Other",
+      reasoning: "Classification failed — defaulted to Wants More Info",
     };
   }
 }

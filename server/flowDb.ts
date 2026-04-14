@@ -38,23 +38,9 @@ Here's a quick overview of what we offer and how it could benefit {{company}}. W
 
 Let me know what questions you have!`,
   },
-  "Already a Customer": {
-    name: "Already a Customer — Acknowledge",
-    body: `Hi {{firstName}}, wonderful — glad to have you on board already!
-
-If there's anything I can help you with or if you'd like to explore additional options, feel free to reach out anytime. We're here for you!`,
-  },
   Unsubscribe: {
     name: "Unsubscribe — Opt-Out Confirmation",
     body: `You've been removed from our list and will receive no further messages. Reply START anytime if you'd like to reconnect. Take care!`,
-  },
-  Other: {
-    name: "Other — General Follow-Up",
-    body: `Hi {{firstName}}, thanks for getting back to me!
-
-I'd love to connect and learn more about what you're looking for. Would a quick call work? You can book a time here: {{link}}
-
-Looking forward to hearing from you!`,
   },
 };
 

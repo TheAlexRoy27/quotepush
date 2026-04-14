@@ -153,15 +153,15 @@ describe("classifyReply", () => {
     expect(result.confidence).toBe("medium");
   });
 
-  it("classifies an already a customer reply", async () => {
+  it("classifies an already-a-customer reply as Wants More Info (no dedicated category)", async () => {
     (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       choices: [
         {
           message: {
             content: JSON.stringify({
-              category: "Already a Customer",
-              confidence: "high",
-              reasoning: "Lead says they are already using the product",
+              category: "Wants More Info",
+              confidence: "medium",
+              reasoning: "Lead is already a customer — classified as Wants More Info",
             }),
           },
         },
@@ -169,10 +169,10 @@ describe("classifyReply", () => {
     });
 
     const result = await classifyReply("I'm already a customer!", "Bob");
-    expect(result.category).toBe("Already a Customer");
+    expect(result.category).toBe("Wants More Info");
   });
 
-  it("falls back to Other on invalid LLM response", async () => {
+  it("falls back to Wants More Info on invalid LLM response", async () => {
     (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       choices: [
         {
@@ -184,19 +184,19 @@ describe("classifyReply", () => {
     });
 
     const result = await classifyReply("random text", "Dave");
-    expect(result.category).toBe("Other");
+    expect(result.category).toBe("Wants More Info");
     expect(result.confidence).toBe("low");
   });
 
-  it("falls back to Other on LLM error", async () => {
+  it("falls back to Wants More Info on LLM error", async () => {
     (invokeLLM as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("LLM timeout"));
 
     const result = await classifyReply("some message", "Eve");
-    expect(result.category).toBe("Other");
+    expect(result.category).toBe("Wants More Info");
     expect(result.confidence).toBe("low");
   });
 
-  it("falls back to Other when category is not in the allowed list", async () => {
+  it("falls back to Wants More Info when category is not in the allowed list", async () => {
     (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       choices: [
         {
@@ -212,7 +212,7 @@ describe("classifyReply", () => {
     });
 
     const result = await classifyReply("some message", "Frank");
-    expect(result.category).toBe("Other");
+    expect(result.category).toBe("Wants More Info");
   });
 });
 
@@ -225,7 +225,7 @@ describe("classifyReply prompt structure", () => {
 
   it("calls invokeLLM with system and user messages", async () => {
     (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      choices: [{ message: { content: JSON.stringify({ category: "Other", confidence: "low", reasoning: "test" }) } }],
+      choices: [{ message: { content: JSON.stringify({ category: "Wants More Info", confidence: "low", reasoning: "test" }) } }],
     });
 
     await classifyReply("Hello there", "TestUser");
@@ -241,7 +241,7 @@ describe("classifyReply prompt structure", () => {
 
   it("includes all reply categories in the system prompt", async () => {
     (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      choices: [{ message: { content: JSON.stringify({ category: "Other", confidence: "low", reasoning: "test" }) } }],
+      choices: [{ message: { content: JSON.stringify({ category: "Wants More Info", confidence: "low", reasoning: "test" }) } }],
     });
 
     await classifyReply("Test message", "User");
@@ -251,9 +251,7 @@ describe("classifyReply prompt structure", () => {
     expect(systemPrompt).toContain("Interested");
     expect(systemPrompt).toContain("Not Interested");
     expect(systemPrompt).toContain("Wants More Info");
-    expect(systemPrompt).toContain("Already a Customer");
     expect(systemPrompt).toContain("Unsubscribe");
-    expect(systemPrompt).toContain("Other");
   });
 
   it("includes the lead name in the user message", async () => {
@@ -270,7 +268,7 @@ describe("classifyReply prompt structure", () => {
 
   it("requests structured JSON output via response_format", async () => {
     (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      choices: [{ message: { content: JSON.stringify({ category: "Other", confidence: "low", reasoning: "test" }) } }],
+      choices: [{ message: { content: JSON.stringify({ category: "Wants More Info", confidence: "low", reasoning: "test" }) } }],
     });
 
     await classifyReply("Some reply", "Lead");
@@ -297,8 +295,6 @@ describe("reconcileFlowDefaults (unit)", () => {
     expect(AUTO_SEND_DEFAULTS["Unsubscribe"]).toBe(true);
     // Other categories should NOT be auto-enabled by default
     expect(AUTO_SEND_DEFAULTS["Wants More Info"]).toBeFalsy();
-    expect(AUTO_SEND_DEFAULTS["Already a Customer"]).toBeFalsy();
-    expect(AUTO_SEND_DEFAULTS["Other"]).toBeFalsy();
   });
 
   it("DEFAULT_TEMPLATE_BODIES for Interested includes a scheduling link placeholder", async () => {
@@ -320,18 +316,18 @@ describe("reconcileFlowDefaults (unit)", () => {
 });
 
 describe("flowDb helpers (unit)", () => {
-  it("REPLY_CATEGORIES contains exactly the six expected categories", async () => {
+  it("REPLY_CATEGORIES contains exactly the four expected categories", async () => {
     const { REPLY_CATEGORIES } = await import("../drizzle/schema");
     expect(REPLY_CATEGORIES).toContain("Interested");
     expect(REPLY_CATEGORIES).toContain("Not Interested");
     expect(REPLY_CATEGORIES).toContain("Wants More Info");
-    expect(REPLY_CATEGORIES).toContain("Already a Customer");
     expect(REPLY_CATEGORIES).toContain("Unsubscribe");
-    expect(REPLY_CATEGORIES).toContain("Other");
-    expect(REPLY_CATEGORIES).toHaveLength(6);
+    expect(REPLY_CATEGORIES).not.toContain("Already a Customer");
+    expect(REPLY_CATEGORIES).not.toContain("Other");
+    expect(REPLY_CATEGORIES).toHaveLength(4);
   });
 
-  it("DEFAULT_FLOW_TEMPLATES covers all six categories", async () => {
+  it("DEFAULT_FLOW_TEMPLATES covers all four categories", async () => {
     const { REPLY_CATEGORIES } = await import("../drizzle/schema");
     // Import the default bodies from flowDb
     const flowDb = await import("./flowDb");
@@ -343,7 +339,7 @@ describe("flowDb helpers (unit)", () => {
     expect(typeof flowDb.listFlowRules).toBe("function");
     expect(typeof flowDb.createMessageClassification).toBe("function");
     expect(typeof flowDb.getClassificationByMessageId).toBe("function");
-    // All 6 categories should have a corresponding default template body
+    // All 4 categories should have a corresponding default template body
     const { DEFAULT_TEMPLATE_BODIES } = flowDb as typeof flowDb & { DEFAULT_TEMPLATE_BODIES?: Record<string, string> };
     if (DEFAULT_TEMPLATE_BODIES) {
       for (const cat of REPLY_CATEGORIES) {

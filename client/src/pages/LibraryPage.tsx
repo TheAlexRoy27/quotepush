@@ -36,13 +36,13 @@ import {
   Trash2,
   Zap,
   BookOpen,
-  ChevronRight,
   Loader2,
   Sparkles,
-  ToggleLeft,
-  ToggleRight,
   MessageSquare,
   Info,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -51,16 +51,21 @@ const CATEGORIES = [
   "Interested",
   "Not Interested",
   "Wants More Info",
-  "Already a Customer",
   "Unsubscribe",
-  "Other",
 ] as const;
 
 type ReplyCategory = (typeof CATEGORIES)[number];
 
 const CATEGORY_META: Record<
   ReplyCategory,
-  { color: string; bg: string; border: string; icon: string; description: string }
+  {
+    color: string;
+    bg: string;
+    border: string;
+    icon: string;
+    description: string;
+    triggerExamples: string[];
+  }
 > = {
   Interested: {
     color: "text-emerald-400",
@@ -68,6 +73,7 @@ const CATEGORY_META: Record<
     border: "border-emerald-500/20",
     icon: "✅",
     description: "Lead wants to move forward or schedule a call",
+    triggerExamples: ["Yes", "That works", "Sounds good", "Sure", "Let's do it", "Absolutely"],
   },
   "Not Interested": {
     color: "text-rose-400",
@@ -75,6 +81,7 @@ const CATEGORY_META: Record<
     border: "border-rose-500/20",
     icon: "🚫",
     description: "Lead declines or is not interested",
+    triggerExamples: ["No thanks", "Not interested", "Not for us", "We're all set", "Pass"],
   },
   "Wants More Info": {
     color: "text-amber-400",
@@ -82,13 +89,7 @@ const CATEGORY_META: Record<
     border: "border-amber-500/20",
     icon: "❓",
     description: "Lead is asking questions or requesting details",
-  },
-  "Already a Customer": {
-    color: "text-sky-400",
-    bg: "bg-sky-500/10",
-    border: "border-sky-500/20",
-    icon: "⭐",
-    description: "Lead is already using your product or service",
+    triggerExamples: ["How much?", "Tell me more", "What do you offer?", "How does it work?"],
   },
   Unsubscribe: {
     color: "text-slate-400",
@@ -96,13 +97,7 @@ const CATEGORY_META: Record<
     border: "border-slate-500/20",
     icon: "🔕",
     description: "Lead wants to opt out of messages",
-  },
-  Other: {
-    color: "text-violet-400",
-    bg: "bg-violet-500/10",
-    border: "border-violet-500/20",
-    icon: "💬",
-    description: "Ambiguous or uncategorized replies",
+    triggerExamples: ["STOP", "Unsubscribe", "Remove me", "Don't text me", "Opt out"],
   },
 };
 
@@ -138,29 +133,36 @@ function TemplateCard({
           <Zap className="h-2.5 w-2.5" /> Auto-flow
         </span>
       )}
-      <div className="flex items-start justify-between gap-2 mb-2 pr-20">
-        <h4 className="text-sm font-semibold text-foreground leading-tight">{template.name}</h4>
+      <div className="flex items-start justify-between gap-2 pr-16">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{template.name}</p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{preview}</p>
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground leading-relaxed font-mono whitespace-pre-wrap">
-        {preview}
-      </p>
       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-          onClick={onEdit}
-        >
-          <Pencil className="h-3 w-3 mr-1" /> Edit
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-xs text-muted-foreground hover:text-rose-400"
-          onClick={onDelete}
-        >
-          <Trash2 className="h-3 w-3 mr-1" /> Delete
-        </Button>
+        {!template.isActive && (
+          <span className="text-[10px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">
+            Inactive
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+            onClick={onEdit}
+          >
+            <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -178,16 +180,21 @@ function TemplateEditorModal({
   open: boolean;
   onClose: () => void;
   defaultCategory: ReplyCategory;
-  template?: { id: number; name: string; category: string; body: string; isActive: number } | null;
+  template?: {
+    id: number;
+    name: string;
+    category: string;
+    body: string;
+    isActive: number;
+  } | null;
   onSuccess: () => void;
 }) {
-  const [form, setForm] = useState({
-    name: template?.name ?? "",
-    category: (template?.category ?? defaultCategory) as ReplyCategory,
-    body: template?.body ?? "",
-    isActive: template ? template.isActive === 1 : true,
-  });
-
+  const [name, setName] = useState(template?.name ?? "");
+  const [category, setCategory] = useState<ReplyCategory>(
+    (template?.category as ReplyCategory) ?? defaultCategory
+  );
+  const [body, setBody] = useState(template?.body ?? "");
+  const [isActive, setIsActive] = useState(template ? template.isActive === 1 : true);
   const utils = trpc.useUtils();
 
   const createMutation = trpc.flowTemplates.create.useMutation({
@@ -213,48 +220,45 @@ function TemplateEditorModal({
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   const handleSubmit = () => {
-    if (!form.name.trim() || !form.body.trim()) {
-      toast.error("Name and message body are required");
+    if (!name.trim() || !body.trim()) {
+      toast.error("Name and body are required");
       return;
     }
     if (template) {
-      updateMutation.mutate({ id: template.id, ...form });
+      updateMutation.mutate({ id: template.id, name, category, body, isActive });
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate({ name, category, body, isActive });
     }
   };
 
   const insertVariable = (tag: string) => {
-    setForm((f) => ({ ...f, body: f.body + tag }));
+    setBody((prev) => prev + tag);
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg bg-card border-border">
+      <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-foreground">
             {template ? "Edit Template" : "New Template"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">
+        <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label className="text-sm text-foreground">Template Name</Label>
+            <Label className="text-xs text-muted-foreground">Template Name</Label>
             <Input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Interested — Schedule Call"
-              className="bg-background border-border"
+              className="bg-background border-border text-sm"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sm text-foreground">Reply Category</Label>
-            <Select
-              value={form.category}
-              onValueChange={(v) => setForm((f) => ({ ...f, category: v as ReplyCategory }))}
-            >
-              <SelectTrigger className="bg-background border-border">
+            <Label className="text-xs text-muted-foreground">Reply Category</Label>
+            <Select value={category} onValueChange={(v) => setCategory(v as ReplyCategory)}>
+              <SelectTrigger className="bg-background border-border text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -268,42 +272,34 @@ function TemplateEditorModal({
           </div>
 
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm text-foreground">Message Body</Label>
-              <div className="flex items-center gap-1">
-                {VARIABLE_HINTS.map(({ tag }) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => insertVariable(tag)}
-                    className="text-[10px] font-mono text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded hover:bg-primary/20 transition-colors"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <Label className="text-xs text-muted-foreground">Message Body</Label>
             <Textarea
-              value={form.body}
-              onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-              rows={6}
-              placeholder="Hi {{firstName}}, thanks for getting back to me! ..."
-              className="bg-background border-border font-mono text-sm resize-none"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Write your follow-up message…"
+              className="bg-background border-border text-sm min-h-[120px] resize-none"
             />
-            <p className="text-xs text-muted-foreground">
-              {form.body.length} characters · Use variable buttons above to insert placeholders
-            </p>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {VARIABLE_HINTS.map((v) => (
+                <button
+                  key={v.tag}
+                  type="button"
+                  onClick={() => insertVariable(v.tag)}
+                  title={v.desc}
+                  className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                >
+                  {v.tag}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/50">
             <div>
               <p className="text-sm font-medium text-foreground">Active</p>
-              <p className="text-xs text-muted-foreground">Inactive templates won't be used in auto-flows</p>
+              <p className="text-xs text-muted-foreground">Only active templates appear in flow rules</p>
             </div>
-            <Switch
-              checked={form.isActive}
-              onCheckedChange={(v) => setForm((f) => ({ ...f, isActive: v }))}
-            />
+            <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
         </div>
 
@@ -321,9 +317,9 @@ function TemplateEditorModal({
   );
 }
 
-// ─── Flow Rule Row ────────────────────────────────────────────────────────────
+// ─── Flow Rule Card (redesigned) ──────────────────────────────────────────────
 
-function FlowRuleRow({
+function FlowRuleCard({
   category,
   rule,
   templates,
@@ -331,11 +327,12 @@ function FlowRuleRow({
 }: {
   category: ReplyCategory;
   rule?: { id: number; templateId: number | null; autoSend: number } | null;
-  templates: { id: number; name: string; isActive: number }[];
+  templates: { id: number; name: string; body: string; isActive: number }[];
   onUpdate: () => void;
 }) {
   const meta = CATEGORY_META[category];
   const utils = trpc.useUtils();
+  const [expanded, setExpanded] = useState(false);
 
   const upsertMutation = trpc.flowRules.upsert.useMutation({
     onSuccess: () => {
@@ -346,6 +343,8 @@ function FlowRuleRow({
   });
 
   const activeTemplates = templates.filter((t) => t.isActive === 1);
+  const assignedTemplate = templates.find((t) => t.id === rule?.templateId);
+  const isAutoSend = rule?.autoSend === 1 && !!rule?.templateId;
 
   const handleTemplateChange = (templateId: string) => {
     upsertMutation.mutate({
@@ -363,51 +362,116 @@ function FlowRuleRow({
     });
   };
 
-  const selectedTemplateId = rule?.templateId?.toString() ?? "none";
-  const isAutoSend = rule?.autoSend === 1;
-
   return (
-    <div className="flex items-center gap-4 p-3.5 rounded-xl bg-card border border-border hover:border-border/80 transition-all">
-      <div className={`flex items-center gap-2 min-w-[180px]`}>
-        <span
-          className={`text-xs font-medium px-2 py-1 rounded-full border ${meta.bg} ${meta.border} ${meta.color}`}
-        >
-          {meta.icon} {category}
-        </span>
-      </div>
+    <div className={`rounded-xl border transition-all ${isAutoSend ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-card"}`}>
+      {/* Main row */}
+      <div className="flex items-center gap-4 p-4">
+        {/* Category badge */}
+        <div className={`flex items-center gap-2 min-w-[170px]`}>
+          <span
+            className={`text-xs font-medium px-2.5 py-1 rounded-full border ${meta.bg} ${meta.border} ${meta.color}`}
+          >
+            {meta.icon} {category}
+          </span>
+        </div>
 
-      <div className="flex-1">
-        <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
-          <SelectTrigger className="h-8 text-xs bg-background border-border">
-            <SelectValue placeholder="No template assigned" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">
-              <span className="text-muted-foreground">No template assigned</span>
-            </SelectItem>
-            {activeTemplates.map((t) => (
-              <SelectItem key={t.id} value={t.id.toString()}>
-                {t.name}
+        {/* Arrow */}
+        <ArrowRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+
+        {/* Assigned template selector */}
+        <div className="flex-1 min-w-0">
+          <Select
+            value={rule?.templateId?.toString() ?? "none"}
+            onValueChange={handleTemplateChange}
+          >
+            <SelectTrigger className="h-8 text-xs bg-background border-border">
+              <SelectValue placeholder="No template assigned" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">
+                <span className="text-muted-foreground">No template assigned</span>
               </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              {activeTemplates.map((t) => (
+                <SelectItem key={t.id} value={t.id.toString()}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Auto-send toggle */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Switch
+            checked={isAutoSend}
+            onCheckedChange={handleAutoSendToggle}
+            disabled={!rule?.templateId}
+          />
+          <span className={`text-xs font-medium w-16 ${isAutoSend ? "text-emerald-400" : "text-muted-foreground"}`}>
+            {isAutoSend ? "⚡ Auto" : "Manual"}
+          </span>
+        </div>
+
+        {/* Expand toggle */}
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="text-muted-foreground hover:text-foreground transition-colors"
+          title={expanded ? "Collapse" : "Preview flow"}
+        >
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        <Switch
-          checked={isAutoSend}
-          onCheckedChange={handleAutoSendToggle}
-          disabled={!rule?.templateId}
-        />
-        <span className="text-xs text-muted-foreground w-16">
-          {isAutoSend ? (
-            <span className="text-emerald-400 font-medium">Auto-send</span>
+      {/* Expanded flow visualization */}
+      {expanded && (
+        <div className="px-4 pb-4 border-t border-border/40 pt-4 space-y-3">
+          {/* Trigger examples */}
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 w-28 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide pt-1">
+              Lead replies with
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {meta.triggerExamples.map((ex) => (
+                <span
+                  key={ex}
+                  className={`text-xs px-2 py-0.5 rounded-full border ${meta.bg} ${meta.border} ${meta.color}`}
+                >
+                  "{ex}"
+                </span>
+              ))}
+              <span className="text-xs text-muted-foreground/60 self-center">…and similar</span>
+            </div>
+          </div>
+
+          {/* Arrow connector */}
+          <div className="flex items-center gap-2 pl-28">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="h-px w-4 bg-border" />
+              <ArrowRight className="h-3 w-3" />
+              <span className="text-[10px] uppercase tracking-wide font-medium">
+                {isAutoSend ? "QuoteNudge auto-sends" : "Suggested reply (manual)"}
+              </span>
+              <div className="h-px w-4 bg-border" />
+            </div>
+          </div>
+
+          {/* Assigned template preview */}
+          {assignedTemplate ? (
+            <div className="ml-28 rounded-lg bg-background border border-border p-3">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                {assignedTemplate.name}
+              </p>
+              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                {assignedTemplate.body.slice(0, 200)}{assignedTemplate.body.length > 200 ? "…" : ""}
+              </p>
+            </div>
           ) : (
-            "Manual"
+            <div className="ml-28 rounded-lg bg-muted/20 border border-dashed border-border p-3 text-center">
+              <p className="text-xs text-muted-foreground">No template assigned — select one above to enable this flow</p>
+            </div>
           )}
-        </span>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -620,25 +684,21 @@ export default function LibraryPage() {
             <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div className="text-sm text-muted-foreground">
               <p>
-                When a lead replies to your outreach SMS, QuoteNudge uses AI to classify the reply
-                into one of the categories below. If <strong className="text-foreground">Auto-send</strong> is
-                enabled for a category, the assigned template is automatically sent back — instantly and automatically.
+                When a lead replies, QuoteNudge uses AI to classify the intent and — if <strong className="text-foreground">Auto</strong> is on — instantly sends the assigned template back. Click the <strong className="text-foreground">↓ arrow</strong> on any row to see the full trigger phrases and template preview.
               </p>
               <p className="mt-1.5 text-xs">
-                <strong className="text-emerald-400">Interested</strong>, <strong className="text-rose-400">Not Interested</strong>, and <strong className="text-slate-400">Unsubscribe</strong> have auto-send <strong className="text-foreground">enabled by default</strong> — replies like "yes", "that works", "sounds good", "no thanks", or "STOP" will trigger an automatic response.
-              </p>
-              <p className="mt-1.5 text-xs">
-                Toggle <strong className="text-foreground">Auto-send</strong> off to receive a notification
-                instead and send the reply manually from the conversation thread.
+                <strong className="text-emerald-400">Interested</strong>, <strong className="text-rose-400">Not Interested</strong>, and <strong className="text-slate-400">Unsubscribe</strong> have auto-send <strong className="text-foreground">enabled by default</strong>.
               </p>
             </div>
           </div>
 
           {/* Column headers */}
-          <div className="flex items-center gap-4 px-3.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            <span className="min-w-[180px]">Reply Category</span>
+          <div className="flex items-center gap-4 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <span className="min-w-[170px]">Reply Category</span>
+            <span className="w-4" />
             <span className="flex-1">Assigned Template</span>
-            <span className="w-28 text-right">Auto-send</span>
+            <span className="w-28 text-center">Auto-send</span>
+            <span className="w-6" />
           </div>
 
           {rulesLoading ? (
@@ -650,7 +710,7 @@ export default function LibraryPage() {
               {CATEGORIES.map((cat) => {
                 const rule = flowRules.find((r) => r.category === cat);
                 return (
-                  <FlowRuleRow
+                  <FlowRuleCard
                     key={cat}
                     category={cat}
                     rule={rule}
@@ -666,7 +726,7 @@ export default function LibraryPage() {
             <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
             <p className="text-xs text-muted-foreground">
               Only <strong className="text-foreground">active</strong> templates appear in the dropdown.
-              Auto-send is disabled when no template is assigned.
+              Auto-send is disabled when no template is assigned. Use the Template Library tab to create and manage templates.
             </p>
           </div>
         </div>

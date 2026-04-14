@@ -5,7 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Eye, Info, Loader2, RotateCcw } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Save, Eye, Info, Loader2, RotateCcw, BookmarkPlus } from "lucide-react";
 
 const DEFAULT_BODY = `Hi {{firstName}}, I came across {{company}} and wanted to reach out personally.
 
@@ -20,6 +34,22 @@ const VARIABLES = [
   { token: "{{link}}", description: "Scheduling / Calendly link" },
 ];
 
+const CATEGORIES = [
+  "Interested",
+  "Not Interested",
+  "Wants More Info",
+  "Unsubscribe",
+] as const;
+
+type ReplyCategory = (typeof CATEGORIES)[number];
+
+const CATEGORY_META: Record<ReplyCategory, { icon: string; description: string }> = {
+  Interested: { icon: "✅", description: "Replies for leads who want to move forward" },
+  "Not Interested": { icon: "🚫", description: "Replies for leads who decline" },
+  "Wants More Info": { icon: "❓", description: "Replies for leads asking questions" },
+  Unsubscribe: { icon: "🔕", description: "Replies for leads opting out" },
+};
+
 function toTitleCase(str: string) {
   return str.toLowerCase().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
@@ -33,6 +63,123 @@ function renderPreview(body: string, name = "Jane Smith", company = "Acme Corp",
     .replace(/\{\{link\}\}/g, link);
 }
 
+// ─── Save to Library Modal ────────────────────────────────────────────────────
+
+function SaveToLibraryModal({
+  open,
+  onClose,
+  templateBody,
+  templateName,
+}: {
+  open: boolean;
+  onClose: () => void;
+  templateBody: string;
+  templateName: string;
+}) {
+  const [libraryName, setLibraryName] = useState(templateName || "");
+  const [category, setCategory] = useState<ReplyCategory>("Interested");
+  const utils = trpc.useUtils();
+
+  useEffect(() => {
+    if (open) {
+      setLibraryName(templateName || "");
+    }
+  }, [open, templateName]);
+
+  const createMutation = trpc.flowTemplates.create.useMutation({
+    onSuccess: () => {
+      toast.success("Template saved to library!");
+      utils.flowTemplates.list.invalidate();
+      onClose();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleSave = () => {
+    if (!libraryName.trim()) {
+      toast.error("Please enter a name for the library template");
+      return;
+    }
+    createMutation.mutate({
+      name: libraryName,
+      category,
+      body: templateBody,
+      isActive: true,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-card border-border max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-foreground flex items-center gap-2">
+            <BookmarkPlus className="h-4 w-4 text-primary" />
+            Save to Template Library
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <p className="text-sm text-muted-foreground">
+            Save the current SMS template body as a reply template in the Template Library. It will be available for use in Auto-Flow Rules.
+          </p>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Library Template Name</Label>
+            <Input
+              value={libraryName}
+              onChange={(e) => setLibraryName(e.target.value)}
+              placeholder="e.g. Initial Outreach — Interested Follow-up"
+              className="bg-background border-border text-sm"
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Reply Category</Label>
+            <Select value={category} onValueChange={(v) => setCategory(v as ReplyCategory)}>
+              <SelectTrigger className="bg-background border-border text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    <span className="flex items-center gap-2">
+                      <span>{CATEGORY_META[c].icon}</span>
+                      <span>{c}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">{CATEGORY_META[category].description}</p>
+          </div>
+
+          {/* Preview of what will be saved */}
+          <div className="rounded-lg bg-muted/20 border border-border p-3 space-y-1.5">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Template body preview</p>
+            <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap line-clamp-4">
+              {templateBody.slice(0, 200)}{templateBody.length > 200 ? "…" : ""}
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={createMutation.isPending}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={createMutation.isPending || !libraryName.trim()}>
+            {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <BookmarkPlus className="h-4 w-4 mr-1.5" />
+            Save to Library
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function TemplatePage() {
   const { data: template, isLoading } = trpc.templates.get.useQuery();
   const utils = trpc.useUtils();
@@ -43,6 +190,7 @@ export default function TemplatePage() {
   const [previewCompany, setPreviewCompany] = useState("Acme Corp");
   const [previewLink, setPreviewLink] = useState("https://calendly.com/your-link");
   const [isDirty, setIsDirty] = useState(false);
+  const [saveToLibraryOpen, setSaveToLibraryOpen] = useState(false);
 
   useEffect(() => {
     if (template) {
@@ -103,6 +251,16 @@ export default function TemplatePage() {
             <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSaveToLibraryOpen(true)}
+            disabled={!body.trim()}
+            className="border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+          >
+            <BookmarkPlus className="h-3.5 w-3.5 mr-1.5" />
+            Save to Library
+          </Button>
+          <Button
             size="sm"
             onClick={() => template && updateTemplate.mutate({ id: template.id, name, body })}
             disabled={!isDirty || updateTemplate.isPending || !template}
@@ -161,6 +319,15 @@ export default function TemplatePage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Save to Library hint */}
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <BookmarkPlus className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Use <strong className="text-foreground">Save to Library</strong> to add this template to the{" "}
+              <strong className="text-foreground">Template Library</strong> as a reply template — assign it to a reply category and enable auto-flow.
+            </p>
           </div>
         </div>
 
@@ -225,6 +392,14 @@ export default function TemplatePage() {
           </div>
         </div>
       </div>
+
+      {/* Save to Library Modal */}
+      <SaveToLibraryModal
+        open={saveToLibraryOpen}
+        onClose={() => setSaveToLibraryOpen(false)}
+        templateBody={body}
+        templateName={name}
+      />
     </div>
   );
 }
