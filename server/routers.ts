@@ -76,6 +76,7 @@ import {
   updateDripSequence,
   upsertDripStep,
   deleteDripStep,
+  seedDefaultDripSequences,
 } from "./dripDb";
 import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES } from "../drizzle/schema";
 import { SignJWT } from "jose";
@@ -145,6 +146,7 @@ const customAuthRouter = router({
       // Seed org defaults
       await seedFlowRules(org.id);
       await seedDefaultTemplates(org.id);
+      await seedDefaultDripSequences(org.id);
 
       // Issue JWT session
       const secret = new TextEncoder().encode(ENV.jwtSecret);
@@ -253,6 +255,7 @@ const customAuthRouter = router({
       const org = await createOrganization(input.orgName, user.id);
       await seedFlowRules(org.id);
       await seedDefaultTemplates(org.id);
+      await seedDefaultDripSequences(org.id);
 
       // Store phone credential
       const hash = await bcrypt.hash(input.password, 12);
@@ -322,6 +325,7 @@ const customAuthRouter = router({
         const newOrg = await createOrganization(input.orgName, user.id);
         await seedFlowRules(newOrg.id);
         await seedDefaultTemplates(newOrg.id);
+        await seedDefaultDripSequences(newOrg.id);
         org = newOrg;
         isNew = true;
       } else {
@@ -428,6 +432,7 @@ const orgRouter = router({
       const org = await createOrganization(input.name, ctx.user.id);
       await seedFlowRules(org.id);
       await seedDefaultTemplates(org.id);
+      await seedDefaultDripSequences(org.id);
       return { org, role: "owner" as const };
     }),
 
@@ -733,6 +738,7 @@ const flowTemplatesRouter = router({
     const orgId = await requireOrgId(ctx.user.id);
     await seedFlowRules(orgId);
     await seedDefaultTemplates(orgId);
+    await seedDefaultDripSequences(orgId);
     return { success: true };
   }),
 });

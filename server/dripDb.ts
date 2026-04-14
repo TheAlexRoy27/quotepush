@@ -310,3 +310,155 @@ export async function getDueEnrollments(): Promise<LeadDripEnrollment[]> {
       and(eq(leadDripEnrollments.status, "active"), lte(leadDripEnrollments.nextSendAt, now))
     );
 }
+
+// ─── Default Drip Sequences Seeder ───────────────────────────────────────────
+
+const DEFAULT_DRIP_SEQUENCES: Array<{
+  name: string;
+  triggerCategory: DripTriggerCategory;
+  steps: Array<{ name: string; delayAmount: number; delayUnit: DripDelayUnit; body: string }>;
+}> = [
+  {
+    name: "Interested — 5-Step Nurture",
+    triggerCategory: "Interested",
+    steps: [
+      {
+        name: "Immediate Follow-Up",
+        delayAmount: 5,
+        delayUnit: "minutes",
+        body: `Hi {{firstName}}, just following up on my last message! I'd love to learn more about {{company}} and see how we can help.
+
+Would a quick 15-min call work this week? Book here: {{link}}`,
+      },
+      {
+        name: "Day 2 — Value Reminder",
+        delayAmount: 2,
+        delayUnit: "days",
+        body: `Hi {{firstName}}, just wanted to make sure my last message didn't get buried!
+
+Our clients typically see results within the first 30 days. I'd love to show you how. Still interested in a quick chat? {{link}}`,
+      },
+      {
+        name: "Day 5 — Social Proof",
+        delayAmount: 5,
+        delayUnit: "days",
+        body: `Hi {{firstName}}, I wanted to share a quick win — one of our clients similar to {{company}} saw a 40% increase in conversions within 60 days.
+
+Happy to share the full story on a call: {{link}}`,
+      },
+      {
+        name: "Day 10 — Soft Check-In",
+        delayAmount: 10,
+        delayUnit: "days",
+        body: `Hi {{firstName}}, checking in one more time! I know things get busy.
+
+If now isn't the right time, just let me know and I'll follow up next quarter. Otherwise, grab a time here: {{link}}`,
+      },
+      {
+        name: "Day 21 — Final Nudge",
+        delayAmount: 21,
+        delayUnit: "days",
+        body: `Hi {{firstName}}, this will be my last follow-up — I don't want to be a bother!
+
+If you ever want to revisit, I'm always here. Just reply anytime or book a call: {{link}}
+
+Wishing you and {{company}} all the best!`,
+      },
+    ],
+  },
+  {
+    name: "Wants More Info — 3-Step Education",
+    triggerCategory: "Wants More Info",
+    steps: [
+      {
+        name: "Immediate Info Drop",
+        delayAmount: 3,
+        delayUnit: "minutes",
+        body: `Hi {{firstName}}, great — here's a quick overview of how we work and what makes us different: {{link}}
+
+Let me know if you have questions — happy to walk you through it personally!`,
+      },
+      {
+        name: "Day 3 — Case Study",
+        delayAmount: 3,
+        delayUnit: "days",
+        body: `Hi {{firstName}}, following up with a real example!
+
+Here's how we helped a company similar to {{company}} solve the same challenge you're facing: {{link}}
+
+Would love to show you how we can do the same for you. Want to jump on a quick call?`,
+      },
+      {
+        name: "Day 7 — Decision Nudge",
+        delayAmount: 7,
+        delayUnit: "days",
+        body: `Hi {{firstName}}, just circling back one more time!
+
+I know you were looking for more info — did you get a chance to review what I sent? Happy to answer any questions or set up a quick demo: {{link}}`,
+      },
+    ],
+  },
+  {
+    name: "Quick 3-Minute Blitz",
+    triggerCategory: "Interested",
+    steps: [
+      {
+        name: "Minute 1 — Confirm Interest",
+        delayAmount: 1,
+        delayUnit: "minutes",
+        body: `Hi {{firstName}}, awesome — glad you're interested! Just confirming — are you looking for a quote for {{company}} specifically, or something broader?
+
+Reply back and I'll get you exactly what you need!`,
+      },
+      {
+        name: "Minute 3 — Book the Call",
+        delayAmount: 3,
+        delayUnit: "minutes",
+        body: `Hi {{firstName}}, while I'm putting together your info — the fastest way to get you an accurate quote is a quick 10-min call.
+
+Grab a time here (totally free, no obligation): {{link}}`,
+      },
+      {
+        name: "Minute 10 — Final Push",
+        delayAmount: 10,
+        delayUnit: "minutes",
+        body: `Hi {{firstName}}, just making sure this didn't get lost!
+
+I have a few slots open today if you want to lock in a time: {{link}}
+
+Otherwise, just reply and I'll work around your schedule!`,
+      },
+    ],
+  },
+];
+
+/** Seed default drip sequences for a new org (idempotent — skips if sequences already exist) */
+export async function seedDefaultDripSequences(orgId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const existing = await listDripSequences(orgId);
+  if (existing.length > 0) return; // Already seeded
+
+  for (const seqDef of DEFAULT_DRIP_SEQUENCES) {
+    const seq = await createDripSequence({
+      orgId,
+      name: seqDef.name,
+      triggerCategory: seqDef.triggerCategory,
+      isActive: 1,
+    });
+    if (!seq) continue;
+
+    for (let i = 0; i < seqDef.steps.length; i++) {
+      const step = seqDef.steps[i];
+      await upsertDripStep({
+        sequenceId: seq.id,
+        stepNumber: i + 1,
+        name: step.name,
+        delayAmount: step.delayAmount,
+        delayUnit: step.delayUnit,
+        body: step.body,
+      });
+    }
+  }
+}

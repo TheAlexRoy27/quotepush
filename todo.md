@@ -252,9 +252,9 @@
 - [x] Remove unused getLoginUrl imports from Home.tsx, DashboardLayout.tsx, useAuth.ts, main.tsx
 
 ## OTP Login Fix
-- [ ] Return OTP code in sendOtp response when Twilio is not configured (simulation mode), so it can be shown on-screen
-- [ ] Show the OTP code on-screen in AuthPage when simulated=true (with a clear "Twilio not configured" notice)
-- [ ] Prompt user to enter Twilio credentials via secrets card
+- [x] Return OTP code in sendOtp response when Twilio is not configured — deferred; phone+password is now the primary login method (no Twilio needed)
+- [x] Show the OTP code on-screen in AuthPage when simulated=true — deferred; OTP tab is now secondary
+- [x] Prompt user to enter Twilio credentials via secrets card — deferred; Twilio only needed for outbound lead SMS, not for login
 
 ## Phone + Password Auth (No OTP)
 - [x] Add phone_credentials table: phone (unique), passwordHash, userId (FK to users)
@@ -262,3 +262,10 @@
 - [x] Add customAuth.registerPhone procedure: creates user + hashes password
 - [x] Add customAuth.loginPhonePassword procedure: verifies phone + password, issues session
 - [x] Add Phone+Password tab to AuthPage as default tab (Sign Up: phone+name+org+password; Sign In: phone+password)
+
+## Sample Automatic Flows
+- [x] Expand seedDefaultTemplates: add 3 templates per category (Interested, Not Interested, Wants More Info, Unsubscribe)
+- [x] Expand seedFlowRules: assign best template per category with autoSend enabled
+- [x] Add seedDefaultDripSequences: create 3 sample drip sequences (Interested 5-step, Wants More Info 3-step, Quick 3-minute follow-up)
+- [x] Call seedDefaultDripSequences in the new org creation flow (registerPhone, registerEmail, loginPhone new user)
+- [x] Apply seeds to the existing org in the DB so the current user sees them immediately

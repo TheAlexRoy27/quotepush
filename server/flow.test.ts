@@ -299,19 +299,23 @@ describe("reconcileFlowDefaults (unit)", () => {
 
   it("DEFAULT_TEMPLATE_BODIES for Interested includes a scheduling link placeholder", async () => {
     const { DEFAULT_TEMPLATE_BODIES } = await import("./flowDb");
-    const interestedTemplate = DEFAULT_TEMPLATE_BODIES?.["Interested"];
-    expect(interestedTemplate).toBeDefined();
-    expect(interestedTemplate?.body).toContain("{{link}}");
+    // DEFAULT_TEMPLATE_BODIES is now an array of templates per category; check the primary one
+    const templates = DEFAULT_TEMPLATE_BODIES?.["Interested"];
+    expect(templates).toBeDefined();
+    const primaryTemplate = Array.isArray(templates) ? templates.find((t: { isPrimary?: boolean }) => t.isPrimary) ?? templates[0] : templates;
+    expect(primaryTemplate?.body).toContain("{{link}}");
     // Templates now use {{firstName}} for personalization instead of {{name}}
-    expect(interestedTemplate?.body).toMatch(/\{\{firstName\}\}|\{\{name\}\}/);
+    expect(primaryTemplate?.body).toMatch(/\{\{firstName\}\}|\{\{name\}\}/);
   });
 
   it("DEFAULT_TEMPLATE_BODIES for Unsubscribe does NOT include {{name}} or {{link}} (plain opt-out)", async () => {
     const { DEFAULT_TEMPLATE_BODIES } = await import("./flowDb");
-    const unsubTemplate = DEFAULT_TEMPLATE_BODIES?.["Unsubscribe"];
-    expect(unsubTemplate).toBeDefined();
-    // Unsubscribe template should be a plain message without personalization
-    expect(unsubTemplate?.body).not.toContain("{{link}}");
+    // DEFAULT_TEMPLATE_BODIES is now an array of templates per category; check the primary one
+    const templates = DEFAULT_TEMPLATE_BODIES?.["Unsubscribe"];
+    expect(templates).toBeDefined();
+    const primaryTemplate = Array.isArray(templates) ? templates.find((t: { isPrimary?: boolean }) => t.isPrimary) ?? templates[0] : templates;
+    // Unsubscribe primary template should be a plain message without personalization
+    expect(primaryTemplate?.body).not.toContain("{{link}}");
   });
 });
 
