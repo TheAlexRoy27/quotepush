@@ -218,3 +218,13 @@
 - [x] Update drip scheduler to compute nextSendAt using minutes or days based on delayUnit
 - [x] Update DripPage StepEditor UI to show unit selector (Minutes / Days) next to delay input
 - [x] Update drip router upsertStep to accept delayUnit
+
+## Drip Builder UX Improvements
+- [x] Replace "New Sequence" dialog with a full guided 2-step wizard: (1) Name + trigger, (2) Quick Start template picker
+- [x] Show a vertical timeline visualization for each sequence with step nodes, delay labels, and message previews
+- [x] Add character counter on message body textarea (SMS = 160 chars per segment)
+- [x] Add a "Lead's View" live preview panel: shows exactly what the lead will receive and when, using sample data
+- [x] Add contextual tooltips/help text explaining what Interested vs Wants More Info means
+- [x] Add a "Quick Start" template picker: pre-fill sequences with 3-step follow-up, 5-day nurture, or quick minute drip
+- [x] Show total sequence duration (e.g. "Spans 14 days") in the sequence card header
+- [x] Add variable insertion buttons ({{firstName}}, {{company}}, {{link}}) so users don't have to type them manually
