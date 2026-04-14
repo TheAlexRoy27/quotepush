@@ -15,6 +15,7 @@ import BillingPage from "./pages/BillingPage";
 import OrgPage from "./pages/OrgPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
+import AdminPage from "./pages/AdminPage";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path={"/auth"} component={AuthPage} />
       <Route path={"/onboarding"} component={OnboardingPage} />
       <Route path={"/invite/:token"} component={AcceptInvitePage} />
+      <Route path={"/admin"} component={AdminPage} />
       <Route>
         <DashboardLayout>
           <Switch>

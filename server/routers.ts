@@ -26,6 +26,7 @@ import {
   findUserByPhone,
   getOrgMembership,
   getOrganizationById,
+  listAllOrganizations,
   listOrgMembers,
   removeMember,
   updateMemberRole,
@@ -39,7 +40,7 @@ import {
 } from "./orgDb";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { notifyOwner } from "./_core/notification";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { systemRouter } from "./_core/systemRouter";
 import { isTwilioConfigured, renderTemplate, sendSms, sendSmsWithConfig } from "./twilio";
 import { createCheckoutSession, createPortalSession } from "./billing";
@@ -653,6 +654,14 @@ const billingRouter = router({
     }),
 });
 
+// ─── Admin Router ───────────────────────────────────────────────────────────
+
+const adminRouter = router({
+  listAccounts: adminProcedure.query(async () => {
+    return listAllOrganizations();
+  }),
+});
+
 // ─── App Router ─────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -674,6 +683,7 @@ export const appRouter = router({
   flowTemplates: flowTemplatesRouter,
   flowRules: flowRulesRouter,
   billing: billingRouter,
+  admin: adminRouter,
 });
 
 

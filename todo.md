@@ -185,3 +185,12 @@
 - [x] Add "Save to Library" button on SMS Template page with category selector modal
 - [x] Redesign Auto-Flow Rules panel: show trigger phrase examples, assigned template name + body preview, and enable/disable toggle per category
 - [x] Show a visual flow card per category: "Lead replies with [examples] → QuoteNudge sends [template preview]"
+
+## Super-Admin Accounts Dashboard
+- [x] Add `listAllOrganizations` DB helper: fetch all orgs with member count, lead count, owner info
+- [x] Add `superAdminProcedure` middleware: reuses existing adminProcedure (role === 'admin')
+- [x] Add `admin.listAccounts` tRPC procedure: returns all orgs with plan, status, member count, lead count, owner name/email, createdAt
+- [x] Add `/admin` route to App.tsx (outside DashboardLayout, own layout)
+- [x] Build AdminPage.tsx: stat summary cards (total orgs, base count, elite count, active subscriptions), filterable accounts table with plan badge, status badge, member count, lead count, owner, joined date
+- [x] Add "Admin Panel" nav item to DashboardLayout sidebar (only visible when user.role === 'admin')
+- [x] Owner account auto-promoted to admin via upsertUser when openId === OWNER_OPEN_ID (existing mechanism)

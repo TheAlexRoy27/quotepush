@@ -22,7 +22,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, Building2, CreditCard, FileText, LogOut, MessageSquare, PanelLeft, Settings, Users, Webhook } from "lucide-react";
+import { BookOpen, Building2, CreditCard, FileText, LogOut, MessageSquare, PanelLeft, Settings, Shield, Users, Webhook } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -36,6 +36,10 @@ const menuItems = [
   { icon: Building2, label: "Organization", path: "/organization" },
   { icon: CreditCard, label: "Billing", path: "/billing" },
   { icon: Settings, label: "Settings", path: "/settings" },
+];
+
+const adminMenuItems = [
+  { icon: Shield, label: "Admin Panel", path: "/admin" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -251,6 +255,32 @@ function DashboardLayoutContent({
                 );
               })}
             </SidebarMenu>
+            {/* Admin-only section */}
+            {(user as any)?.role === "admin" && (
+              <>
+                <div className="px-4 py-2">
+                  <div className="h-px bg-border" />
+                </div>
+                <SidebarMenu className="px-2 pb-1">
+                  {adminMenuItems.map(item => {
+                    const isActive = location === item.path;
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          onClick={() => setLocation(item.path)}
+                          tooltip={item.label}
+                          className={`h-10 transition-all font-normal text-violet-400 hover:text-violet-300`}
+                        >
+                          <item.icon className={`h-4 w-4`} />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </>
+            )}
           </SidebarContent>
 
           <SidebarFooter className="p-3">

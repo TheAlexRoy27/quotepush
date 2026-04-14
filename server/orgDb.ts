@@ -9,6 +9,7 @@ import {
   InsertOrganization,
   InsertPhoneOtp,
   InsertUser,
+  leads as leadsTable,
   OrgMember,
   OrgRole,
   Organization,
@@ -339,4 +340,83 @@ export async function canAddMember(orgId: number): Promise<boolean> {
   // Base plan: check active subscription and seat count
   const count = await getOrgMemberCount(orgId);
   return count < 1; // Base includes 1 seat; additional seats require Elite
+}
+
+// ─── Super-Admin: List All Organizations ─────────────────────────────────────
+
+export interface OrgSummary {
+  id: number;
+  name: string;
+  slug: string;
+  plan: string;
+  subscriptionStatus: string | null;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  createdAt: Date;
+  memberCount: number;
+  leadCount: number;
+  ownerName: string | null;
+  ownerEmail: string | null;
+  ownerPhone: string | null;
+}
+
+export async function listAllOrganizations(): Promise<OrgSummary[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const orgs = await db.select().from(organizations).orderBy(organizations.createdAt);
+
+  const result: OrgSummary[] = [];
+  for (const org of orgs) {
+    // Count accepted members
+    const members = await db
+      .select()
+      .from(orgMembers)
+      .where(and(eq(orgMembers.orgId, org.id), eq(orgMembers.inviteAccepted, 1)));
+    const memberCount = members.length;
+
+    // Count leads
+    const leadRows = await db
+      .select()
+      .from(leadsTable)
+      .where(eq(leadsTable.orgId, org.id));
+    const leadCount = leadRows.length;
+
+    // Find owner
+    const ownerMember = members.find((m) => m.role === "owner");
+    let ownerName: string | null = null;
+    let ownerEmail: string | null = null;
+    let ownerPhone: string | null = null;
+
+    if (ownerMember && ownerMember.userId > 0) {
+      const ownerRows = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, ownerMember.userId))
+        .limit(1);
+      if (ownerRows[0]) {
+        ownerName = ownerRows[0].name ?? null;
+        ownerEmail = ownerRows[0].email ?? null;
+        ownerPhone = ownerRows[0].phone ?? null;
+      }
+    }
+
+    result.push({
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      plan: org.plan,
+      subscriptionStatus: org.subscriptionStatus ?? null,
+      stripeCustomerId: org.stripeCustomerId ?? null,
+      stripeSubscriptionId: org.stripeSubscriptionId ?? null,
+      createdAt: org.createdAt,
+      memberCount,
+      leadCount,
+      ownerName,
+      ownerEmail,
+      ownerPhone,
+    });
+  }
+
+  return result;
 }
