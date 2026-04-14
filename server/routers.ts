@@ -7,6 +7,7 @@ import {
   createMessage,
   deleteLead,
   getDefaultTemplate,
+  getExistingPhones,
   getLeadById,
   getLeadStats,
   getMessagesByLeadId,
@@ -364,10 +365,16 @@ const leadsRouter = router({
       phone: z.string().min(1),
       company: z.string().optional(),
       email: z.string().optional(),
+      skipDuplicates: z.boolean().optional(),
     })))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
-      return bulkCreateLeads(orgId, input.map((l) => ({
+      const existingPhones = await getExistingPhones(orgId);
+      const rows = input.filter(l => {
+        if (!l.skipDuplicates) return true;
+        return !existingPhones.has(l.phone.replace(/\D/g, ""));
+      });
+      return bulkCreateLeads(orgId, rows.map((l) => ({
         orgId,
         name: l.name,
         phone: l.phone,
@@ -375,6 +382,15 @@ const leadsRouter = router({
         email: l.email || null,
         status: "Pending" as const,
       })));
+    }),
+
+  checkDuplicates: protectedProcedure
+    .input(z.array(z.string()))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const existingPhones = await getExistingPhones(orgId);
+      const duplicates = input.filter(phone => existingPhones.has(phone.replace(/\D/g, "")));
+      return { duplicateCount: duplicates.length, duplicatePhones: duplicates };
     }),
 
   update: protectedProcedure

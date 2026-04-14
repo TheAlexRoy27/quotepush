@@ -117,6 +117,13 @@ export async function createLead(data: InsertLead) {
   return getLeadById(insertId);
 }
 
+export async function getExistingPhones(orgId: number): Promise<Set<string>> {
+  const db = await getDb();
+  if (!db) return new Set();
+  const rows = await db.select({ phone: leads.phone }).from(leads).where(eq(leads.orgId, orgId));
+  return new Set(rows.map(r => r.phone.replace(/\D/g, "")));
+}
+
 export async function bulkCreateLeads(orgId: number, data: InsertLead[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import Papa from "papaparse";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Plus, Upload, Search, Send, Trash2, MessageSquare, RefreshCw,
-  Users, Clock, CheckCircle2, Calendar, ChevronRight, X, Loader2, SendHorizonal
+  Users, Clock, CheckCircle2, Calendar, ChevronRight, X, Loader2, SendHorizonal,
+  Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp
 } from "lucide-react";
 import type { Lead, Message } from "../../../drizzle/schema";
 
@@ -105,86 +107,306 @@ function AddLeadModal({ open, onClose, onSuccess }: {
 
 // ─── CSV Import Modal ─────────────────────────────────────────────────────────
 
+// ─── Field mapping types ──────────────────────────────────────────────────────
+type ParsedRow = Record<string, string>;
+type MappedLead = { name: string; phone: string; company?: string; email?: string };
+type ColumnMap = { name: string; phone: string; company: string; email: string };
+
+const FIELD_LABELS: Record<keyof ColumnMap, string> = {
+  name: "Full Name",
+  phone: "Phone Number",
+  company: "Company",
+  email: "Email",
+};
+
+const FIELD_REQUIRED: Record<keyof ColumnMap, boolean> = {
+  name: true, phone: true, company: false, email: false,
+};
+
+function downloadSampleCSV() {
+  const csv = [
+    "name,phone,company,email",
+    "Jane Smith,+15551234567,Acme Corp,jane@acme.com",
+    "Bob Johnson,+15559876543,Globex,bob@globex.com",
+    "Alice Williams,+15555551234,,",
+  ].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "quotenudge_leads_template.csv"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function autoDetectMapping(headers: string[]): ColumnMap {
+  const find = (patterns: string[]) =>
+    headers.find(h => patterns.some(p => h.toLowerCase().includes(p))) ?? "";
+  return {
+    name: find(["name", "full", "first"]),
+    phone: find(["phone", "mobile", "tel", "cell", "number"]),
+    company: find(["company", "org", "business", "firm"]),
+    email: find(["email", "mail"]),
+  };
+}
+
+function applyMapping(rows: ParsedRow[], map: ColumnMap): MappedLead[] {
+  return rows
+    .map(row => ({
+      name: (map.name ? row[map.name] : "") ?? "",
+      phone: (map.phone ? row[map.phone] : "") ?? "",
+      company: map.company ? (row[map.company] || undefined) : undefined,
+      email: map.email ? (row[map.email] || undefined) : undefined,
+    }))
+    .filter(r => r.name.trim() && r.phone.trim());
+}
+
 function CsvImportModal({ open, onClose, onSuccess }: {
   open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
-  const [preview, setPreview] = useState<Array<{ name: string; phone: string; company?: string; email?: string }>>([]);
+  const [step, setStep] = useState<"upload" | "map" | "preview">("upload");
+  const [rawRows, setRawRows] = useState<ParsedRow[]>([]);
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [columnMap, setColumnMap] = useState<ColumnMap>({ name: "", phone: "", company: "", email: "" });
+  const [preview, setPreview] = useState<MappedLead[]>([]);
+  const [duplicateCount, setDuplicateCount] = useState(0);
+  const [skipDuplicates, setSkipDuplicates] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showAllRows, setShowAllRows] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const checkDuplicates = trpc.leads.checkDuplicates.useMutation({
+    onSuccess: (data) => setDuplicateCount(data.duplicateCount),
+  });
+
   const bulkCreate = trpc.leads.bulkCreate.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Imported ${preview.length} leads successfully`);
+    onSuccess: () => {
+      const imported = skipDuplicates ? preview.length - duplicateCount : preview.length;
+      toast.success(`Successfully imported ${imported} lead${imported !== 1 ? "s" : ""}!`);
       onSuccess();
+      handleReset();
       onClose();
-      setPreview([]);
     },
     onError: (e) => toast.error(e.message),
   });
 
-  const parseCSV = useCallback((text: string) => {
+  const handleReset = () => {
+    setStep("upload"); setRawRows([]); setHeaders([]); setPreview([]);
+    setDuplicateCount(0); setError(""); setShowAllRows(false);
+    setColumnMap({ name: "", phone: "", company: "", email: "" });
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const parseFile = useCallback((file: File) => {
     setError("");
-    const lines = text.trim().split(/\r?\n/);
-    if (lines.length < 2) { setError("CSV must have a header row and at least one data row."); return; }
-
-    const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ""));
-    const nameIdx = headers.findIndex(h => h.includes("name"));
-    const phoneIdx = headers.findIndex(h => h.includes("phone") || h.includes("mobile") || h.includes("tel"));
-    const companyIdx = headers.findIndex(h => h.includes("company") || h.includes("org"));
-    const emailIdx = headers.findIndex(h => h.includes("email"));
-
-    if (nameIdx === -1 || phoneIdx === -1) {
-      setError("CSV must have 'name' and 'phone' columns.");
-      return;
-    }
-
-    const rows = lines.slice(1).map(line => {
-      const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
-      return {
-        name: cols[nameIdx] ?? "",
-        phone: cols[phoneIdx] ?? "",
-        company: companyIdx >= 0 ? cols[companyIdx] : undefined,
-        email: emailIdx >= 0 ? cols[emailIdx] : undefined,
-      };
-    }).filter(r => r.name && r.phone);
-
-    if (rows.length === 0) { setError("No valid rows found."); return; }
-    setPreview(rows);
+    Papa.parse<ParsedRow>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (!results.data.length) { setError("No data rows found in the file."); return; }
+        const hdrs = results.meta.fields ?? [];
+        if (!hdrs.length) { setError("Could not detect column headers."); return; }
+        setRawRows(results.data);
+        setHeaders(hdrs);
+        const detected = autoDetectMapping(hdrs);
+        setColumnMap(detected);
+        setStep("map");
+      },
+      error: (err) => setError(`Parse error: ${err.message}`),
+    });
   }, []);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => parseCSV(ev.target?.result as string);
-    reader.readAsText(file);
+    if (file) parseFile(file);
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".csv")) parseFile(file);
+    else setError("Please drop a .csv file.");
+  };
+
+  const handleApplyMapping = () => {
+    if (!columnMap.name || !columnMap.phone) {
+      setError("Name and Phone columns are required."); return;
+    }
+    const mapped = applyMapping(rawRows, columnMap);
+    if (!mapped.length) { setError("No valid rows after applying mapping."); return; }
+    setPreview(mapped);
+    setError("");
+    checkDuplicates.mutate(mapped.map(r => r.phone));
+    setStep("preview");
+  };
+
+  const handleImport = () => {
+    bulkCreate.mutate(preview.map(r => ({ ...r, skipDuplicates })));
+  };
+
+  const importCount = skipDuplicates ? preview.length - duplicateCount : preview.length;
+  const displayRows = showAllRows ? preview : preview.slice(0, 8);
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg bg-card border-border">
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { handleReset(); onClose(); } }}>
+      <DialogContent className="sm:max-w-2xl bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-foreground">Import Leads from CSV</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <p className="text-sm text-muted-foreground">
-            Upload a CSV file with columns: <code className="text-primary">name</code>, <code className="text-primary">phone</code>, and optionally <code className="text-primary">company</code>, <code className="text-primary">email</code>.
-          </p>
-          <div
-            className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Click to select a CSV file</p>
-            <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <FileText className="h-5 w-5 text-indigo-400" />
+              Import Leads from CSV
+            </DialogTitle>
+            <Button variant="ghost" size="sm" onClick={downloadSampleCSV} className="text-muted-foreground hover:text-foreground text-xs gap-1.5">
+              <Download className="h-3.5 w-3.5" /> Sample Template
+            </Button>
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          {preview.length > 0 && (
-            <div>
-              <p className="text-sm font-medium text-foreground mb-2">{preview.length} leads ready to import:</p>
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 pt-2">
+            {(["upload", "map", "preview"] as const).map((s, i) => (
+              <div key={s} className="flex items-center gap-2">
+                <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${
+                  step === s ? "bg-indigo-600 text-white" :
+                  ["upload", "map", "preview"].indexOf(step) > i ? "bg-emerald-500/20 text-emerald-400" :
+                  "bg-muted text-muted-foreground"
+                }`}>
+                  {["upload", "map", "preview"].indexOf(step) > i
+                    ? <CheckCheck className="h-3 w-3" />
+                    : <span>{i + 1}</span>}
+                  {s === "upload" ? "Upload" : s === "map" ? "Map Columns" : "Preview & Import"}
+                </div>
+                {i < 2 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+              </div>
+            ))}
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* ── Step 1: Upload ── */}
+          {step === "upload" && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Upload any CSV file — we'll help you map the columns to lead fields in the next step.
+              </p>
+              <div
+                className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
+                  isDragging ? "border-indigo-500 bg-indigo-500/10" : "border-border hover:border-indigo-500/50 hover:bg-muted/30"
+                }`}
+                onClick={() => fileRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+              >
+                <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-sm font-medium text-foreground">Drop your CSV file here</p>
+                <p className="text-xs text-muted-foreground mt-1">or click to browse files</p>
+                <input ref={fileRef} type="file" accept=".csv,.txt" className="hidden" onChange={handleFile} />
+              </div>
+              {error && (
+                <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {error}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 2: Column Mapping ── */}
+          {step === "map" && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                We detected <strong className="text-foreground">{rawRows.length} rows</strong> and <strong className="text-foreground">{headers.length} columns</strong>. Map each field below.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {(Object.keys(FIELD_LABELS) as (keyof ColumnMap)[]).map(field => (
+                  <div key={field} className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      {FIELD_LABELS[field]}
+                      {FIELD_REQUIRED[field] && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    <Select
+                      value={columnMap[field] || "__none__"}
+                      onValueChange={(v) => setColumnMap(prev => ({ ...prev, [field]: v === "__none__" ? "" : v }))}
+                    >
+                      <SelectTrigger className="bg-background border-border text-sm h-9">
+                        <SelectValue placeholder="— skip —" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— skip —</SelectItem>
+                        {headers.map(h => (
+                          <SelectItem key={h} value={h}>{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+              {/* Preview of first 3 raw rows */}
+              <div className="rounded-lg border border-border overflow-hidden">
+                <div className="bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground font-medium">Raw data preview (first 3 rows)</div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/20">
+                      <tr>{headers.map(h => <th key={h} className="px-3 py-1.5 text-left text-muted-foreground whitespace-nowrap">{h}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                      {rawRows.slice(0, 3).map((row, i) => (
+                        <tr key={i} className="border-t border-border">
+                          {headers.map(h => <td key={h} className="px-3 py-1.5 text-foreground whitespace-nowrap max-w-[120px] truncate">{row[h] ?? ""}</td>)}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              {error && (
+                <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {error}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Step 3: Preview & Import ── */}
+          {step === "preview" && (
+            <div className="space-y-4">
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-muted/30 rounded-lg px-3 py-2 text-center">
+                  <p className="text-lg font-bold text-foreground">{preview.length}</p>
+                  <p className="text-xs text-muted-foreground">Total rows</p>
+                </div>
+                <div className="bg-amber-500/10 rounded-lg px-3 py-2 text-center">
+                  <p className="text-lg font-bold text-amber-400">{duplicateCount}</p>
+                  <p className="text-xs text-muted-foreground">Duplicates</p>
+                </div>
+                <div className="bg-emerald-500/10 rounded-lg px-3 py-2 text-center">
+                  <p className="text-lg font-bold text-emerald-400">{importCount}</p>
+                  <p className="text-xs text-muted-foreground">Will import</p>
+                </div>
+              </div>
+
+              {/* Duplicate handling toggle */}
+              {duplicateCount > 0 && (
+                <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                  <p className="text-sm text-amber-300 flex-1">
+                    {duplicateCount} lead{duplicateCount !== 1 ? "s" : ""} already exist with the same phone number.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSkipDuplicates(!skipDuplicates)}
+                    className={`text-xs border-amber-500/30 ${
+                      skipDuplicates ? "bg-amber-500/20 text-amber-300" : "text-muted-foreground"
+                    }`}
+                  >
+                    {skipDuplicates ? "Skipping duplicates" : "Import all"}
+                  </Button>
+                </div>
+              )}
+
+              {/* Lead preview table */}
+              <div className="rounded-lg border border-border overflow-hidden">
                 <table className="w-full text-xs">
-                  <thead className="bg-muted/50 sticky top-0">
+                  <thead className="bg-muted/40 sticky top-0">
                     <tr>
                       {["Name", "Phone", "Company", "Email"].map(h => (
                         <th key={h} className="px-3 py-2 text-left text-muted-foreground font-medium">{h}</th>
@@ -192,36 +414,59 @@ function CsvImportModal({ open, onClose, onSuccess }: {
                     </tr>
                   </thead>
                   <tbody>
-                    {preview.slice(0, 10).map((row, i) => (
-                      <tr key={i} className="border-t border-border">
-                        <td className="px-3 py-1.5 text-foreground">{row.name}</td>
-                        <td className="px-3 py-1.5 text-foreground">{row.phone}</td>
+                    {displayRows.map((row, i) => (
+                      <tr key={i} className="border-t border-border hover:bg-muted/20">
+                        <td className="px-3 py-1.5 text-foreground font-medium">{row.name}</td>
+                        <td className="px-3 py-1.5 text-foreground font-mono text-[11px]">{row.phone}</td>
                         <td className="px-3 py-1.5 text-muted-foreground">{row.company ?? "—"}</td>
                         <td className="px-3 py-1.5 text-muted-foreground">{row.email ?? "—"}</td>
                       </tr>
                     ))}
-                    {preview.length > 10 && (
-                      <tr className="border-t border-border">
-                        <td colSpan={4} className="px-3 py-1.5 text-muted-foreground text-center">
-                          +{preview.length - 10} more rows
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
+              {preview.length > 8 && (
+                <Button
+                  variant="ghost" size="sm"
+                  onClick={() => setShowAllRows(!showAllRows)}
+                  className="w-full text-muted-foreground text-xs gap-1"
+                >
+                  {showAllRows
+                    ? <><ChevronUp className="h-3.5 w-3.5" /> Show less</>
+                    : <><ChevronDown className="h-3.5 w-3.5" /> Show all {preview.length} rows</>
+                  }
+                </Button>
+              )}
             </div>
           )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} className="border-border text-foreground">Cancel</Button>
-          <Button
-            onClick={() => bulkCreate.mutate(preview)}
-            disabled={preview.length === 0 || bulkCreate.isPending}
-          >
-            {bulkCreate.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Import {preview.length > 0 ? `${preview.length} Leads` : ""}
+
+        <DialogFooter className="flex items-center gap-2">
+          {step !== "upload" && (
+            <Button variant="ghost" size="sm" onClick={handleReset} className="mr-auto text-muted-foreground gap-1.5">
+              <RotateCcw className="h-3.5 w-3.5" /> Start over
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => { handleReset(); onClose(); }} className="border-border text-foreground">
+            Cancel
           </Button>
+          {step === "map" && (
+            <Button onClick={handleApplyMapping} className="bg-indigo-600 hover:bg-indigo-500 text-white">
+              Preview Import <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+          {step === "preview" && (
+            <Button
+              onClick={handleImport}
+              disabled={importCount === 0 || bulkCreate.isPending}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white"
+            >
+              {bulkCreate.isPending
+                ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Importing...</>
+                : <><Upload className="h-4 w-4 mr-2" /> Import {importCount} Lead{importCount !== 1 ? "s" : ""}</>
+              }
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -151,3 +151,13 @@
 
 ## Bug Fixes
 - [x] Fix: /onboarding page throws "No organization found" error — DashboardLayout now blocks children rendering until org.me resolves, preventing leads.stats and sms.isConfigured from firing before the redirect
+
+## CSV Import Enhancements
+- [x] Drag-and-drop file zone (drag a CSV onto the modal to load it)
+- [x] Column mapping UI: auto-detect columns but let user remap any field via dropdowns
+- [x] Duplicate detection: check existing leads by phone number, show warning count before importing
+- [x] Download sample CSV template button
+- [x] Import progress indicator for large files (row count shown in step 2)
+- [x] Quoted-field CSV parser to handle commas inside quoted values (papaparse)
+- [x] Clear/reset button to re-upload a different file without closing the modal
+- [x] Show full preview count and allow scrolling all rows (show all / show less toggle)
