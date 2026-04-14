@@ -645,6 +645,31 @@ export default function LeadsPage() {
     utils.leads.stats.invalidate();
   };
 
+  const exportToCSV = () => {
+    if (!leads.length) { toast.error("No leads to export."); return; }
+    const rows = leads.map(l => ({
+      name: l.name,
+      phone: l.phone,
+      company: l.company ?? "",
+      email: l.email ?? "",
+      status: l.status,
+      notes: l.notes ?? "",
+      created_at: new Date(l.createdAt).toLocaleDateString(),
+    }));
+    const csv = Papa.unparse(rows, { header: true });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    const filterPart = statusFilter !== "all" ? `_${statusFilter.toLowerCase()}` : "";
+    const searchPart = search ? `_search` : "";
+    a.href = url;
+    a.download = `quotenudge_leads${filterPart}${searchPart}_${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${leads.length} lead${leads.length !== 1 ? "s" : ""} to CSV`);
+  };
+
   return (
     <div className="flex h-[calc(100vh-2rem)] gap-0">
       {/* Main panel */}
@@ -661,6 +686,9 @@ export default function LeadsPage() {
                 Twilio not configured
               </span>
             )}
+            <Button variant="outline" size="sm" onClick={exportToCSV} disabled={!leads.length} className="border-border text-foreground hover:bg-accent">
+              <Download className="h-4 w-4 mr-1.5" /> Export{leads.length > 0 ? ` ${leads.length}` : ""}
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setCsvOpen(true)} className="border-border text-foreground hover:bg-accent">
               <Upload className="h-4 w-4 mr-1.5" /> Import CSV
             </Button>

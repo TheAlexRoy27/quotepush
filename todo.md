@@ -161,3 +161,10 @@
 - [x] Quoted-field CSV parser to handle commas inside quoted values (papaparse)
 - [x] Clear/reset button to re-upload a different file without closing the modal
 - [x] Show full preview count and allow scrolling all rows (show all / show less toggle)
+
+## Export to CSV
+- [x] Add Export CSV button to Leads page toolbar (next to Import CSV)
+- [x] Client-side CSV generation using papaparse unparse — respects active search + status filters
+- [x] Include all lead fields: name, phone, company, email, status, notes, createdAt
+- [x] Filename includes current date and active filter (e.g. quotenudge_leads_pending_2026-04-14.csv)
+- [x] Show row count in button label (e.g. "Export 24 Leads")
