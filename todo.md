@@ -194,3 +194,18 @@
 - [x] Build AdminPage.tsx: stat summary cards (total orgs, base count, elite count, active subscriptions), filterable accounts table with plan badge, status badge, member count, lead count, owner, joined date
 - [x] Add "Admin Panel" nav item to DashboardLayout sidebar (only visible when user.role === 'admin')
 - [x] Owner account auto-promoted to admin via upsertUser when openId === OWNER_OPEN_ID (existing mechanism)
+
+## Multi-Step Text Drip System
+- [x] Add `drip_sequences` table: id, orgId, name, triggerCategory (Interested|Wants More Info), isActive
+- [x] Add `drip_steps` table: id, sequenceId, stepNumber, delayDays, templateBody, name
+- [x] Add `lead_drip_enrollments` table: id, leadId, orgId, sequenceId, currentStep, status (active|paused|completed|stopped), enrolledAt, nextSendAt
+- [x] Run migration SQL for new tables
+- [x] Add drip DB helpers: createSequence, listSequences, upsertStep, deleteStep, enrollLead, advanceEnrollment, stopEnrollment
+- [x] Add drip tRPC router: CRUD for sequences/steps, enroll/pause/stop per lead
+- [x] Integrate drip enrollment into Twilio inbound webhook: after LLM classifies reply as Interested or Wants More Info, auto-enroll lead in matching sequence
+- [x] Build drip scheduler: setInterval every 5 min, find enrollments where nextSendAt <= now and status=active, send SMS, advance to next step or mark completed
+- [x] Stop drip on new inbound reply or Unsubscribe classification
+- [x] Build DripPage.tsx: list sequences, create/edit sequence with steps (name, delay days, body), toggle active
+- [x] Add Drip Sequences nav item to sidebar
+- [ ] Show drip enrollment status per lead in LeadsPage (badge: "In Drip") — deferred
+- [x] Write Vitest tests for drip scheduler and enrollment logic

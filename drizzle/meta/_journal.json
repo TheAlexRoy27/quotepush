@@ -43,6 +43,13 @@
       "when": 1776196382024,
       "tag": "0005_moaning_mandrill",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1776202338836,
+      "tag": "0006_true_the_watchers",
+      "breakpoints": true
     }
   ]
 }

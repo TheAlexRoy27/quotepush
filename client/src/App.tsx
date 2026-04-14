@@ -16,6 +16,7 @@ import OrgPage from "./pages/OrgPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import AcceptInvitePage from "./pages/AcceptInvitePage";
 import AdminPage from "./pages/AdminPage";
+import DripPage from "./pages/DripPage";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
             <Route path={"/settings"} component={SettingsPage} />
             <Route path={"/webhook"} component={WebhookPage} />
             <Route path={"/library"} component={LibraryPage} />
+            <Route path={"/drip"} component={DripPage} />
             <Route path={"/billing"} component={BillingPage} />
             <Route path={"/organization"} component={OrgPage} />
             <Route path={"/404"} component={NotFound} />

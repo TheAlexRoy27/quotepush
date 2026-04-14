@@ -61,7 +61,23 @@ import {
   updateFlowTemplate,
   upsertFlowRule,
 } from "./flowDb";
-import { REPLY_CATEGORIES } from "../drizzle/schema";
+import {
+  createDripSequence,
+  deleteDripSequence,
+  enrollLeadInSequence,
+  getDripSequenceById,
+  listDripSequences,
+  listDripSteps,
+  listEnrollmentsForLead,
+  listEnrollmentsForOrg,
+  pauseEnrollment,
+  resumeEnrollment,
+  stopEnrollment,
+  updateDripSequence,
+  upsertDripStep,
+  deleteDripStep,
+} from "./dripDb";
+import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES } from "../drizzle/schema";
 import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
 
@@ -654,6 +670,123 @@ const billingRouter = router({
     }),
 });
 
+// ─── Drip Router ─────────────────────────────────────────────────────────────
+
+const DripTriggerCategoryEnum = z.enum(DRIP_TRIGGER_CATEGORIES);
+
+const dripRouter = router({
+  // ─── Sequences ──────────────────────────────────────────────────────────────
+  listSequences: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    const seqs = await listDripSequences(orgId);
+    // Attach steps to each sequence
+    return Promise.all(
+      seqs.map(async (seq) => ({
+        ...seq,
+        steps: await listDripSteps(seq.id),
+      }))
+    );
+  }),
+
+  createSequence: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        triggerCategory: DripTriggerCategoryEnum,
+        isActive: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      return createDripSequence({
+        orgId,
+        name: input.name,
+        triggerCategory: input.triggerCategory,
+        isActive: input.isActive === false ? 0 : 1,
+      });
+    }),
+
+  updateSequence: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().min(1).optional(),
+        triggerCategory: DripTriggerCategoryEnum.optional(),
+        isActive: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { id, isActive, ...rest } = input;
+      return updateDripSequence(id, {
+        ...rest,
+        ...(isActive !== undefined ? { isActive: isActive ? 1 : 0 } : {}),
+      });
+    }),
+
+  deleteSequence: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteDripSequence(input.id)),
+
+  // ─── Steps ───────────────────────────────────────────────────────────────────
+  upsertStep: protectedProcedure
+    .input(
+      z.object({
+        sequenceId: z.number(),
+        stepNumber: z.number().min(1),
+        delayDays: z.number().min(0),
+        name: z.string().min(1),
+        body: z.string().min(1),
+      })
+    )
+    .mutation(({ input }) => upsertDripStep(input)),
+
+  deleteStep: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteDripStep(input.id)),
+
+  // ─── Enrollments ───────────────────────────────────────────────────────────
+  listEnrollments: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    return listEnrollmentsForOrg(orgId);
+  }),
+
+  enrollLead: protectedProcedure
+    .input(
+      z.object({
+        leadId: z.number(),
+        sequenceId: z.number(),
+        firstStepDelayDays: z.number().min(0).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      return enrollLeadInSequence(
+        input.leadId,
+        orgId,
+        input.sequenceId,
+        input.firstStepDelayDays ?? 0
+      );
+    }),
+
+  pauseLead: protectedProcedure
+    .input(z.object({ leadId: z.number() }))
+    .mutation(({ input }) => pauseEnrollment(input.leadId)),
+
+  resumeLead: protectedProcedure
+    .input(z.object({ leadId: z.number() }))
+    .mutation(({ input }) => resumeEnrollment(input.leadId)),
+
+  stopLead: protectedProcedure
+    .input(z.object({ leadId: z.number() }))
+    .mutation(({ input }) => stopEnrollment(input.leadId, "manual")),
+
+  leadEnrollments: protectedProcedure
+    .input(z.object({ leadId: z.number() }))
+    .query(({ input }) => listEnrollmentsForLead(input.leadId)),
+
+  triggerCategories: protectedProcedure.query(() => DRIP_TRIGGER_CATEGORIES),
+});
+
 // ─── Admin Router ───────────────────────────────────────────────────────────
 
 const adminRouter = router({
@@ -684,6 +817,7 @@ export const appRouter = router({
   flowRules: flowRulesRouter,
   billing: billingRouter,
   admin: adminRouter,
+  drip: dripRouter,
 });
 
 

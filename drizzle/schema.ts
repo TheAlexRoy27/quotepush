@@ -235,6 +235,66 @@ export const messageClassifications = mysqlTable("message_classifications", {
 export type MessageClassification = typeof messageClassifications.$inferSelect;
 export type InsertMessageClassification = typeof messageClassifications.$inferInsert;
 
+// ─── Drip Sequences ──────────────────────────────────────────────────────────
+// A named sequence of follow-up messages triggered by a reply category
+
+export const DRIP_TRIGGER_CATEGORIES = ["Interested", "Wants More Info"] as const;
+export type DripTriggerCategory = (typeof DRIP_TRIGGER_CATEGORIES)[number];
+
+export const dripSequences = mysqlTable("drip_sequences", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  triggerCategory: mysqlEnum("triggerCategory", DRIP_TRIGGER_CATEGORIES).notNull(),
+  isActive: int("isActive").notNull().default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DripSequence = typeof dripSequences.$inferSelect;
+export type InsertDripSequence = typeof dripSequences.$inferInsert;
+
+// ─── Drip Steps ───────────────────────────────────────────────────────────────
+// Each step in a sequence: a message body sent after N days of silence
+
+export const dripSteps = mysqlTable("drip_steps", {
+  id: int("id").autoincrement().primaryKey(),
+  sequenceId: int("sequenceId").notNull(),
+  stepNumber: int("stepNumber").notNull(), // 1-based ordering
+  delayDays: int("delayDays").notNull().default(3), // days after previous step
+  name: varchar("name", { length: 255 }).notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DripStep = typeof dripSteps.$inferSelect;
+export type InsertDripStep = typeof dripSteps.$inferInsert;
+
+// ─── Lead Drip Enrollments ────────────────────────────────────────────────────
+// Tracks each lead's progress through a drip sequence
+
+export const DRIP_ENROLLMENT_STATUSES = ["active", "paused", "completed", "stopped"] as const;
+export type DripEnrollmentStatus = (typeof DRIP_ENROLLMENT_STATUSES)[number];
+
+export const leadDripEnrollments = mysqlTable("lead_drip_enrollments", {
+  id: int("id").autoincrement().primaryKey(),
+  leadId: int("leadId").notNull(),
+  orgId: int("orgId").notNull(),
+  sequenceId: int("sequenceId").notNull(),
+  currentStep: int("currentStep").notNull().default(1), // next step to send
+  status: mysqlEnum("status", DRIP_ENROLLMENT_STATUSES).notNull().default("active"),
+  enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
+  nextSendAt: timestamp("nextSendAt").notNull(), // when to send the next step
+  lastSentAt: timestamp("lastSentAt"),
+  stoppedReason: varchar("stoppedReason", { length: 64 }), // 'replied', 'unsubscribed', 'manual', 'completed'
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LeadDripEnrollment = typeof leadDripEnrollments.$inferSelect;
+export type InsertLeadDripEnrollment = typeof leadDripEnrollments.$inferInsert;
+
 // ─── Org Twilio Config ────────────────────────────────────────────────────────
 // Per-org Twilio credentials (encrypted at rest via env key)
 

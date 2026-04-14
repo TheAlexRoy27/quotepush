@@ -19,6 +19,14 @@ import {
 } from "../flowDb";
 import { getOrgTwilioConfig } from "../orgDb";
 import { handleStripeWebhook } from "../billing";
+import { startDripScheduler } from "../dripScheduler";
+import {
+  enrollLeadInSequence,
+  stopEnrollment,
+  getActiveDripSequenceByCategory,
+  listDripSteps,
+} from "../dripDb";
+import { DRIP_TRIGGER_CATEGORIES } from "../../drizzle/schema";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -97,7 +105,7 @@ async function startServer() {
         await updateLead(lead.id, { status: "Replied" });
       }
 
-      let category = "Other" as import("../../drizzle/schema").ReplyCategory;
+      let category = "Wants More Info" as import("../../drizzle/schema").ReplyCategory;
       let confidence = "low" as "high" | "medium" | "low";
       try {
         const classification = await classifyReply(body, lead.name);
@@ -131,6 +139,28 @@ async function startServer() {
         }
       } catch (flowErr) {
         console.error("[Auto-Flow] Error:", flowErr);
+      }
+
+      // ─── Drip: stop any running drip, then auto-enroll for trigger categories ───
+      try {
+        // Use specific reason for Unsubscribe, generic "replied" for all others
+        const stopReason = category === "Unsubscribe" ? "unsubscribed" : "replied";
+        await stopEnrollment(lead.id, stopReason);
+        const isDripTrigger = (DRIP_TRIGGER_CATEGORIES as readonly string[]).includes(category);
+        if (isDripTrigger) {
+          const seq = await getActiveDripSequenceByCategory(
+            lead.orgId,
+            category as import("../../drizzle/schema").DripTriggerCategory
+          );
+          if (seq) {
+            const steps = await listDripSteps(seq.id);
+            const firstDelay = steps[0]?.delayDays ?? 3;
+            await enrollLeadInSequence(lead.id, lead.orgId, seq.id, firstDelay);
+            console.log(`[Drip] Enrolled lead ${lead.id} in sequence "${seq.name}" (step 1 in ${firstDelay} day(s))`);
+          }
+        }
+      } catch (dripErr) {
+        console.error("[Drip] Enrollment error:", dripErr);
       }
 
       await notifyOwner({
@@ -225,6 +255,9 @@ async function startServer() {
   } else {
     serveStatic(app);
   }
+
+  // Start the drip scheduler after the server is ready
+  startDripScheduler();
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
