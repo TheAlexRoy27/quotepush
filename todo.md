@@ -101,50 +101,50 @@
 ## Multi-Tenant SaaS Platform
 
 ### Schema
-- [ ] Add `organizations` table: id, name, slug, plan (base/elite), stripeCustomerId, stripeSubscriptionId, subscriptionStatus, createdAt
-- [ ] Add `org_members` table: id, orgId (FK), userId (FK), role (owner/admin/member), inviteToken, inviteAccepted, createdAt
-- [ ] Add `phone_otp` table: id, phone, code, expiresAt, verified, createdAt
-- [ ] Add `email_credentials` table: id, userId (FK), email, passwordHash, createdAt
-- [ ] Add `orgId` column to leads, messages, sms_templates, webhook_configs, flow_templates, flow_rules tables
-- [ ] Run migration and apply SQL
+- [x] Add `organizations` table: id, name, slug, plan (base/elite), stripeCustomerId, stripeSubscriptionId, subscriptionStatus, createdAt
+- [x] Add `org_members` table: id, orgId (FK), userId (FK), role (owner/admin/member), inviteToken, inviteAccepted, createdAt
+- [x] Add `phone_otp` table: id, phone, code, expiresAt, verified, createdAt
+- [x] Add `email_credentials` table: id, userId (FK), email, passwordHash, createdAt
+- [x] Add `orgId` column to leads, messages, sms_templates, webhook_configs, flow_templates, flow_rules tables
+- [x] Run migration and apply SQL
 
 ### Auth System
-- [ ] POST /api/auth/otp/send — send 6-digit OTP via Twilio Verify to phone number
-- [ ] POST /api/auth/otp/verify — verify OTP, create/find user, issue JWT session
-- [ ] POST /api/auth/email/register — register with email + password (hashed with bcrypt)
-- [ ] POST /api/auth/email/login — login with email + password, issue JWT session
-- [ ] POST /api/auth/logout — clear session cookie
-- [ ] tRPC: auth.me — return current user + org context
-- [ ] Middleware: orgContext — inject orgId into tRPC context from session
-- [ ] Guard all existing procedures with orgId scoping
+- [x] POST /api/auth/otp/send — send 6-digit OTP via Twilio Verify to phone number (via tRPC customAuth.sendOtp)
+- [x] POST /api/auth/otp/verify — verify OTP, create/find user, issue JWT session (via tRPC customAuth.loginPhone)
+- [x] POST /api/auth/email/register — register with email + password (via tRPC customAuth.registerEmail)
+- [x] POST /api/auth/email/login — login with email + password (via tRPC customAuth.loginEmail)
+- [x] POST /api/auth/logout — clear session cookie (via tRPC auth.logout)
+- [x] tRPC: auth.me — return current user + org context
+- [x] Middleware: orgContext — inject orgId into tRPC context (requireOrgId helper in all procedures)
+- [x] Guard all existing procedures with orgId scoping
 
 ### Stripe Billing
-- [ ] Add Stripe integration via webdev_add_feature
-- [ ] Create Stripe products: Base ($199/mo) and Elite ($249/mo)
-- [ ] tRPC: billing.createCheckoutSession — redirect to Stripe checkout
-- [ ] tRPC: billing.getSubscription — return current plan + seat count
-- [ ] tRPC: billing.createPortalSession — redirect to Stripe customer portal
-- [ ] POST /api/webhooks/stripe — handle subscription created/updated/deleted events
-- [ ] Enforce seat limit on Base plan (1 included seat, block invite if over limit without upgrade)
+- [x] Add Stripe integration via webdev_add_feature
+- [x] Create Stripe products: Base ($199/mo) and Elite ($249/mo) in server/products.ts
+- [x] tRPC: billing.createCheckoutSession — redirect to Stripe checkout
+- [x] tRPC: billing.getSubscription — return current plan + seat count
+- [x] tRPC: billing.createPortalSession — redirect to Stripe customer portal
+- [x] POST /api/webhooks/stripe — handle subscription created/updated/deleted events
+- [x] Enforce seat limit on Base plan (1 included seat, block invite if over limit without upgrade)
 
 ### Organization Management UI
-- [ ] Onboarding flow: after sign-up, create org (name + slug)
-- [ ] Org Settings page: name, plan badge, member list
-- [ ] Invite member modal: enter email or phone, send invite link
-- [ ] Accept invite page: /invite/:token
-- [ ] Role management: owner can promote/demote members
-- [ ] Billing page: current plan, seat count, upgrade/downgrade, manage via Stripe portal
+- [x] Onboarding flow: after sign-up, create org (name + slug) — OnboardingPage.tsx
+- [x] Org Settings page: name, plan badge, member list — OrgPage.tsx
+- [x] Invite member modal: enter email or phone, send invite link
+- [x] Accept invite page: /invite/:token (acceptInvite tRPC procedure)
+- [x] Role management: owner can promote/demote members
+- [x] Billing page: current plan, seat count, upgrade/downgrade, manage via Stripe portal — BillingPage.tsx
 
 ### Sign-Up / Login Pages
-- [ ] Landing/auth page with two tabs: Phone (OTP) and Email
-- [ ] Phone tab: enter number → send code → enter 6-digit OTP → logged in
-- [ ] Email tab: toggle between Login and Register forms
-- [ ] After login: redirect to org dashboard or onboarding if no org yet
-- [ ] Protect all dashboard routes — redirect to login if unauthenticated
+- [x] Landing/auth page with two tabs: Phone (OTP) and Email — AuthPage.tsx
+- [x] Phone tab: enter number → send code → enter 6-digit OTP → logged in
+- [x] Email tab: toggle between Login and Register forms
+- [x] After login: redirect to org dashboard or onboarding if no org yet
+- [x] Protect all dashboard routes — redirect to login if unauthenticated
 
 ### Data Isolation
-- [ ] All leads queries scoped to orgId
-- [ ] All templates queries scoped to orgId
-- [ ] All webhook configs scoped to orgId
-- [ ] All flow templates and rules scoped to orgId
-- [ ] Seed defaults (templates, flow rules) per org on first login
+- [x] All leads queries scoped to orgId
+- [x] All templates queries scoped to orgId
+- [x] All webhook configs scoped to orgId
+- [x] All flow templates and rules scoped to orgId
+- [x] Seed defaults (templates, flow rules) per org on first login

@@ -14,12 +14,14 @@ import AuthPage from "./pages/AuthPage";
 import BillingPage from "./pages/BillingPage";
 import OrgPage from "./pages/OrgPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import AcceptInvitePage from "./pages/AcceptInvitePage";
 
 function Router() {
   return (
     <Switch>
       <Route path={"/auth"} component={AuthPage} />
       <Route path={"/onboarding"} component={OnboardingPage} />
+      <Route path={"/invite/:token"} component={AcceptInvitePage} />
       <Route>
         <DashboardLayout>
           <Switch>
