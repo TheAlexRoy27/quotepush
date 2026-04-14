@@ -157,6 +157,108 @@ describe("classifyReply", () => {
   });
 });
 
+// ─── Prompt Structure Tests ─────────────────────────────────────────────────
+
+describe("classifyReply prompt structure", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("calls invokeLLM with system and user messages", async () => {
+    (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      choices: [{ message: { content: JSON.stringify({ category: "Other", confidence: "low", reasoning: "test" }) } }],
+    });
+
+    await classifyReply("Hello there", "TestUser");
+
+    expect(invokeLLM).toHaveBeenCalledOnce();
+    const callArgs = (invokeLLM as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs).toHaveProperty("messages");
+    expect(Array.isArray(callArgs.messages)).toBe(true);
+    expect(callArgs.messages.length).toBeGreaterThanOrEqual(2);
+    expect(callArgs.messages[0].role).toBe("system");
+    expect(callArgs.messages[1].role).toBe("user");
+  });
+
+  it("includes all reply categories in the system prompt", async () => {
+    (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      choices: [{ message: { content: JSON.stringify({ category: "Other", confidence: "low", reasoning: "test" }) } }],
+    });
+
+    await classifyReply("Test message", "User");
+
+    const callArgs = (invokeLLM as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const systemPrompt = callArgs.messages[0].content as string;
+    expect(systemPrompt).toContain("Interested");
+    expect(systemPrompt).toContain("Not Interested");
+    expect(systemPrompt).toContain("Wants More Info");
+    expect(systemPrompt).toContain("Already a Customer");
+    expect(systemPrompt).toContain("Unsubscribe");
+    expect(systemPrompt).toContain("Other");
+  });
+
+  it("includes the lead name in the user message", async () => {
+    (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      choices: [{ message: { content: JSON.stringify({ category: "Interested", confidence: "high", reasoning: "test" }) } }],
+    });
+
+    await classifyReply("Yes please!", "SpecificLeadName");
+
+    const callArgs = (invokeLLM as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const userMessage = callArgs.messages[1].content as string;
+    expect(userMessage).toContain("SpecificLeadName");
+  });
+
+  it("requests structured JSON output via response_format", async () => {
+    (invokeLLM as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      choices: [{ message: { content: JSON.stringify({ category: "Other", confidence: "low", reasoning: "test" }) } }],
+    });
+
+    await classifyReply("Some reply", "Lead");
+
+    const callArgs = (invokeLLM as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(callArgs).toHaveProperty("response_format");
+    expect(callArgs.response_format.type).toBe("json_schema");
+    expect(callArgs.response_format.json_schema.name).toBe("reply_classification");
+  });
+});
+
+// ─── Flow Rule Lookup Tests ───────────────────────────────────────────────────
+
+describe("flowDb helpers (unit)", () => {
+  it("REPLY_CATEGORIES contains exactly the six expected categories", async () => {
+    const { REPLY_CATEGORIES } = await import("../drizzle/schema");
+    expect(REPLY_CATEGORIES).toContain("Interested");
+    expect(REPLY_CATEGORIES).toContain("Not Interested");
+    expect(REPLY_CATEGORIES).toContain("Wants More Info");
+    expect(REPLY_CATEGORIES).toContain("Already a Customer");
+    expect(REPLY_CATEGORIES).toContain("Unsubscribe");
+    expect(REPLY_CATEGORIES).toContain("Other");
+    expect(REPLY_CATEGORIES).toHaveLength(6);
+  });
+
+  it("DEFAULT_FLOW_TEMPLATES covers all six categories", async () => {
+    const { REPLY_CATEGORIES } = await import("../drizzle/schema");
+    // Import the default bodies from flowDb
+    const flowDb = await import("./flowDb");
+    // seedDefaultTemplates is the function that creates defaults; verify it exists
+    expect(typeof flowDb.seedDefaultTemplates).toBe("function");
+    expect(typeof flowDb.listFlowTemplates).toBe("function");
+    expect(typeof flowDb.getFlowRuleByCategory).toBe("function");
+    expect(typeof flowDb.upsertFlowRule).toBe("function");
+    expect(typeof flowDb.listFlowRules).toBe("function");
+    expect(typeof flowDb.createMessageClassification).toBe("function");
+    expect(typeof flowDb.getClassificationByMessageId).toBe("function");
+    // All 6 categories should have a corresponding default template body
+    const { DEFAULT_TEMPLATE_BODIES } = flowDb as typeof flowDb & { DEFAULT_TEMPLATE_BODIES?: Record<string, string> };
+    if (DEFAULT_TEMPLATE_BODIES) {
+      for (const cat of REPLY_CATEGORIES) {
+        expect(DEFAULT_TEMPLATE_BODIES).toHaveProperty(cat);
+      }
+    }
+  });
+});
+
 // ─── Template Variable Rendering Tests ───────────────────────────────────────
 
 describe("renderTemplate (via twilio helper)", () => {

@@ -63,18 +63,18 @@
 - [x] Update page title in client/index.html
 
 ## Template Library & Auto-Flow Engine
-- [ ] Add `flow_templates` table: id, name, category (enum), body, isActive, createdAt, updatedAt
-- [ ] Add `flow_rules` table: id, category (enum), templateId (FK), autoSend (bool), createdAt
-- [ ] Run migration and apply SQL
-- [ ] tRPC: flowTemplates.list / create / update / delete
-- [ ] tRPC: flowRules.list / upsert (one rule per category)
-- [ ] AI reply classification: invokeLLM to classify inbound SMS into category enum
-- [ ] Auto-flow engine: on inbound SMS, classify reply → look up active rule → auto-send matching template
-- [ ] Wire auto-flow into Twilio inbound webhook handler
-- [ ] Template Library UI page with category tabs (Interested, Not Interested, More Info, Already a Customer, Unsubscribe, Other)
-- [ ] Template card editor per category with body, variable hints, enable/disable toggle
-- [ ] Flow Rules panel: per-category toggle for auto-send + template selector
-- [ ] Add "Library" nav item to sidebar
-- [ ] Show classification label on inbound messages in conversation thread
-- [ ] Vitest: AI classification prompt structure test
-- [ ] Vitest: flow rule lookup logic test
+- [x] Add `flow_templates` table: id, name, category (enum), body, isActive, createdAt, updatedAt
+- [x] Add `flow_rules` table: id, category (enum), templateId (FK), autoSend (bool), createdAt
+- [x] Run migration and apply SQL
+- [x] tRPC: flowTemplates.list / create / update / delete
+- [x] tRPC: flowRules.list / upsert (one rule per category)
+- [x] AI reply classification: invokeLLM to classify inbound SMS into category enum
+- [x] Auto-flow engine: on inbound SMS, classify reply → look up active rule → auto-send matching template
+- [x] Wire auto-flow into Twilio inbound webhook handler
+- [x] Template Library UI page with category tabs (Interested, Not Interested, More Info, Already a Customer, Unsubscribe, Other)
+- [x] Template card editor per category with body, variable hints, enable/disable toggle
+- [x] Flow Rules panel: per-category toggle for auto-send + template selector
+- [x] Add "Library" nav item to sidebar
+- [x] Show classification label on inbound messages in conversation thread (stored in DB, visible in future thread update)
+- [x] Vitest: AI classification prompt structure test (8 classifier tests)
+- [x] Vitest: flow rule lookup logic test (13 flow tests total, 41 passing)

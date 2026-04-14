@@ -14,6 +14,15 @@ import {
 } from "lucide-react";
 import type { Lead, Message } from "../../../drizzle/schema";
 
+const CATEGORY_COLORS: Record<string, string> = {
+  "Interested": "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+  "Not Interested": "text-rose-400 bg-rose-500/10 border-rose-500/20",
+  "Wants More Info": "text-amber-400 bg-amber-500/10 border-amber-500/20",
+  "Already a Customer": "text-sky-400 bg-sky-500/10 border-sky-500/20",
+  "Unsubscribe": "text-slate-400 bg-slate-500/10 border-slate-500/20",
+  "Other": "text-violet-400 bg-violet-500/10 border-violet-500/20",
+};
+
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, icon: Icon, color }: {
@@ -298,7 +307,7 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
           </div>
         ) : (
           messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.direction === "outbound" ? "justify-end" : "justify-start"}`}>
+            <div key={msg.id} className={`flex flex-col gap-1 ${msg.direction === "outbound" ? "items-end" : "items-start"}`}>
               <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                 msg.direction === "outbound"
                   ? "bg-primary text-primary-foreground rounded-br-sm"
@@ -311,6 +320,14 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
                   {msg.twilioStatus === "simulated" ? " · simulated" : ""}
                 </p>
               </div>
+              {/* AI classification badge for inbound messages */}
+              {msg.direction === "inbound" && (msg as Message & { classification?: string }).classification && (
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                  CATEGORY_COLORS[(msg as Message & { classification?: string }).classification!] ?? "text-muted-foreground bg-muted border-border"
+                }`}>
+                  {(msg as Message & { classification?: string }).classification}
+                </span>
+              )}
             </div>
           ))
         )}

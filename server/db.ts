@@ -6,6 +6,7 @@ import {
   InsertSmsTemplate,
   Lead,
   leads,
+  messageClassifications,
   messages,
   smsTemplates,
   users,
@@ -153,11 +154,22 @@ export async function deleteLead(id: number) {
 export async function getMessagesByLeadId(leadId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db
-    .select()
+  const rows = await db
+    .select({
+      id: messages.id,
+      leadId: messages.leadId,
+      direction: messages.direction,
+      body: messages.body,
+      twilioSid: messages.twilioSid,
+      twilioStatus: messages.twilioStatus,
+      sentAt: messages.sentAt,
+      classification: messageClassifications.category,
+    })
     .from(messages)
+    .leftJoin(messageClassifications, eq(messageClassifications.messageId, messages.id))
     .where(eq(messages.leadId, leadId))
     .orderBy(messages.sentAt);
+  return rows;
 }
 
 export async function createMessage(data: InsertMessage) {
