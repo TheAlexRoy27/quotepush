@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { webhookConfigs, webhookLogs } from "../drizzle/schema";
 import type { InsertWebhookConfig } from "../drizzle/schema";
@@ -7,10 +7,10 @@ import type { InsertWebhookConfig } from "../drizzle/schema";
 // ─── Field Mapping Types ──────────────────────────────────────────────────────
 
 export interface FieldMappings {
-  name: string;       // dot-notation path into payload, e.g. "contact.full_name"
-  phone: string;      // e.g. "contact.phone_number"
-  company?: string;   // e.g. "contact.company_name"
-  email?: string;     // e.g. "contact.email"
+  name: string;
+  phone: string;
+  company?: string;
+  email?: string;
 }
 
 // ─── Dot-notation value extractor ────────────────────────────────────────────
@@ -36,9 +36,7 @@ export function mapPayloadToLead(
 ): { name: string; phone: string; company?: string; email?: string } | null {
   const name = extractValue(payload, mappings.name);
   const phone = extractValue(payload, mappings.phone);
-
   if (!name || !phone) return null;
-
   return {
     name,
     phone,
@@ -49,11 +47,15 @@ export function mapPayloadToLead(
 
 // ─── DB helpers ───────────────────────────────────────────────────────────────
 
-export async function getOrCreateWebhookConfig() {
+export async function getOrCreateWebhookConfig(orgId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const existing = await db.select().from(webhookConfigs).limit(1);
+  const existing = await db
+    .select()
+    .from(webhookConfigs)
+    .where(eq(webhookConfigs.orgId, orgId))
+    .limit(1);
   if (existing.length > 0) return existing[0];
 
   const secret = nanoid(32);
@@ -65,6 +67,7 @@ export async function getOrCreateWebhookConfig() {
   };
 
   await db.insert(webhookConfigs).values({
+    orgId,
     name: "CRM Webhook",
     secret,
     fieldMappings: JSON.stringify(defaultMappings),
@@ -72,7 +75,11 @@ export async function getOrCreateWebhookConfig() {
     schedulingLink: null,
   });
 
-  const created = await db.select().from(webhookConfigs).limit(1);
+  const created = await db
+    .select()
+    .from(webhookConfigs)
+    .where(eq(webhookConfigs.orgId, orgId))
+    .limit(1);
   return created[0]!;
 }
 
@@ -93,6 +100,7 @@ export async function regenerateSecret(id: number) {
 }
 
 export async function logWebhookEvent(data: {
+  orgId?: number;
   status: "success" | "error" | "skipped";
   payload?: string;
   message?: string;
@@ -101,6 +109,7 @@ export async function logWebhookEvent(data: {
   const db = await getDb();
   if (!db) return;
   await db.insert(webhookLogs).values({
+    orgId: data.orgId ?? null,
     status: data.status,
     payload: data.payload ?? null,
     message: data.message ?? null,
@@ -108,8 +117,24 @@ export async function logWebhookEvent(data: {
   });
 }
 
-export async function getWebhookLogs(limit = 20) {
+export async function getWebhookLogs(orgId: number, limit = 20) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(webhookLogs).orderBy(desc(webhookLogs.receivedAt)).limit(limit);
+  return db
+    .select()
+    .from(webhookLogs)
+    .where(eq(webhookLogs.orgId, orgId))
+    .orderBy(desc(webhookLogs.receivedAt))
+    .limit(limit);
+}
+
+export async function getWebhookConfigBySecret(secret: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(webhookConfigs)
+    .where(eq(webhookConfigs.secret, secret))
+    .limit(1);
+  return rows[0];
 }

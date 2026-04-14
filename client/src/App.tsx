@@ -10,21 +10,33 @@ import SettingsPage from "./pages/SettingsPage";
 import WebhookPage from "./pages/WebhookPage";
 import LibraryPage from "./pages/LibraryPage";
 import DashboardLayout from "./components/DashboardLayout";
+import AuthPage from "./pages/AuthPage";
+import BillingPage from "./pages/BillingPage";
+import OrgPage from "./pages/OrgPage";
+import OnboardingPage from "./pages/OnboardingPage";
 
 function Router() {
   return (
-    <DashboardLayout>
-      <Switch>
-        <Route path={"/"} component={LeadsPage} />
-        <Route path={"/leads"} component={LeadsPage} />
-        <Route path={"/template"} component={TemplatePage} />
-        <Route path={"/settings"} component={SettingsPage} />
-        <Route path={"/webhook"} component={WebhookPage} />
-        <Route path={"/library"} component={LibraryPage} />
-        <Route path={"/404"} component={NotFound} />
-        <Route component={NotFound} />
-      </Switch>
-    </DashboardLayout>
+    <Switch>
+      <Route path={"/auth"} component={AuthPage} />
+      <Route path={"/onboarding"} component={OnboardingPage} />
+      <Route>
+        <DashboardLayout>
+          <Switch>
+            <Route path={"/"} component={LeadsPage} />
+            <Route path={"/leads"} component={LeadsPage} />
+            <Route path={"/template"} component={TemplatePage} />
+            <Route path={"/settings"} component={SettingsPage} />
+            <Route path={"/webhook"} component={WebhookPage} />
+            <Route path={"/library"} component={LibraryPage} />
+            <Route path={"/billing"} component={BillingPage} />
+            <Route path={"/organization"} component={OrgPage} />
+            <Route path={"/404"} component={NotFound} />
+            <Route component={NotFound} />
+          </Switch>
+        </DashboardLayout>
+      </Route>
+    </Switch>
   );
 }
 

@@ -8,25 +8,22 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { createLead, createMessage, getDefaultTemplate, getLeadById, listLeads, updateLead } from "../db";
-import { getOrCreateWebhookConfig, logWebhookEvent, mapPayloadToLead } from "../webhookEngine";
-import { isTwilioConfigured, renderTemplate, sendSms } from "../twilio";
+import { getWebhookConfigBySecret, logWebhookEvent, mapPayloadToLead } from "../webhookEngine";
+import { isTwilioConfigured, renderTemplate, sendSms, sendSmsWithConfig } from "../twilio";
 import { notifyOwner } from "./notification";
 import { classifyReply } from "../replyClassifier";
 import {
   createMessageClassification,
   getFlowRuleByCategory,
   getFlowTemplateById,
-  reconcileFlowDefaults,
-  seedDefaultTemplates,
-  seedFlowRules,
 } from "../flowDb";
+import { getOrgTwilioConfig } from "../orgDb";
+import { handleStripeWebhook } from "../billing";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
     const server = net.createServer();
-    server.listen(port, () => {
-      server.close(() => resolve(true));
-    });
+    server.listen(port, () => { server.close(() => resolve(true)); });
     server.on("error", () => resolve(false));
   });
 }
@@ -42,28 +39,44 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // Stripe webhook must use raw body BEFORE express.json()
+  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+    const sig = req.headers["stripe-signature"] as string;
+    try {
+      await handleStripeWebhook(req.body as Buffer, sig);
+      res.json({ received: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[Stripe Webhook] Error:", message);
+      res.status(400).json({ error: message });
+    }
+  });
+
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // OAuth callback
   registerOAuthRoutes(app);
 
   // ─── Twilio Inbound SMS Webhook ───────────────────────────────────────────
   app.post("/api/webhooks/twilio/sms", async (req, res) => {
-    // Respond immediately to Twilio (must be within 15s)
     res.status(200).type("text/xml").send("<Response></Response>");
 
     try {
       const from: string = req.body?.From ?? "";
       const body: string = req.body?.Body ?? "";
-
       if (!from || !body) return;
 
-      // Normalize phone number for matching (strip non-digits, compare last 10)
       const normalize = (p: string) => p.replace(/\D/g, "").slice(-10);
       const fromNorm = normalize(from);
 
-      const allLeads = await listLeads();
+      // Search across all orgs (global Twilio number)
+      // We'll find the lead by phone across all orgs
+      const db = await import("../db").then(m => m.getDb());
+      if (!db) return;
+
+      const { leads } = await import("../../drizzle/schema");
+      const { like } = await import("drizzle-orm");
+      const allLeads = await db.select().from(leads);
       const lead = allLeads.find((l) => normalize(l.phone) === fromNorm);
 
       if (!lead) {
@@ -71,8 +84,8 @@ async function startServer() {
         return;
       }
 
-      // 1. Store the inbound message
       const savedMsg = await createMessage({
+        orgId: lead.orgId,
         leadId: lead.id,
         direction: "inbound",
         body,
@@ -80,71 +93,46 @@ async function startServer() {
         twilioStatus: "received",
       });
 
-      // 2. Update lead status to Replied
       if (lead.status === "Sent" || lead.status === "Pending") {
         await updateLead(lead.id, { status: "Replied" });
       }
 
-      // 3. AI classification (async, non-blocking on errors)
       let category = "Other" as import("../../drizzle/schema").ReplyCategory;
       let confidence = "low" as "high" | "medium" | "low";
       try {
         const classification = await classifyReply(body, lead.name);
         category = classification.category;
         confidence = classification.confidence;
-        console.log(`[Twilio Webhook] Classified reply from ${lead.name} as: ${category} (${confidence})`);
-
-        // Store classification
         if (savedMsg) {
-          await createMessageClassification({
-            messageId: savedMsg.id,
-            category,
-            confidence,
-          });
+          await createMessageClassification({ messageId: savedMsg.id, category, confidence });
         }
       } catch (classErr) {
         console.error("[Twilio Webhook] Classification error:", classErr);
       }
 
-      // 4. Auto-flow: look up rule for this category and auto-send if enabled
       try {
-        const rule = await getFlowRuleByCategory(category);
+        const rule = await getFlowRuleByCategory(lead.orgId, category);
         if (rule && rule.autoSend && rule.templateId) {
           const flowTemplate = await getFlowTemplateById(rule.templateId);
           if (flowTemplate && flowTemplate.isActive) {
-            const replyBody = renderTemplate(flowTemplate.body, {
-              name: lead.name,
-              company: lead.company,
-              link: undefined,
-            });
+            const replyBody = renderTemplate(flowTemplate.body, { name: lead.name, company: lead.company, link: undefined });
+            const orgConfig = await getOrgTwilioConfig(lead.orgId);
 
-            if (isTwilioConfigured()) {
+            if (orgConfig?.accountSid) {
+              const result = await sendSmsWithConfig(lead.phone, replyBody, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
+              await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "outbound", body: replyBody, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent" });
+            } else if (isTwilioConfigured()) {
               const result = await sendSms(lead.phone, replyBody);
-              await createMessage({
-                leadId: lead.id,
-                direction: "outbound",
-                body: replyBody,
-                twilioSid: result.sid ?? null,
-                twilioStatus: result.status ?? "sent",
-              });
+              await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "outbound", body: replyBody, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent" });
             } else {
-              console.log(`[Auto-Flow] Simulation — auto-reply to ${lead.phone}: ${replyBody}`);
-              await createMessage({
-                leadId: lead.id,
-                direction: "outbound",
-                body: replyBody,
-                twilioSid: null,
-                twilioStatus: "simulated",
-              });
+              await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "outbound", body: replyBody, twilioSid: null, twilioStatus: "simulated" });
             }
-            console.log(`[Auto-Flow] Sent "${category}" template to ${lead.name}`);
           }
         }
       } catch (flowErr) {
-        console.error("[Auto-Flow] Error sending auto-reply:", flowErr);
+        console.error("[Auto-Flow] Error:", flowErr);
       }
 
-      // 5. Notify owner
       await notifyOwner({
         title: `New reply from ${lead.name} [${category}]`,
         content: `Lead ${lead.name} (${lead.company ?? "—"}) replied: "${body}"\n\nClassified as: ${category} (${confidence} confidence)`,
@@ -160,19 +148,20 @@ async function startServer() {
     const rawPayload = JSON.stringify(req.body);
 
     try {
-      const config = await getOrCreateWebhookConfig();
+      const config = await getWebhookConfigBySecret(secret);
 
-      if (config.secret !== secret) {
-        await logWebhookEvent({ status: "error", payload: rawPayload, message: "Invalid secret" });
+      if (!config) {
         res.status(401).json({ error: "Unauthorized" });
         return;
       }
+
+      const orgId = config.orgId;
 
       let mappings: { name: string; phone: string; company?: string; email?: string };
       try {
         mappings = JSON.parse(config.fieldMappings);
       } catch {
-        await logWebhookEvent({ status: "error", payload: rawPayload, message: "Invalid field mappings JSON" });
+        await logWebhookEvent({ orgId, status: "error", payload: rawPayload, message: "Invalid field mappings JSON" });
         res.status(500).json({ error: "Invalid field mappings configuration" });
         return;
       }
@@ -180,25 +169,15 @@ async function startServer() {
       const leadData = mapPayloadToLead(req.body, mappings);
 
       if (!leadData) {
-        await logWebhookEvent({
-          status: "skipped",
-          payload: rawPayload,
-          message: "Could not extract required fields (name, phone) from payload",
-        });
+        await logWebhookEvent({ orgId, status: "skipped", payload: rawPayload, message: "Could not extract required fields (name, phone) from payload" });
         res.status(200).json({ status: "skipped", reason: "Missing required fields" });
         return;
       }
 
-      const lead = await createLead({
-        name: leadData.name,
-        phone: leadData.phone,
-        company: leadData.company ?? null,
-        email: leadData.email ?? null,
-        status: "Pending",
-      });
+      const lead = await createLead({ orgId, name: leadData.name, phone: leadData.phone, company: leadData.company ?? null, email: leadData.email ?? null, status: "Pending" });
 
       if (!lead) {
-        await logWebhookEvent({ status: "error", payload: rawPayload, message: "Failed to create lead" });
+        await logWebhookEvent({ orgId, status: "error", payload: rawPayload, message: "Failed to create lead" });
         res.status(500).json({ error: "Failed to create lead" });
         return;
       }
@@ -208,77 +187,38 @@ async function startServer() {
 
       if (config.autoSend) {
         try {
-          const template = await getDefaultTemplate();
+          const template = await getDefaultTemplate(orgId);
           if (template) {
-            const body = renderTemplate(template.body, {
-              name: lead.name,
-              company: lead.company,
-              link: config.schedulingLink ?? undefined,
-            });
+            const body = renderTemplate(template.body, { name: lead.name, company: lead.company, link: config.schedulingLink ?? undefined });
+            const orgConfig = await getOrgTwilioConfig(orgId);
 
-            if (isTwilioConfigured()) {
+            if (orgConfig?.accountSid) {
+              const result = await sendSmsWithConfig(lead.phone, body, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
+              await createMessage({ orgId, leadId: lead.id, direction: "outbound", body, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent" });
+            } else if (isTwilioConfigured()) {
               const result = await sendSms(lead.phone, body);
-              await createMessage({
-                leadId: lead.id,
-                direction: "outbound",
-                body,
-                twilioSid: result.sid ?? null,
-                twilioStatus: result.status ?? "sent",
-              });
-              await updateLead(lead.id, { status: "Sent" });
-              smsSent = true;
+              await createMessage({ orgId, leadId: lead.id, direction: "outbound", body, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent" });
             } else {
-              console.log(`[CRM Webhook] Simulation — SMS to ${lead.phone}: ${body}`);
-              await createMessage({
-                leadId: lead.id,
-                direction: "outbound",
-                body,
-                twilioSid: null,
-                twilioStatus: "simulated",
-              });
-              await updateLead(lead.id, { status: "Sent" });
-              smsSent = true;
+              await createMessage({ orgId, leadId: lead.id, direction: "outbound", body, twilioSid: null, twilioStatus: "simulated" });
             }
+            await updateLead(lead.id, { status: "Sent" });
+            smsSent = true;
           }
         } catch (err) {
           smsError = err instanceof Error ? err.message : String(err);
-          console.error("[CRM Webhook] SMS send error:", smsError);
         }
       }
 
-      await logWebhookEvent({
-        status: "success",
-        payload: rawPayload,
-        message: smsSent
-          ? `Lead created and SMS sent to ${lead.phone}`
-          : smsError
-          ? `Lead created but SMS failed: ${smsError}`
-          : "Lead created (auto-send disabled)",
-        leadId: lead.id,
-      });
-
-      res.status(200).json({
-        status: "success",
-        leadId: lead.id,
-        smsSent,
-        ...(smsError ? { smsError } : {}),
-      });
+      await logWebhookEvent({ orgId, status: "success", payload: rawPayload, message: smsSent ? `Lead created and SMS sent` : "Lead created", leadId: lead.id });
+      res.status(200).json({ status: "success", leadId: lead.id, smsSent });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error("[CRM Webhook] Unhandled error:", message);
       await logWebhookEvent({ status: "error", payload: rawPayload, message }).catch(() => {});
       res.status(500).json({ error: message });
     }
   });
 
-  // tRPC API
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext,
-    })
-  );
+  app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
 
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
@@ -288,15 +228,7 @@ async function startServer() {
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
-  // Seed and reconcile flow defaults on startup (idempotent)
-  seedFlowRules().catch((e) => console.warn("[Startup] seedFlowRules failed:", e));
-  seedDefaultTemplates().catch((e) => console.warn("[Startup] seedDefaultTemplates failed:", e));
-  reconcileFlowDefaults().catch((e) => console.warn("[Startup] reconcileFlowDefaults failed:", e));
+  if (port !== preferredPort) console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);

@@ -34,6 +34,18 @@ export function renderTemplate(
     .replace(/\{\{link\}\}/g, vars.link ?? "https://calendly.com/your-link");
 }
 
+export async function sendSmsWithConfig(
+  to: string,
+  body: string,
+  accountSid: string,
+  authToken: string,
+  fromNumber: string
+) {
+  const client = twilio(accountSid, authToken);
+  const message = await client.messages.create({ to, from: fromNumber, body });
+  return { sid: message.sid, status: message.status };
+}
+
 export function isTwilioConfigured() {
   return !!(
     process.env.TWILIO_ACCOUNT_SID &&

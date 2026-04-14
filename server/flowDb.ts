@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   FlowRule,
   FlowTemplate,
@@ -18,7 +18,7 @@ import { getDb } from "./db";
 const DEFAULT_TEMPLATES: Record<ReplyCategory, { name: string; body: string }> = {
   Interested: {
     name: "Interested — Schedule Call",
-    body: `Hi {{name}}, awesome — so glad to hear that! 🎉
+    body: `Hi {{name}}, awesome — so glad to hear that!
 
 Let's get something on the calendar. You can grab a time that works best for you right here: {{link}}
 
@@ -58,15 +58,21 @@ Looking forward to hearing from you!`,
   },
 };
 
+// Categories that should have auto-send ON by default
+const AUTO_SEND_DEFAULTS: Partial<Record<ReplyCategory, boolean>> = {
+  Interested: true,
+  "Not Interested": true,
+  Unsubscribe: true,
+};
+
 // ─── Flow Templates ───────────────────────────────────────────────────────────
 
-export async function listFlowTemplates(category?: ReplyCategory): Promise<FlowTemplate[]> {
+export async function listFlowTemplates(orgId: number, category?: ReplyCategory): Promise<FlowTemplate[]> {
   const db = await getDb();
   if (!db) return [];
-  if (category) {
-    return db.select().from(flowTemplates).where(eq(flowTemplates.category, category));
-  }
-  return db.select().from(flowTemplates);
+  const conditions = [eq(flowTemplates.orgId, orgId)];
+  if (category) conditions.push(eq(flowTemplates.category, category));
+  return db.select().from(flowTemplates).where(and(...conditions));
 }
 
 export async function getFlowTemplateById(id: number): Promise<FlowTemplate | undefined> {
@@ -97,35 +103,31 @@ export async function updateFlowTemplate(
 export async function deleteFlowTemplate(id: number): Promise<{ success: boolean }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Unlink from any flow rules first
-  await db
-    .update(flowRules)
-    .set({ templateId: null })
-    .where(eq(flowRules.templateId, id));
+  await db.update(flowRules).set({ templateId: null }).where(eq(flowRules.templateId, id));
   await db.delete(flowTemplates).where(eq(flowTemplates.id, id));
   return { success: true };
 }
 
 // ─── Flow Rules ───────────────────────────────────────────────────────────────
 
-export async function listFlowRules(): Promise<FlowRule[]> {
+export async function listFlowRules(orgId: number): Promise<FlowRule[]> {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(flowRules);
+  return db.select().from(flowRules).where(eq(flowRules.orgId, orgId));
 }
 
-export async function getFlowRuleByCategory(category: ReplyCategory): Promise<FlowRule | undefined> {
+export async function getFlowRuleByCategory(orgId: number, category: ReplyCategory): Promise<FlowRule | undefined> {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db
     .select()
     .from(flowRules)
-    .where(eq(flowRules.category, category))
+    .where(and(eq(flowRules.orgId, orgId), eq(flowRules.category, category)))
     .limit(1);
   return result[0];
 }
 
-export async function upsertFlowRule(data: {
+export async function upsertFlowRule(orgId: number, data: {
   category: ReplyCategory;
   templateId?: number | null;
   autoSend?: boolean;
@@ -133,93 +135,79 @@ export async function upsertFlowRule(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const existing = await getFlowRuleByCategory(data.category);
+  const existing = await getFlowRuleByCategory(orgId, data.category);
   const values: InsertFlowRule = {
+    orgId,
     category: data.category,
     templateId: data.templateId ?? null,
     autoSend: data.autoSend ? 1 : 0,
   };
 
   if (existing) {
-    await db.update(flowRules).set(values).where(eq(flowRules.category, data.category));
+    await db
+      .update(flowRules)
+      .set(values)
+      .where(and(eq(flowRules.orgId, orgId), eq(flowRules.category, data.category)));
   } else {
     await db.insert(flowRules).values(values);
   }
-  return getFlowRuleByCategory(data.category);
+  return getFlowRuleByCategory(orgId, data.category);
 }
 
-// Categories that should have auto-send ON by default
-const AUTO_SEND_DEFAULTS: Partial<Record<ReplyCategory, boolean>> = {
-  Interested: true,
-  "Not Interested": true,
-  Unsubscribe: true,
-};
-
-/** Ensure all 6 categories have a default flow rule row */
-export async function seedFlowRules(): Promise<void> {
+/** Ensure all 6 categories have a default flow rule row for the given org */
+export async function seedFlowRules(orgId: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
   for (const category of REPLY_CATEGORIES) {
-    const existing = await getFlowRuleByCategory(category);
+    const existing = await getFlowRuleByCategory(orgId, category);
     if (!existing) {
       const autoSend = AUTO_SEND_DEFAULTS[category] ? 1 : 0;
-      await db.insert(flowRules).values({ category, templateId: null, autoSend });
+      await db.insert(flowRules).values({ orgId, category, templateId: null, autoSend });
     }
   }
 }
 
-/** Seed default templates for any category that has no templates yet */
-export async function seedDefaultTemplates(): Promise<void> {
+/** Seed default templates for any category that has no templates yet for the given org */
+export async function seedDefaultTemplates(orgId: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
   for (const category of REPLY_CATEGORIES) {
-    const existing = await listFlowTemplates(category);
+    const existing = await listFlowTemplates(orgId, category);
     if (existing.length === 0) {
       const { name, body } = DEFAULT_TEMPLATES[category];
-      const inserted = await createFlowTemplate({ name, category, body, isActive: 1 });
-      // Auto-assign to the flow rule and enable auto-send for priority categories
+      const inserted = await createFlowTemplate({ orgId, name, category, body, isActive: 1 });
       if (inserted) {
         const autoSend = AUTO_SEND_DEFAULTS[category] ?? false;
-        await upsertFlowRule({ category, templateId: inserted.id, autoSend });
+        await upsertFlowRule(orgId, { category, templateId: inserted.id, autoSend });
       }
     }
   }
 }
 
-/**
- * Reconcile existing flow rules and templates to match current defaults.
- * - Ensures Interested, Not Interested, and Unsubscribe have autoSend=true if they have a template assigned.
- * - Updates default template bodies for those three categories if the template name matches the default.
- * This is idempotent and safe to call on every server startup.
- */
-export async function reconcileFlowDefaults(): Promise<void> {
+/** Reconcile existing flow rules and templates to match current defaults (idempotent) */
+export async function reconcileFlowDefaults(orgId: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  // 1. Ensure auto-send is enabled for priority categories that have a template assigned
   for (const [category, shouldAutoSend] of Object.entries(AUTO_SEND_DEFAULTS)) {
     if (!shouldAutoSend) continue;
-    const rule = await getFlowRuleByCategory(category as ReplyCategory);
+    const rule = await getFlowRuleByCategory(orgId, category as ReplyCategory);
     if (rule && rule.autoSend !== 1 && rule.templateId) {
-      // Only enable if they have a template — don't force-enable empty rules
       await db
         .update(flowRules)
         .set({ autoSend: 1 })
-        .where(eq(flowRules.category, category as ReplyCategory));
+        .where(and(eq(flowRules.orgId, orgId), eq(flowRules.category, category as ReplyCategory)));
     }
   }
 
-  // 2. Update default template bodies for priority categories if the template name matches the default name
-  // This ensures the improved copy is applied without overwriting user-customized templates
   const priorityCategories: ReplyCategory[] = ["Interested", "Not Interested", "Unsubscribe"];
   for (const category of priorityCategories) {
     const { name: defaultName, body: defaultBody } = DEFAULT_TEMPLATES[category];
-    const templates = await listFlowTemplates(category);
+    const templates = await listFlowTemplates(orgId, category);
     for (const t of templates) {
       if (t.name === defaultName) {
-        // Only update if the name matches the default — user-renamed templates are left alone
         await db
           .update(flowTemplates)
           .set({ body: defaultBody })
@@ -234,9 +222,7 @@ export { DEFAULT_TEMPLATES as DEFAULT_TEMPLATE_BODIES, AUTO_SEND_DEFAULTS };
 
 // ─── Message Classifications ──────────────────────────────────────────────────
 
-export async function createMessageClassification(
-  data: InsertMessageClassification
-) {
+export async function createMessageClassification(data: InsertMessageClassification) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.insert(messageClassifications).values(data);

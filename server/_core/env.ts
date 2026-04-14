@@ -1,4 +1,5 @@
 export const ENV = {
+  jwtSecret: process.env.JWT_SECRET ?? "",
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",

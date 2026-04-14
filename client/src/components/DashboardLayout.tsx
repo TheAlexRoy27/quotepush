@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { BookOpen, FileText, LogOut, MessageSquare, PanelLeft, Settings, Users, Webhook } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { BookOpen, Building2, CreditCard, FileText, LogOut, MessageSquare, PanelLeft, Settings, Users, Webhook } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -32,6 +33,8 @@ const menuItems = [
   { icon: FileText, label: "SMS Template", path: "/template" },
   { icon: BookOpen, label: "Template Library", path: "/library" },
   { icon: Webhook, label: "CRM Webhook", path: "/webhook" },
+  { icon: Building2, label: "Organization", path: "/organization" },
+  { icon: CreditCard, label: "Billing", path: "/billing" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
@@ -50,12 +53,20 @@ export default function DashboardLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
+  const [, setLocation] = useLocation();
+  const orgQuery = trpc.org.me.useQuery(undefined, { enabled: !!user });
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  if (loading) {
+  useEffect(() => {
+    if (user && !orgQuery.isLoading && orgQuery.data === null) {
+      setLocation("/onboarding");
+    }
+  }, [user, orgQuery.isLoading, orgQuery.data, setLocation]);
+
+  if (loading || (user && orgQuery.isLoading)) {
     return <DashboardLayoutSkeleton />
   }
 
@@ -78,15 +89,23 @@ export default function DashboardLayout({
               </p>
             </div>
           </div>
-          <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
-            size="lg"
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg hover:shadow-xl transition-all"
-          >
-            Sign in to continue
-          </Button>
+          <div className="w-full space-y-3">
+            <Button
+              onClick={() => { window.location.href = "/auth"; }}
+              size="lg"
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg hover:shadow-xl transition-all"
+            >
+              Sign in with Phone or Email
+            </Button>
+            <Button
+              onClick={() => { window.location.href = getLoginUrl(); }}
+              size="lg"
+              variant="outline"
+              className="w-full"
+            >
+              Sign in with Manus
+            </Button>
+          </div>
         </div>
       </div>
     );

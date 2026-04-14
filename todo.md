@@ -97,3 +97,54 @@
 - [x] Add reconcileFlowDefaults() to update existing default template bodies for those three categories
 - [x] Call reconcileFlowDefaults() on server startup alongside seedFlowRules/seedDefaultTemplates
 - [x] Vitest: reconcileFlowDefaults updates existing rules without overriding user customizations (4 reconcile tests, 69 total)
+
+## Multi-Tenant SaaS Platform
+
+### Schema
+- [ ] Add `organizations` table: id, name, slug, plan (base/elite), stripeCustomerId, stripeSubscriptionId, subscriptionStatus, createdAt
+- [ ] Add `org_members` table: id, orgId (FK), userId (FK), role (owner/admin/member), inviteToken, inviteAccepted, createdAt
+- [ ] Add `phone_otp` table: id, phone, code, expiresAt, verified, createdAt
+- [ ] Add `email_credentials` table: id, userId (FK), email, passwordHash, createdAt
+- [ ] Add `orgId` column to leads, messages, sms_templates, webhook_configs, flow_templates, flow_rules tables
+- [ ] Run migration and apply SQL
+
+### Auth System
+- [ ] POST /api/auth/otp/send — send 6-digit OTP via Twilio Verify to phone number
+- [ ] POST /api/auth/otp/verify — verify OTP, create/find user, issue JWT session
+- [ ] POST /api/auth/email/register — register with email + password (hashed with bcrypt)
+- [ ] POST /api/auth/email/login — login with email + password, issue JWT session
+- [ ] POST /api/auth/logout — clear session cookie
+- [ ] tRPC: auth.me — return current user + org context
+- [ ] Middleware: orgContext — inject orgId into tRPC context from session
+- [ ] Guard all existing procedures with orgId scoping
+
+### Stripe Billing
+- [ ] Add Stripe integration via webdev_add_feature
+- [ ] Create Stripe products: Base ($199/mo) and Elite ($249/mo)
+- [ ] tRPC: billing.createCheckoutSession — redirect to Stripe checkout
+- [ ] tRPC: billing.getSubscription — return current plan + seat count
+- [ ] tRPC: billing.createPortalSession — redirect to Stripe customer portal
+- [ ] POST /api/webhooks/stripe — handle subscription created/updated/deleted events
+- [ ] Enforce seat limit on Base plan (1 included seat, block invite if over limit without upgrade)
+
+### Organization Management UI
+- [ ] Onboarding flow: after sign-up, create org (name + slug)
+- [ ] Org Settings page: name, plan badge, member list
+- [ ] Invite member modal: enter email or phone, send invite link
+- [ ] Accept invite page: /invite/:token
+- [ ] Role management: owner can promote/demote members
+- [ ] Billing page: current plan, seat count, upgrade/downgrade, manage via Stripe portal
+
+### Sign-Up / Login Pages
+- [ ] Landing/auth page with two tabs: Phone (OTP) and Email
+- [ ] Phone tab: enter number → send code → enter 6-digit OTP → logged in
+- [ ] Email tab: toggle between Login and Register forms
+- [ ] After login: redirect to org dashboard or onboarding if no org yet
+- [ ] Protect all dashboard routes — redirect to login if unauthenticated
+
+### Data Isolation
+- [ ] All leads queries scoped to orgId
+- [ ] All templates queries scoped to orgId
+- [ ] All webhook configs scoped to orgId
+- [ ] All flow templates and rules scoped to orgId
+- [ ] Seed defaults (templates, flow rules) per org on first login

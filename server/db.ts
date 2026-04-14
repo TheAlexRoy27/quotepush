@@ -74,14 +74,14 @@ export async function getUserByOpenId(openId: string) {
 
 // ─── Leads ────────────────────────────────────────────────────────────────────
 
-export async function listLeads(opts?: {
+export async function listLeads(orgId: number, opts?: {
   search?: string;
   status?: Lead["status"];
 }) {
   const db = await getDb();
   if (!db) return [];
 
-  const conditions = [];
+  const conditions = [eq(leads.orgId, orgId)];
 
   if (opts?.status) {
     conditions.push(eq(leads.status, opts.status));
@@ -95,20 +95,11 @@ export async function listLeads(opts?: {
         like(leads.company, pattern),
         like(leads.email, pattern),
         like(leads.phone, pattern)
-      )
+      )!
     );
   }
 
-  const query =
-    conditions.length > 0
-      ? db
-          .select()
-          .from(leads)
-          .where(and(...conditions))
-          .orderBy(desc(leads.createdAt))
-      : db.select().from(leads).orderBy(desc(leads.createdAt));
-
-  return query;
+  return db.select().from(leads).where(and(...conditions)).orderBy(desc(leads.createdAt));
 }
 
 export async function getLeadById(id: number) {
@@ -126,12 +117,13 @@ export async function createLead(data: InsertLead) {
   return getLeadById(insertId);
 }
 
-export async function bulkCreateLeads(data: InsertLead[]) {
+export async function bulkCreateLeads(orgId: number, data: InsertLead[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (data.length === 0) return [];
-  await db.insert(leads).values(data);
-  return listLeads();
+  const withOrg = data.map((d) => ({ ...d, orgId }));
+  await db.insert(leads).values(withOrg);
+  return listLeads(orgId);
 }
 
 export async function updateLead(id: number, data: Partial<InsertLead>) {
@@ -157,6 +149,7 @@ export async function getMessagesByLeadId(leadId: number) {
   const rows = await db
     .select({
       id: messages.id,
+      orgId: messages.orgId,
       leadId: messages.leadId,
       direction: messages.direction,
       body: messages.body,
@@ -204,18 +197,27 @@ I'd love to schedule a quick 15-minute call to explore how we might be able to h
 
 Looking forward to connecting!`;
 
-export async function getDefaultTemplate() {
+export async function getDefaultTemplate(orgId: number) {
   const db = await getDb();
   if (!db) return null;
 
-  const result = await db.select().from(smsTemplates).limit(1);
+  const result = await db
+    .select()
+    .from(smsTemplates)
+    .where(eq(smsTemplates.orgId, orgId))
+    .limit(1);
 
   if (result.length === 0) {
     await db.insert(smsTemplates).values({
+      orgId,
       name: "Default Outreach",
       body: DEFAULT_TEMPLATE_BODY,
     });
-    const created = await db.select().from(smsTemplates).limit(1);
+    const created = await db
+      .select()
+      .from(smsTemplates)
+      .where(eq(smsTemplates.orgId, orgId))
+      .limit(1);
     return created[0] ?? null;
   }
 
@@ -230,13 +232,14 @@ export async function updateTemplate(id: number, data: Partial<InsertSmsTemplate
   return result[0];
 }
 
-export async function getLeadStats() {
+export async function getLeadStats(orgId: number) {
   const db = await getDb();
   if (!db) return { total: 0, pending: 0, sent: 0, replied: 0, scheduled: 0 };
 
   const rows = await db
     .select({ status: leads.status, count: sql<number>`count(*)` })
     .from(leads)
+    .where(eq(leads.orgId, orgId))
     .groupBy(leads.status);
 
   const stats = { total: 0, pending: 0, sent: 0, replied: 0, scheduled: 0 };
