@@ -310,11 +310,11 @@ export default function BillingPage() {
           </CardContent>
           <CardFooter className="pt-4">
             <Button
-              className="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-zinc-900 font-semibold hover:from-amber-400 hover:to-yellow-300 border-0 gap-2"
+              className="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-zinc-900 font-semibold hover:from-amber-400 hover:to-yellow-300 border-0 gap-2 whitespace-normal leading-tight py-3 h-auto"
               onClick={() => { setSubmitted(false); setEnterpriseForm({ name: "", phone: "", company: "", message: "" }); setShowEnterpriseModal(true); }}
             >
-              <MessageSquare className="h-4 w-4" />
-              Talk to an Agency Success Manager
+              <MessageSquare className="h-4 w-4 shrink-0" />
+              Talk to Agency Success Manager
             </Button>
           </CardFooter>
         </Card>

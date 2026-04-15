@@ -298,3 +298,11 @@
 - [x] Enterprise card features: unlimited seats, dedicated success manager, custom integrations, white-label option, priority support
 - [x] CTA opens a friendly contact modal with name/phone/message form that notifies the owner via notifyOwner()
 - [x] Style Enterprise card as premium/distinct from Base and Elite (gold/gradient border)
+
+## Drip Step Inline Editing & AI Generation
+- [ ] Make delay amount and unit editable inline directly on the timeline step card (click to edit, save on blur/enter)
+- [ ] Add AI "Generate with AI" button in the Add Step flow: sends sequence name, industry, trigger category, and previous step bodies to LLM and returns a clever next-step message
+- [ ] Add drip.generateNextStep tRPC procedure: accepts sequenceName, triggerCategory, previousSteps[], and returns a suggested message body
+- [ ] Show AI generation loading state with spinner and "Crafting your message..." text
+- [ ] Allow user to regenerate (try again) if they don't like the AI suggestion
+- [ ] Pre-fill the step body textarea with the AI-generated message (fully editable before saving)
