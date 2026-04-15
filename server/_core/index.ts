@@ -7,7 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { createLead, createMessage, getDefaultTemplate, getLeadById, listLeads, updateLead } from "../db";
+import { createLead, createMessage, getBotConfig, countBotReplies, getDefaultTemplate, getLeadById, listLeads, updateLead } from "../db";
 import { getWebhookConfigBySecret, logWebhookEvent, mapPayloadToLead } from "../webhookEngine";
 import { isTwilioConfigured, renderTemplate, sendSms, sendSmsWithConfig } from "../twilio";
 import { notifyOwner } from "./notification";
@@ -189,6 +189,64 @@ async function startServer() {
         title: `New reply from ${lead.name} [${category}]`,
         content: `Lead ${lead.name} (${lead.company ?? "—"}) replied: "${body}"\n\nClassified as: ${category} (${confidence} confidence)`,
       });
+
+      // ─── AI Bot Auto-Reply ────────────────────────────────────────────
+      try {
+        // Don't bot-reply to unsubscribes
+        if (category !== "Unsubscribe") {
+          const botConfig = await getBotConfig(lead.orgId);
+          if (botConfig?.enabled) {
+            const botReplies = await countBotReplies(lead.id);
+            if (botReplies < botConfig.maxRepliesPerLead) {
+              const firstName = lead.name.split(" ")[0] ?? lead.name;
+              const botName = botConfig.botName ?? "Alex";
+              const toneGuide: Record<string, string> = {
+                friendly: "Be warm, approachable, and conversational. Use casual language and the occasional emoji.",
+                professional: "Be polished and business-like. Avoid slang.",
+                casual: "Be relaxed and informal, like texting a friend.",
+                empathetic: "Be understanding and patient. Acknowledge their situation before responding.",
+                direct: "Be concise and to the point. No fluff.",
+              };
+              const systemPrompt = [
+                botConfig.identity?.replace(/\{botName\}/g, botName) ??
+                  `You are ${botName}, a friendly insurance advisor helping leads get a quote.`,
+                `Tone: ${toneGuide[botConfig.tone ?? "friendly"]}`,
+                botConfig.businessContext ? `Business context:\n${botConfig.businessContext}` : "",
+                botConfig.customInstructions ? `Rules:\n${botConfig.customInstructions}` : "",
+                `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Always be respectful of their time.`,
+                `You have sent ${botReplies} bot replies so far. After ${botConfig.maxRepliesPerLead} total, a human agent will take over.`,
+              ].filter(Boolean).join("\n\n");
+
+              const { invokeLLM } = await import("./llm");
+              const response = await invokeLLM({
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: body },
+                ],
+              });
+              const rawContent = response?.choices?.[0]?.message?.content;
+              const botReply = typeof rawContent === "string" ? rawContent.trim() : undefined;
+              if (botReply) {
+                const orgConfig = await getOrgTwilioConfig(lead.orgId);
+                if (orgConfig?.accountSid) {
+                  const result = await sendSmsWithConfig(lead.phone, botReply, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
+                  await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "outbound", body: botReply, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent", isBot: true });
+                } else if (isTwilioConfigured()) {
+                  const result = await sendSms(lead.phone, botReply);
+                  await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "outbound", body: botReply, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent", isBot: true });
+                } else {
+                  await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "outbound", body: botReply, twilioSid: null, twilioStatus: "simulated", isBot: true });
+                }
+                console.log(`[AIBot] Replied to lead ${lead.id} (${botReplies + 1}/${botConfig.maxRepliesPerLead})`);
+              }
+            } else {
+              console.log(`[AIBot] Lead ${lead.id} hit max bot replies (${botConfig.maxRepliesPerLead}), handing off to human.`);
+            }
+          }
+        }
+      } catch (botErr) {
+        console.error("[AIBot] Error:", botErr);
+      }
     } catch (err) {
       console.error("[Twilio Webhook] Error:", err);
     }

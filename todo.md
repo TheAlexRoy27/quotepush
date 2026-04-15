@@ -483,3 +483,16 @@
 - [x] Add og:title, og:description, og:image, og:url, og:type to index.html
 - [x] Add twitter:card, twitter:title, twitter:description, twitter:image to index.html
 - [x] Add apple-touch-icon and theme-color meta tags
+
+## AI Text Bot
+- [x] Add bot_configs table to drizzle schema (orgId, botName, tone, identity, openingMessage, businessContext, customInstructions, enabled, maxRepliesPerLead)
+- [x] Generate and apply migration SQL
+- [x] Add getBotConfig / upsertBotConfig db helpers in db.ts
+- [x] Add botRouter tRPC procedures: getConfig, saveConfig
+- [x] Build BotConfigPage UI: bot name, tone selector, identity/persona textarea, opening message, business context, custom instructions, enable toggle, max replies per lead
+- [x] Add "AI Bot" nav item to DashboardLayout sidebar
+- [x] Register /bot route in App.tsx
+- [x] On new lead creation: if bot enabled, send opening message via Twilio and log as bot message
+- [x] Wire bot auto-reply into inbound SMS webhook: if bot enabled and under maxRepliesPerLead, fetch conversation history, call LLM with system prompt, send reply via Twilio
+- [x] Track bot reply count per lead (use messages table botReply flag)
+- [x] Show bot reply indicator in conversation thread ("Bot" badge on bot-sent messages)

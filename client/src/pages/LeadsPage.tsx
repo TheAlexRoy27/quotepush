@@ -593,6 +593,12 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
                   {msg.twilioStatus === "simulated" ? " · simulated" : ""}
                 </p>
               </div>
+              {/* Bot badge for bot-sent outbound messages */}
+              {msg.direction === "outbound" && (msg as unknown as Message & { isBot?: boolean }).isBot && (
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-violet-500/40 bg-violet-500/10 text-violet-400 flex items-center gap-1">
+                  <span>🤖</span> Bot
+                </span>
+              )}
               {/* AI classification badge for inbound messages */}
               {msg.direction === "inbound" && (msg as Message & { classification?: string }).classification && (
                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${

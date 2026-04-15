@@ -7,6 +7,9 @@ import {
   InsertKeywordPromotionRule,
   InsertReferral,
   Lead,
+  botConfigs,
+  BotConfig,
+  InsertBotConfig,
   keywordPromotionRules,
   leads,
   messageClassifications,
@@ -389,4 +392,36 @@ export async function markReferralConverted(referredId: number) {
   const db = await getDb();
   if (!db) return;
   await db.update(referrals).set({ convertedAt: new Date() }).where(eq(referrals.referredId, referredId));
+}
+
+// ─── Bot Config ───────────────────────────────────────────────────────────────
+
+export async function getBotConfig(orgId: number): Promise<BotConfig | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(botConfigs).where(eq(botConfigs.orgId, orgId)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function upsertBotConfig(orgId: number, data: Partial<Omit<InsertBotConfig, "id" | "orgId" | "createdAt" | "updatedAt">>): Promise<BotConfig> {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const existing = await getBotConfig(orgId);
+  if (existing) {
+    await db.update(botConfigs).set(data).where(eq(botConfigs.orgId, orgId));
+  } else {
+    await db.insert(botConfigs).values({ orgId, ...data } as InsertBotConfig);
+  }
+  const updated = await getBotConfig(orgId);
+  return updated!;
+}
+
+export async function countBotReplies(leadId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(messages)
+    .where(and(eq(messages.leadId, leadId), eq(messages.isBot, true)));
+  return Number(rows[0]?.count ?? 0);
 }

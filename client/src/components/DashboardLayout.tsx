@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, Bell, BookOpen, Building2, CreditCard, FileText, Gift, LogOut, MessageSquare, PanelLeft, Settings, Shield, TrendingUp, Users, Webhook, Zap } from "lucide-react";
+import { BarChart2, Bell, BookOpen, Bot, Building2, CreditCard, FileText, Gift, LogOut, MessageSquare, PanelLeft, Settings, Shield, TrendingUp, Users, Webhook, Zap } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -39,6 +39,7 @@ const menuItems = [
   { icon: Settings, label: "Settings", path: "/settings" },
   { icon: Zap, label: "Auto-Promote", path: "/keyword-promotion" },
   { icon: Gift, label: "Referrals", path: "/referrals" },
+  { icon: Bot, label: "AI Bot", path: "/bot" },
 ];
 
 const adminMenuItems = [

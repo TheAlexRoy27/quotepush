@@ -148,6 +148,7 @@ export const messages = mysqlTable("messages", {
   twilioSid: varchar("twilioSid", { length: 64 }),
   twilioStatus: varchar("twilioStatus", { length: 32 }),
   isRead: boolean("isRead").notNull().default(false),
+  isBot: boolean("isBot").notNull().default(false),   // true when sent by the AI bot
   sentAt: timestamp("sentAt").defaultNow().notNull(),
 });
 
@@ -440,3 +441,26 @@ export const appointments = mysqlTable("appointments", {
 
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = typeof appointments.$inferInsert;
+
+// ─── Bot Configs ──────────────────────────────────────────────────────────────
+// Per-org AI text bot configuration. One row per org.
+export const BOT_TONES = ["friendly", "professional", "casual", "empathetic", "direct"] as const;
+export type BotTone = (typeof BOT_TONES)[number];
+
+export const botConfigs = mysqlTable("bot_configs", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull().unique(),                          // one config per org
+  enabled: boolean("enabled").notNull().default(false),
+  botName: varchar("botName", { length: 100 }).notNull().default("Alex"),
+  tone: mysqlEnum("tone", BOT_TONES).notNull().default("friendly"),
+  identity: text("identity"),                                      // who the bot is (e.g. "You are Alex, an insurance advisor at...")
+  openingMessage: text("openingMessage"),                          // first message sent when a new lead is added
+  businessContext: text("businessContext"),                        // what the bot knows about the business / products
+  customInstructions: text("customInstructions"),                  // extra rules / things to avoid
+  maxRepliesPerLead: int("maxRepliesPerLead").notNull().default(10), // safety cap per lead
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BotConfig = typeof botConfigs.$inferSelect;
+export type InsertBotConfig = typeof botConfigs.$inferInsert;

@@ -24,6 +24,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import KeywordPromotionPage from "./pages/KeywordPromotionPage";
 import ReferralPage from "./pages/ReferralPage";
 import UsageDashboardPage from "./pages/UsageDashboardPage";
+import BotConfigPage from "./pages/BotConfigPage";
 
 function Router() {
   return (
@@ -51,6 +52,7 @@ function Router() {
             <Route path={"/keyword-promotion"} component={KeywordPromotionPage} />
             <Route path={"/referrals"} component={ReferralPage} />
             <Route path={"/my-dashboard"} component={UsageDashboardPage} />
+            <Route path={"/bot"} component={BotConfigPage} />
             <Route path={"/404"} component={NotFound} />
             <Route component={NotFound} />
           </Switch>

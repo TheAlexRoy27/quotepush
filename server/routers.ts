@@ -7,9 +7,11 @@ import {
   createLead,
   createMessage,
   createReferral,
+  countBotReplies,
   deleteLead,
   deleteKeywordRule,
   getActiveKeywordRules,
+  getBotConfig,
   getDefaultTemplate,
   getExistingPhones,
   getLeadById,
@@ -25,6 +27,7 @@ import {
   updateKeywordRule,
   updateLead,
   updateTemplate,
+  upsertBotConfig,
 } from "./db";
 import {
   acceptInvite,
@@ -702,7 +705,7 @@ const leadsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
-      return createLead({
+      const lead = await createLead({
         orgId,
         name: input.name,
         phone: input.phone,
@@ -712,6 +715,35 @@ const leadsRouter = router({
         consentUrl: input.consentUrl || null,
         status: "Pending",
       });
+
+      // ─── AI Bot: send opening message ─────────────────────────────────────────
+      try {
+        if (!lead) throw new Error("Lead creation failed");
+        const botConfig = await getBotConfig(orgId);
+        if (botConfig?.enabled && botConfig.openingMessage) {
+          const firstName = input.name.split(" ")[0] ?? input.name;
+          const botName = botConfig.botName ?? "Alex";
+          const openingText = botConfig.openingMessage
+            .replace(/\{firstName\}/g, firstName)
+            .replace(/\{botName\}/g, botName);
+          const orgConfig = await getOrgTwilioConfig(orgId);
+          if (orgConfig?.accountSid) {
+            const result = await sendSmsWithConfig(lead.phone, openingText, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
+            await createMessage({ orgId, leadId: lead.id, direction: "outbound", body: openingText, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent", isBot: true });
+          } else if (isTwilioConfigured()) {
+            const result = await sendSms(lead.phone, openingText);
+            await createMessage({ orgId, leadId: lead.id, direction: "outbound", body: openingText, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent", isBot: true });
+          } else {
+            await createMessage({ orgId, leadId: lead.id, direction: "outbound", body: openingText, twilioSid: null, twilioStatus: "simulated", isBot: true });
+          }
+          await updateLead(lead.id, { status: "Sent" });
+          console.log(`[AIBot] Sent opening message to new lead ${lead.id}`);
+        }
+      } catch (botErr) {
+        console.error("[AIBot] Opening message error:", botErr);
+      }
+
+      return lead;
     }),
 
   bulkCreate: protectedProcedure
@@ -1499,6 +1531,30 @@ const usageDashboardRouter = router({
   }),
 });
 
+// ─── Bot Router ─────────────────────────────────────────────────────────────
+const botRouter = router({
+  getConfig: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    return getBotConfig(orgId);
+  }),
+
+  saveConfig: protectedProcedure
+    .input(z.object({
+      enabled: z.boolean().optional(),
+      botName: z.string().min(1).max(100).optional(),
+      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct"]).optional(),
+      identity: z.string().max(2000).optional(),
+      openingMessage: z.string().max(1000).optional(),
+      businessContext: z.string().max(3000).optional(),
+      customInstructions: z.string().max(2000).optional(),
+      maxRepliesPerLead: z.number().int().min(1).max(50).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      return upsertBotConfig(orgId, input);
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -1526,6 +1582,7 @@ export const appRouter = router({
   keywordPromotion: keywordPromotionRouter,
   referrals: referralsRouter,
   usageDashboard: usageDashboardRouter,
+  bot: botRouter,
 });
 
 export type AppRouter = typeof appRouter;

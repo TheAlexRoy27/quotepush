@@ -134,6 +134,13 @@
       "when": 1776265528862,
       "tag": "0018_handy_hellfire_club",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1776293080891,
+      "tag": "0019_brief_human_fly",
+      "breakpoints": true
     }
   ]
 }
