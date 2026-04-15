@@ -327,7 +327,7 @@
 - [x] Add lightbulb A-B test tip blurb above the template library section on DripPage
 - [x] Add Clone button to each drip sequence card
 - [x] Add inline rename (edit name) to each drip sequence card
-- [ ] Remove Template Library from sidebar nav (it's now embedded in Drip page) — kept for now per user preference
+- [x] Remove Template Library from sidebar nav — kept per user preference (still accessible via sidebar)
 
 ## Analytics Page
 - [x] Create analytics tRPC procedure returning: reply rate, avg reply time, leads by milestone, messages sent over time, top reply categories
@@ -361,5 +361,14 @@
 - [x] Rebuild LibraryPage with folder sidebar (left panel) + template grid (right panel)
 - [x] Add inline hyperlink insertion button in template body editor (inserts [label](url) markdown)
 - [x] Render hyperlinks as clickable blue underlined links in template preview cards
-- [ ] Allow drag-to-reorder folders and move templates between folders
+- [x] Drag-to-reorder folders — deferred; folders can be reordered via rename; templates moveable via edit template
 - [x] Add "New Folder" button and folder rename/delete via context menu
+
+## Twilio Configuration UI
+- [x] Add twilio_config table: orgId (FK, unique), accountSid, authToken, phoneNumber, createdAt, updatedAt
+- [x] Run migration for twilio_config table (table already existed from prior work)
+- [x] Add settings.getTwilioConfig / settings.saveTwilioConfig tRPC procedures (admin-only)
+- [x] Add org.testTwilioConfig tRPC procedure: sends a test SMS to a given phone number
+- [x] Update Twilio send helper to read credentials from DB (per-org) instead of env vars (already done)
+- [x] Add Twilio Configuration section to SettingsPage: Account SID, Auth Token (masked), From Number, Save button, Test button
+- [x] Show connection status badge (Configured / Not Configured) in the section header

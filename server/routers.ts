@@ -508,6 +508,27 @@ const orgRouter = router({
       return { success: true, phone: normalizedPhone, name: input.name };
     }),
 
+  // Test Twilio config by sending a test SMS to the owner's phone
+  testTwilioConfig: protectedProcedure
+    .input(z.object({ toPhone: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const config = await getOrgTwilioConfig(orgId);
+      if (!config?.accountSid) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Twilio is not configured yet.' });
+      try {
+        await sendSmsWithConfig(
+          input.toPhone,
+          'QuotePush.io — Twilio test message. Your SMS integration is working!',
+          config.accountSid,
+          config.authToken,
+          config.phoneNumber
+        );
+        return { success: true };
+      } catch (e: any) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message ?? 'SMS send failed' });
+      }
+    }),
+
   // Twilio config per org
   getTwilioConfig: protectedProcedure.query(async ({ ctx }) => {
     const orgId = await requireOrgId(ctx.user.id);
