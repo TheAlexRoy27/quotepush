@@ -1,0 +1,1 @@
+ALTER TABLE `organizations` ADD `customLogoUrl` varchar(512);

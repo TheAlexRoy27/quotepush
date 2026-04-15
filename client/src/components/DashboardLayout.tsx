@@ -168,7 +168,7 @@ export default function DashboardLayout({
         } as CSSProperties
       }
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} customLogoUrl={orgQuery.data?.org?.customLogoUrl ?? null}>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -178,11 +178,13 @@ export default function DashboardLayout({
 type DashboardLayoutContentProps = {
   children: React.ReactNode;
   setSidebarWidth: (width: number) => void;
+  customLogoUrl: string | null;
 };
 
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
+  customLogoUrl,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
@@ -396,6 +398,16 @@ function DashboardLayoutContent({
               </span>
             )}
           </div>
+          {/* Custom org logo centered in top bar */}
+          {customLogoUrl && (
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
+              <img
+                src={customLogoUrl}
+                alt="Organization logo"
+                className="h-8 max-w-[160px] object-contain"
+              />
+            </div>
+          )}
           {/* Notification Bell + greeting pushed to right */}
           <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
             <NotificationBellButton />

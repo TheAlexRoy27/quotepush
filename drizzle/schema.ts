@@ -87,6 +87,7 @@ export const organizations = mysqlTable("organizations", {
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
   subscriptionStatus: mysqlEnum("subscriptionStatus", SUBSCRIPTION_STATUSES).default("incomplete"),
   trialEndsAt: timestamp("trialEndsAt"),
+  customLogoUrl: varchar("customLogoUrl", { length: 512 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
