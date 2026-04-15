@@ -344,3 +344,9 @@
 - [x] Add "Generate with AI" button in StepEditor: sends context to LLM, shows spinner + "Crafting your message..." text
 - [x] Allow user to regenerate (try again) if they don't like the AI suggestion
 - [x] Pre-fill step body textarea with AI-generated message (fully editable before saving)
+
+## A/B Test Button on Drip Sequences
+- [x] Add "A/B Test" button to each drip sequence card header (beside Clone and Rename)
+- [x] On click, open a guided modal: show original sequence name, let user name the variant (pre-filled as "[Name] — Variant B"), show a tip about what to change (tone, timing, CTA), and a "Create Variant" button
+- [x] On confirm, clone the sequence with the chosen name, scroll/expand the new card, and show a success toast: "Variant B created! Now edit it to test a different approach."
+- [x] Tag variant sequences visually with a small "B" badge so they're easy to identify (name-based identification via modal)

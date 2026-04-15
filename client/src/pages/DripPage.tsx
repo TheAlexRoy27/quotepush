@@ -1,14 +1,15 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -567,6 +568,8 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
   const [delayEditUnit, setDelayEditUnit] = useState<"minutes" | "days">("days");
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(seq.name);
+  const [abTestOpen, setAbTestOpen] = useState(false);
+  const [abVariantName, setAbVariantName] = useState(`${seq.name} — Variant B`);
   const utils = trpc.useUtils();
 
   const upsertStep = trpc.drip.upsertStep.useMutation({
@@ -602,6 +605,18 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
       toast.success(`"${seq.name}" cloned successfully!`, {
         description: "A copy has been added below. You can now rename and edit it.",
         duration: 4000,
+      });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const abTest = trpc.drip.cloneSequence.useMutation({
+    onSuccess: () => {
+      utils.drip.listSequences.invalidate();
+      setAbTestOpen(false);
+      toast.success(`A/B Variant created!`, {
+        description: `"${abVariantName}" has been added below. Edit it to test a different approach, then compare reply rates.`,
+        duration: 5000,
       });
     },
     onError: (e) => toast.error(e.message),
@@ -688,6 +703,15 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
             >
               <Copy className="h-3.5 w-3.5" />
               Clone
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 text-xs gap-1.5 border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
+              onClick={() => { setAbVariantName(`${seq.name} — Variant B`); setAbTestOpen(true); }}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              A/B Test
             </Button>
           </TooltipProvider>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setExpanded((v) => !v)}>
@@ -898,6 +922,57 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
           </div>
         </div>
       )}
+
+      {/* A/B Test Modal */}
+      <Dialog open={abTestOpen} onOpenChange={setAbTestOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-400" />
+              Create A/B Test Variant
+            </DialogTitle>
+            <DialogDescription>
+              A copy of <span className="font-medium text-foreground">"{seq.name}"</span> will be created. Rename it, then tweak one thing — tone, timing, or CTA — and compare reply rates.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Variant Name</Label>
+              <Input
+                autoFocus
+                value={abVariantName}
+                onChange={(e) => setAbVariantName(e.target.value)}
+                placeholder={`${seq.name} — Variant B`}
+                className="text-sm"
+              />
+            </div>
+
+            <div className="rounded-lg bg-amber-500/5 border border-amber-500/20 p-3 space-y-2">
+              <p className="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
+                <Lightbulb className="h-3.5 w-3.5" /> What to change in your variant
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> <span><strong className="text-foreground">Tone:</strong> Try casual vs. professional, or short vs. detailed</span></li>
+                <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> <span><strong className="text-foreground">Timing:</strong> Adjust delays — e.g. same day vs. 3 days later</span></li>
+                <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> <span><strong className="text-foreground">CTA:</strong> "Reply YES" vs. "Click my link" vs. "Call me"</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setAbTestOpen(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              className="bg-amber-500 hover:bg-amber-600 text-white gap-1.5"
+              onClick={() => abTest.mutate({ id: seq.id, name: abVariantName || `${seq.name} — Variant B` })}
+              disabled={abTest.isPending || !abVariantName.trim()}
+            >
+              {abTest.isPending ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Creating…</> : <><Sparkles className="h-3.5 w-3.5" /> Create Variant</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
