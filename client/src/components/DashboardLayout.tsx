@@ -404,7 +404,7 @@ function DashboardLayoutContent({
               <img
                 src={customLogoUrl}
                 alt="Organization logo"
-                className="h-8 max-w-[160px] object-contain"
+                className="h-12 max-w-[220px] object-contain"
               />
             </div>
           )}
