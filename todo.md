@@ -503,3 +503,8 @@
 - [x] Show opening message preview as first bot bubble when simulator is opened
 - [x] Stream or show loading state while LLM is generating
 - [x] Show "Test mode — no real SMS sent" disclaimer
+
+## Light Mode Toggle
+- [x] Add light mode CSS variables to index.css using #efe6dd as background (converted to OKLCH)
+- [x] Add dark/light toggle button to DashboardLayout header
+- [x] Persist theme preference in localStorage via ThemeProvider

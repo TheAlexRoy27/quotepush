@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, Bell, BookOpen, Bot, Building2, CreditCard, FileText, Gift, LogOut, MessageSquare, PanelLeft, Settings, Shield, TrendingUp, Users, Webhook, Zap } from "lucide-react";
+import { BarChart2, Bell, BookOpen, Bot, Building2, CreditCard, FileText, Gift, LogOut, MessageSquare, Moon, PanelLeft, Settings, Shield, Sun, TrendingUp, Users, Webhook, Zap } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -411,6 +412,7 @@ function DashboardLayoutContent({
           )}
           {/* Notification Bell + greeting pushed to right */}
           <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
+            <ThemeToggleButton />
             <NotificationBellButton />
             {/* Wave greeting */}
             <div className="flex items-center gap-1.5">
@@ -538,5 +540,26 @@ function NotificationBellButton() {
         </div>
       )}
     </div>
+  );
+}
+
+// --- Theme Toggle Button ---
+function ThemeToggleButton() {
+  const { theme, toggleTheme } = useTheme();
+  if (!toggleTheme) return null;
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      className="h-9 w-9 rounded-lg"
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {theme === "dark" ? (
+        <Sun className="h-4 w-4 text-muted-foreground" />
+      ) : (
+        <Moon className="h-4 w-4 text-muted-foreground" />
+      )}
+    </Button>
   );
 }
