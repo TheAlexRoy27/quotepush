@@ -34,6 +34,7 @@ import {
   createUserWithEmail,
   createUserWithPhone,
   findUserByEmail,
+  findUserById,
   findUserByPhone,
   getOrgMembership,
   getOrganizationById,
@@ -1417,7 +1418,11 @@ const referralsRouter = router({
     .input(z.object({ code: z.string() }))
     .mutation(async ({ input }) => {
       const row = await getReferralCodeByCode(input.code);
-      return { valid: !!row, referrerId: row?.userId ?? null };
+      if (!row) return { valid: false, referrerId: null, referrerName: null };
+      // Look up the referrer's display name
+      const referrer = await findUserById(row.userId);
+      const referrerName = referrer?.name ?? null;
+      return { valid: true, referrerId: row.userId, referrerName };
     }),
 
   // Called after a referred user signs up

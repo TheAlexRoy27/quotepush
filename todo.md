@@ -471,3 +471,8 @@
 - [x] On successful sign-up (all paths), validate referral code via trpc.referrals.trackVisit, then call trpc.referrals.recordSignup to attribute the new user to the referrer
 - [x] Pre-fill referral code field if URL contains ?ref=CODE query param
 - [x] Show subtle validation feedback: green check when code is valid, red hint when invalid
+
+## Personalized Referral Welcome Message
+- [x] Update trpc.referrals.trackVisit to also return the referrer's display name
+- [x] Store referrer name in AuthPage state alongside referrerId
+- [x] After successful sign-up with a valid referral code, show a personalized welcome toast that includes the referrer's first name

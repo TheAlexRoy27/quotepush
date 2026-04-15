@@ -72,6 +72,7 @@ export default function AuthPage() {
   const [referralCode, setReferralCode] = useState("");
   const [referralState, setReferralState] = useState<"idle" | "valid" | "invalid">("idle");
   const [referrerId, setReferrerId] = useState<number | null>(null);
+  const [referrerName, setReferrerName] = useState<string | null>(null);
 
   // Phone + password state
   const [ppPhone, setPpPhone] = useState("");
@@ -114,6 +115,7 @@ export default function AuthPage() {
         if (res.valid && res.referrerId) {
           setReferralState("valid");
           setReferrerId(res.referrerId);
+          setReferrerName(res.referrerName ?? null);
         } else {
           setReferralState("invalid");
         }
@@ -139,9 +141,11 @@ export default function AuthPage() {
         if (res.valid && res.referrerId) {
           setReferralState("valid");
           setReferrerId(res.referrerId);
+          setReferrerName(res.referrerName ?? null);
         } else {
           setReferralState("invalid");
           setReferrerId(null);
+          setReferrerName(null);
         }
       } catch {
         setReferralState("invalid");
@@ -153,14 +157,26 @@ export default function AuthPage() {
   }, [referralCode, mode]);
 
   // Helper: record referral attribution after a successful signup
-  const recordReferral = async (newUserId: number) => {
+  // Returns the referrer's first name if attribution succeeded, null otherwise
+  const recordReferral = async (newUserId: number): Promise<string | null> => {
     if (referrerId && referralState === "valid") {
       try {
         await recordSignupMutation.mutateAsync({ referrerId, referredId: newUserId });
+        return referrerName ? referrerName.split(" ")[0] : null;
       } catch {
         // Non-fatal — don't block the signup
       }
     }
+    return null;
+  };
+
+  // Helper: build the welcome toast message
+  const welcomeMessage = (isNew: boolean, referrerFirstName: string | null): string => {
+    if (!isNew) return "Welcome back!";
+    if (referrerFirstName) {
+      return `Welcome! ${referrerFirstName} sent you here — you're in good hands. 🎉`;
+    }
+    return "Account created! Welcome to QuotePush.io.";
   };
 
   // ── Phone + Password handlers ──────────────────────────────────────────────
@@ -198,8 +214,8 @@ export default function AuthPage() {
         name: ppName.trim(),
         orgName: ppOrgName.trim(),
       });        if (result.success) {
-        if (result.user?.id) await recordReferral(result.user.id);
-        toast.success("Account created! Welcome to QuotePush.io.");
+        const refFirst = result.user?.id ? await recordReferral(result.user.id) : null;
+        toast.success(welcomeMessage(true, refFirst));
         utils.auth.me.invalidate();
         navigate("/");
       }
@@ -235,8 +251,8 @@ export default function AuthPage() {
         orgName: phoneOrgName.trim() || undefined,
       });
       if (result.success) {
-        if (result.isNew && result.user?.id) await recordReferral(result.user.id);
-        toast.success(result.isNew ? "Welcome to QuotePush.io!" : "Welcome back!");
+        const refFirst = result.isNew && result.user?.id ? await recordReferral(result.user.id) : null;
+        toast.success(welcomeMessage(result.isNew, refFirst));
         utils.auth.me.invalidate();
         navigate("/");
       }
@@ -273,8 +289,8 @@ export default function AuthPage() {
         orgName: emailOrgName.trim(),
       });
       if (result.success) {
-        if (result.user?.id) await recordReferral(result.user.id);
-        toast.success("Account created! Welcome to QuotePush.io.");
+        const refFirst = result.user?.id ? await recordReferral(result.user.id) : null;
+        toast.success(welcomeMessage(true, refFirst));
         utils.auth.me.invalidate();
         navigate("/");
       }
