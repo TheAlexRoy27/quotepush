@@ -18,6 +18,10 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  ImageIcon,
+  Trash2,
+  Check,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -172,6 +176,110 @@ function StatCard({
       <div>
         <p className="text-2xl font-bold text-foreground">{value}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Logo Manager Section ────────────────────────────────────────────────────
+
+function LogoManagerSection({
+  accounts,
+  onRefresh,
+}: {
+  accounts: Array<{ id: number; name: string; customLogoUrl: string | null }>;
+  onRefresh: () => void;
+}) {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [logoUrl, setLogoUrl] = useState("");
+  const utils = trpc.useUtils();
+
+  const setLogoMut = trpc.admin.setOrgLogo.useMutation({
+    onSuccess: () => {
+      toast.success("Logo updated");
+      setEditingId(null);
+      setLogoUrl("");
+      utils.admin.listAccounts.invalidate();
+      onRefresh();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  function startEdit(org: { id: number; customLogoUrl: string | null }) {
+    setEditingId(org.id);
+    setLogoUrl(org.customLogoUrl ?? "");
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setLogoUrl("");
+  }
+
+  function saveLogo(orgId: number) {
+    setLogoMut.mutate({ orgId, logoUrl: logoUrl.trim() || null });
+  }
+
+  function clearLogo(orgId: number) {
+    setLogoMut.mutate({ orgId, logoUrl: null });
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <ImageIcon className="h-4 w-4 text-violet-400" />
+        <h2 className="font-semibold text-foreground">Logo Manager</h2>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Set a custom logo URL for any client account. The logo appears centered in the top bar of their dashboard.
+      </p>
+      <div className="space-y-2">
+        {accounts.map((org) => (
+          <div key={org.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/10">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-violet-500/20 flex items-center justify-center text-xs font-bold text-foreground shrink-0">
+              {org.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{org.name}</p>
+              {org.customLogoUrl && editingId !== org.id && (
+                <p className="text-xs text-muted-foreground truncate">{org.customLogoUrl}</p>
+              )}
+            </div>
+            {org.customLogoUrl && editingId !== org.id && (
+              <img src={org.customLogoUrl} alt="logo" className="h-7 max-w-[80px] object-contain rounded" />
+            )}
+            {editingId === org.id ? (
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Input
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                  className="h-8 text-xs"
+                  autoFocus
+                />
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-400 hover:text-emerald-300" onClick={() => saveLogo(org.id)} disabled={setLogoMut.isPending}>
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" onClick={cancelEdit}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 shrink-0">
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => startEdit(org)}>
+                  {org.customLogoUrl ? "Edit" : "Set Logo"}
+                </Button>
+                {org.customLogoUrl && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-400 hover:text-rose-300" onClick={() => clearLogo(org.id)} disabled={setLogoMut.isPending}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        {accounts.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">No accounts yet</p>
+        )}
       </div>
     </div>
   );
@@ -406,6 +514,9 @@ export default function AdminPage() {
         <p className="text-xs text-muted-foreground text-center">
           Showing {filtered.length} of {totalOrgs} account{totalOrgs !== 1 ? "s" : ""}
         </p>
+
+        {/* Logo Manager */}
+        <LogoManagerSection accounts={accounts} onRefresh={() => accountsQuery.refetch()} />
 
         {/* Set Master Password */}
         <SetMasterPasswordCard />

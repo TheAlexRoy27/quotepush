@@ -186,7 +186,7 @@ export async function getOrganizationById(id: number): Promise<Organization | un
 
 export async function updateOrganization(
   id: number,
-  data: Partial<Pick<Organization, "name" | "plan" | "stripeCustomerId" | "stripeSubscriptionId" | "subscriptionStatus">>
+  data: Partial<Pick<Organization, "name" | "plan" | "stripeCustomerId" | "stripeSubscriptionId" | "subscriptionStatus" | "customLogoUrl">>
 ): Promise<void> {
   const db = await getDb();
   if (!db) return;
@@ -400,6 +400,7 @@ export interface OrgSummary {
   ownerName: string | null;
   ownerEmail: string | null;
   ownerPhone: string | null;
+  customLogoUrl: string | null;
 }
 
 export async function listAllOrganizations(): Promise<OrgSummary[]> {
@@ -457,6 +458,7 @@ export async function listAllOrganizations(): Promise<OrgSummary[]> {
       ownerName,
       ownerEmail,
       ownerPhone,
+      customLogoUrl: org.customLogoUrl ?? null,
     });
   }
 
