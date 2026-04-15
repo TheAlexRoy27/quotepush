@@ -156,6 +156,31 @@ const customAuthRouter = router({
       await seedDefaultTemplates(org.id);
       await seedDefaultDripSequences(org.id);
 
+      // Auto-create a lead for the owner so every new signup appears on the Leads page
+      try {
+        const db2 = await getDb();
+        if (db2 && ENV.ownerOpenId) {
+          const ownerRows = await db2.select().from(users).where(eq(users.openId, ENV.ownerOpenId)).limit(1);
+          const ownerUser = ownerRows[0];
+          if (ownerUser) {
+            const ownerMembership = await getOrgMembership(ownerUser.id).catch(() => null);
+            if (ownerMembership) {
+              await createLead({
+                orgId: ownerMembership.orgId,
+                name: input.name,
+                phone: "email-only",
+                email: input.email,
+                company: input.orgName,
+                notes: `New signup via QuotePush.io (no plan yet) — email: ${input.email}`,
+                status: "Pending",
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[Signup] Failed to create owner lead:", e);
+      }
+
       // Issue JWT session
       const secret = new TextEncoder().encode(ENV.jwtSecret);
       const token = await new SignJWT({ userId: user.id, orgId: org.id })
@@ -358,6 +383,30 @@ const customAuthRouter = router({
         await seedDefaultDripSequences(newOrg.id);
         org = newOrg;
         isNew = true;
+
+        // Auto-create a lead for the owner so every new signup appears on the Leads page
+        try {
+          const db2 = await getDb();
+          if (db2 && ENV.ownerOpenId) {
+            const ownerRows = await db2.select().from(users).where(eq(users.openId, ENV.ownerOpenId)).limit(1);
+            const ownerUser = ownerRows[0];
+            if (ownerUser) {
+              const ownerMembership = await getOrgMembership(ownerUser.id).catch(() => null);
+              if (ownerMembership) {
+                await createLead({
+                  orgId: ownerMembership.orgId,
+                  name: input.name,
+                  phone: input.phone,
+                  company: input.orgName,
+                  notes: `New signup via QuotePush.io (no plan yet)`,
+                  status: "Pending",
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.error("[Signup] Failed to create owner lead:", e);
+        }
       } else {
         await updateUserLastSignedIn(user.id);
         const membership = await getOrgMembership(user.id);
