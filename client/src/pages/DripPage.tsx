@@ -624,7 +624,16 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
               </TooltipTrigger>
               <TooltipContent>Rename</TooltipContent>
             </Tooltip>
-
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 text-xs gap-1.5"
+              onClick={() => clone.mutate({ id: seq.id })}
+              disabled={clone.isPending}
+            >
+              <Copy className="h-3.5 w-3.5" />
+              Clone
+            </Button>
           </TooltipProvider>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setExpanded((v) => !v)}>
             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
