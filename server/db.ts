@@ -241,7 +241,7 @@ export async function updateTemplate(id: number, data: Partial<InsertSmsTemplate
 
 export async function getLeadStats(orgId: number) {
   const db = await getDb();
-  if (!db) return { total: 0, pending: 0, sent: 0, replied: 0, scheduled: 0 };
+  if (!db) return { total: 0, pending: 0, sent: 0, replied: 0, scheduled: 0, xDated: 0 };
 
   const rows = await db
     .select({ status: leads.status, count: sql<number>`count(*)` })
@@ -249,7 +249,7 @@ export async function getLeadStats(orgId: number) {
     .where(eq(leads.orgId, orgId))
     .groupBy(leads.status);
 
-  const stats = { total: 0, pending: 0, sent: 0, replied: 0, scheduled: 0 };
+  const stats = { total: 0, pending: 0, sent: 0, replied: 0, scheduled: 0, xDated: 0 };
   for (const row of rows) {
     const count = Number(row.count);
     stats.total += count;
@@ -257,6 +257,7 @@ export async function getLeadStats(orgId: number) {
     if (row.status === "Sent") stats.sent = count;
     if (row.status === "Replied") stats.replied = count;
     if (row.status === "Scheduled") stats.scheduled = count;
+    if (row.status === "X-Dated") stats.xDated = count;
   }
   return stats;
 }

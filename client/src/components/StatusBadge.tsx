@@ -7,6 +7,7 @@ const statusConfig: Record<Status, { label: string; className: string }> = {
   Sent: { label: "Sent", className: "status-sent" },
   Replied: { label: "Replied", className: "status-replied" },
   Scheduled: { label: "Scheduled", className: "status-scheduled" },
+  "X-Dated": { label: "X-Dated", className: "status-xdated" },
 };
 
 export function StatusBadge({ status }: { status: Status }) {

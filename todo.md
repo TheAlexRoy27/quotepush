@@ -306,3 +306,10 @@
 - [ ] Show AI generation loading state with spinner and "Crafting your message..." text
 - [ ] Allow user to regenerate (try again) if they don't like the AI suggestion
 - [ ] Pre-fill the step body textarea with the AI-generated message (fully editable before saving)
+
+## Lead Milestones Rename
+- [x] Rename all "Status" / "Statuses" labels in UI to "Milestone" / "Milestones"
+- [x] Add "x-dated" to the lead status enum in schema and apply DB migration
+- [x] Add X-Dated to all status dropdowns, filter selects, and badge color maps
+- [x] Update filter label "All Statuses" → "All Milestones" on Leads page
+- [x] Update column header and badge display text throughout

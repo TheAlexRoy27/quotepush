@@ -87,7 +87,7 @@ export default function SettingsPage() {
         <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
           <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
           <p className="text-xs text-muted-foreground">
-            When a lead replies, the app will automatically update their status to <strong className="text-foreground">Replied</strong>, log the message in their conversation thread, and send you an owner notification.
+            When a lead replies, the app will automatically update their milestone to <strong className="text-foreground">Replied</strong>, log the message in their conversation thread, and send you an owner notification.
           </p>
         </div>
       </div>
@@ -108,8 +108,8 @@ export default function SettingsPage() {
             <span className="text-foreground">Twilio</span>
           </div>
           <div className="flex justify-between">
-            <span>Status Tracking</span>
-            <span className="text-foreground">Pending → Sent → Replied / Scheduled</span>
+            <span>Milestone Tracking</span>
+            <span className="text-foreground">Pending → Sent → Replied / Scheduled / X-Dated</span>
           </div>
           <div className="flex justify-between">
             <span>Template Variables</span>

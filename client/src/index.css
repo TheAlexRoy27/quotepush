@@ -104,6 +104,11 @@
   color: oklch(0.72 0.20 290);
   border: 1px solid oklch(0.65 0.22 290 / 0.25);
 }
+.status-xdated {
+  background-color: oklch(0.70 0.18 195 / 0.15);
+  color: oklch(0.75 0.18 195);
+  border: 1px solid oklch(0.70 0.18 195 / 0.25);
+}
 
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 5px; height: 5px; }

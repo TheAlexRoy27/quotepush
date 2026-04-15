@@ -86,7 +86,7 @@ import { getDb } from "./db";
 import { ownerCredentials } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
-const LeadStatusEnum = z.enum(["Pending", "Sent", "Replied", "Scheduled"]);
+const LeadStatusEnum = z.enum(["Pending", "Sent", "Replied", "Scheduled", "X-Dated"]);
 const ReplyCategoryEnum = z.enum(REPLY_CATEGORIES);
 
 // ─── Helper: get orgId from ctx or throw ─────────────────────────────────────

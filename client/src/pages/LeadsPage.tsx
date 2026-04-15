@@ -518,9 +518,9 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
         </div>
       </div>
 
-      {/* Status changer */}
+      {/* Milestone changer */}
       <div className="px-5 py-3 border-b border-border flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">Status:</span>
+        <span className="text-xs text-muted-foreground">Milestone:</span>
         <Select
           value={lead.status}
           onValueChange={(val) => updateStatus.mutate({ id: lead.id, status: val as Lead["status"] })}
@@ -529,7 +529,7 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-popover border-border">
-            {["Pending", "Sent", "Replied", "Scheduled"].map(s => (
+            {["Pending", "Sent", "Replied", "Scheduled", "X-Dated"].map(s => (
               <SelectItem key={s} value={s} className="text-xs text-foreground">{s}</SelectItem>
             ))}
           </SelectContent>
@@ -716,12 +716,12 @@ export default function LeadsPage() {
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-36 bg-input border-border text-foreground">
-              <SelectValue placeholder="All statuses" />
+            <SelectTrigger className="w-40 bg-input border-border text-foreground">
+              <SelectValue placeholder="All Milestones" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
-              <SelectItem value="all" className="text-foreground">All Statuses</SelectItem>
-              {["Pending", "Sent", "Replied", "Scheduled"].map(s => (
+              <SelectItem value="all" className="text-foreground">All Milestones</SelectItem>
+              {["Pending", "Sent", "Replied", "Scheduled", "X-Dated"].map(s => (
                 <SelectItem key={s} value={s} className="text-foreground">{s}</SelectItem>
               ))}
             </SelectContent>
@@ -765,7 +765,7 @@ export default function LeadsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  {["Name", "Phone", "Company", "Email", "Status", "Added", ""].map((h) => (
+                  {["Name", "Phone", "Company", "Email", "Milestone", "Added", ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       {h}
                     </th>

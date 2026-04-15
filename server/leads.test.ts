@@ -94,16 +94,17 @@ describe("auth.logout", () => {
 // ─── Status enum validation ───────────────────────────────────────────────────
 
 describe("Lead status values", () => {
-  const validStatuses = ["Pending", "Sent", "Replied", "Scheduled"];
+  const validStatuses = ["Pending", "Sent", "Replied", "Scheduled", "X-Dated"];
 
-  it("has exactly 4 valid statuses", () => {
-    expect(validStatuses).toHaveLength(4);
+  it("has exactly 5 valid milestones", () => {
+    expect(validStatuses).toHaveLength(5);
   });
 
-  it("includes all required status labels", () => {
+  it("includes all required milestone labels", () => {
     expect(validStatuses).toContain("Pending");
     expect(validStatuses).toContain("Sent");
     expect(validStatuses).toContain("Replied");
     expect(validStatuses).toContain("Scheduled");
+    expect(validStatuses).toContain("X-Dated");
   });
 });

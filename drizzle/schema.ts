@@ -122,7 +122,7 @@ export const leads = mysqlTable("leads", {
   phone: varchar("phone", { length: 32 }).notNull(),
   company: varchar("company", { length: 255 }),
   email: varchar("email", { length: 320 }),
-  status: mysqlEnum("status", ["Pending", "Sent", "Replied", "Scheduled"])
+  status: mysqlEnum("status", ["Pending", "Sent", "Replied", "Scheduled", "X-Dated"])
     .default("Pending")
     .notNull(),
   notes: text("notes"),
