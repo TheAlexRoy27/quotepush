@@ -3,6 +3,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -21,13 +38,18 @@ import { trpc } from "@/lib/trpc";
 import {
   ArrowDown,
   ArrowRight,
+  BookOpen,
   Check,
   ChevronDown,
   ChevronUp,
   Clock,
+  Copy,
   GitBranch,
   HelpCircle,
+  Lightbulb,
+  Loader2,
   MessageSquare,
+  Pencil,
   Phone,
   Plus,
   Sparkles,
@@ -498,6 +520,8 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
   const [expanded, setExpanded] = useState(false);
   const [addingStep, setAddingStep] = useState(false);
   const [editingStepId, setEditingStepId] = useState<number | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(seq.name);
   const utils = trpc.useUtils();
 
   const toggleActive = trpc.drip.updateSequence.useMutation({
@@ -509,6 +533,21 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
       utils.drip.listSequences.invalidate();
       onDeleted();
       toast.success("Sequence deleted");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const rename = trpc.drip.updateSequence.useMutation({
+    onSuccess: () => {
+      utils.drip.listSequences.invalidate();
+      setRenaming(false);
+      toast.success("Sequence renamed");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const clone = trpc.drip.cloneSequence.useMutation({
+    onSuccess: () => {
+      utils.drip.listSequences.invalidate();
+      toast.success("Sequence cloned! Find it below.");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -529,7 +568,24 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
           <Zap className={`h-4 w-4 ${isInterested ? "text-emerald-400" : "text-blue-400"}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-foreground truncate">{seq.name}</p>
+          {renaming ? (
+            <form
+              className="flex items-center gap-2"
+              onSubmit={(e) => { e.preventDefault(); rename.mutate({ id: seq.id, name: renameValue }); }}
+            >
+              <input
+                autoFocus
+                className="flex-1 bg-background border border-border rounded-md px-2 py-1 text-sm font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Escape') setRenaming(false); }}
+              />
+              <Button type="submit" size="sm" className="h-7 px-2 text-xs" disabled={rename.isPending}>Save</Button>
+              <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setRenaming(false)}>Cancel</Button>
+            </form>
+          ) : (
+            <p className="font-semibold text-foreground truncate">{seq.name}</p>
+          )}
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${categoryColor}`}>
               {seq.triggerCategory}
@@ -551,14 +607,32 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{seq.isActive ? "Active" : "Paused"}</span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">{seq.isActive ? "Active" : "Paused"}</span>
             <Switch
               checked={!!seq.isActive}
               onCheckedChange={(v) => toggleActive.mutate({ id: seq.id, isActive: v })}
             />
           </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setRenameValue(seq.name); setRenaming(true); }}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Rename</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => clone.mutate({ id: seq.id })} disabled={clone.isPending}>
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Clone sequence</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setExpanded((v) => !v)}>
             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
@@ -1060,7 +1134,277 @@ export default function DripPage() {
         )}
 
         {wizardOpen && <CreateWizard onClose={() => { setWizardOpen(false); utils.drip.listSequences.invalidate(); }} />}
+
+        {/* ─── A/B Test Lightbulb Tip ─────────────────────────────────────────── */}
+        <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 flex items-start gap-3">
+          <div className="h-9 w-9 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0 mt-0.5">
+            <Lightbulb className="h-5 w-5 text-amber-400" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-amber-300">Pro Tip: A/B Test Your Message Styles</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              It's a great idea to A/B test what message styles work best for your leads. Clone a sequence below, tweak the tone or timing, then compare reply rates. Clone, edit, and measure the results!
+            </p>
+          </div>
+        </div>
+
+        {/* ─── Embedded Template Library ───────────────────────────────────────── */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-2">Template Library</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <EmbeddedLibrary />
+        </div>
       </div>
     </TooltipProvider>
+  );
+}
+
+// ─── Embedded Template Library ───────────────────────────────────────────────
+
+
+
+const LIB_CATEGORIES = ["Interested", "Not Interested", "Wants More Info", "Unsubscribe"] as const;
+type LibCategory = (typeof LIB_CATEGORIES)[number];
+
+const LIB_CATEGORY_META: Record<LibCategory, { color: string; bg: string; border: string; icon: string }> = {
+  Interested: { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: "✅" },
+  "Not Interested": { color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/20", icon: "❌" },
+  "Wants More Info": { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/20", icon: "🤔" },
+  Unsubscribe: { color: "text-muted-foreground", bg: "bg-muted/20", border: "border-border", icon: "🚫" },
+};
+
+function EmbeddedLibrary() {
+  const [activeCategory, setActiveCategory] = useState<LibCategory>("Interested");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<{ id: number; name: string; category: string; body: string; isActive: number } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const utils = trpc.useUtils();
+
+  const { data: allTemplates = [], isLoading } = trpc.flowTemplates.list.useQuery(undefined);
+  const { data: flowRules = [] } = trpc.flowRules.list.useQuery();
+
+  const seedMutation = trpc.flowTemplates.seed.useMutation({
+    onSuccess: () => { toast.success("Default templates loaded"); utils.flowTemplates.list.invalidate(); utils.flowRules.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteMutation = trpc.flowTemplates.delete.useMutation({
+    onSuccess: () => { toast.success("Template deleted"); utils.flowTemplates.list.invalidate(); utils.flowRules.list.invalidate(); setDeleteTarget(null); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const categoryTemplates = allTemplates.filter((t) => t.category === activeCategory);
+  const linkedTemplateIds = new Set(flowRules.map((r) => r.templateId).filter(Boolean));
+
+  return (
+    <div className="space-y-5">
+      {/* Category tabs + actions */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-1 bg-muted/30 border border-border rounded-lg p-1 flex-wrap">
+          {LIB_CATEGORIES.map((cat) => {
+            const meta = LIB_CATEGORY_META[cat];
+            const count = allTemplates.filter((t) => t.category === cat).length;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${activeCategory === cat ? "bg-card text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <span>{meta.icon}</span>
+                <span>{cat}</span>
+                {count > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-full ${meta.bg} ${meta.color}`}>{count}</span>}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2">
+          {allTemplates.length === 0 && (
+            <Button variant="outline" size="sm" onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending} className="text-xs">
+              {seedMutation.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+              Load Defaults
+            </Button>
+          )}
+          <Button size="sm" onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
+            <Plus className="h-4 w-4 mr-1.5" /> New Template
+          </Button>
+        </div>
+      </div>
+
+      {/* Template list */}
+      {isLoading ? (
+        <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 bg-card border border-border rounded-xl animate-pulse" />)}</div>
+      ) : categoryTemplates.length === 0 ? (
+        <div className="text-center py-10 text-muted-foreground border border-dashed border-border rounded-xl">
+          <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">No templates for {activeCategory} yet</p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Template
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {categoryTemplates.map((t) => {
+            const isLinked = linkedTemplateIds.has(t.id);
+            const meta = LIB_CATEGORY_META[activeCategory];
+            const expanded = expandedId === t.id;
+            return (
+              <div key={t.id} className="border border-border rounded-xl bg-card overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className={`h-8 w-8 rounded-lg ${meta.bg} flex items-center justify-center shrink-0 text-sm`}>{meta.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-foreground truncate">{t.name}</p>
+                      {isLinked && (
+                        <span className="inline-flex items-center gap-1 text-xs text-violet-300 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-full">
+                          <Zap className="h-3 w-3" /> Auto-Flow
+                        </span>
+                      )}
+                      {!t.isActive && (
+                        <span className="text-xs text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded-full">Inactive</span>
+                      )}
+                    </div>
+                    {!expanded && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{t.body}</p>}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setEditingTemplate(t); setEditorOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(t.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setExpandedId(expanded ? null : t.id)}>
+                      {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+                </div>
+                {expanded && (
+                  <div className="border-t border-border px-4 py-3 bg-muted/5">
+                    <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{t.body}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Template Editor Modal */}
+      <EmbeddedTemplateEditor
+        open={editorOpen}
+        defaultCategory={activeCategory}
+        template={editingTemplate}
+        onClose={() => { setEditorOpen(false); setEditingTemplate(null); }}
+        onSuccess={() => { utils.flowTemplates.list.invalidate(); }}
+      />
+
+      {/* Delete Confirm */}
+      <AlertDialog open={deleteTarget !== null} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Delete Template?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">This template will be permanently deleted.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteTarget !== null && deleteMutation.mutate({ id: deleteTarget })} className="bg-rose-600 hover:bg-rose-500 text-white">
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function EmbeddedTemplateEditor({
+  open,
+  defaultCategory,
+  template,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  defaultCategory: string;
+  template: { id: number; name: string; category: string; body: string; isActive: number } | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [name, setName] = useState(template?.name ?? "");
+  const [category, setCategory] = useState(template?.category ?? defaultCategory);
+  const [body, setBody] = useState(template?.body ?? "");
+  const [isActive, setIsActive] = useState(template?.isActive !== 0);
+  const utils = trpc.useUtils();
+
+  const createMutation = trpc.flowTemplates.create.useMutation({
+    onSuccess: () => { toast.success("Template created"); onSuccess(); onClose(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMutation = trpc.flowTemplates.update.useMutation({
+    onSuccess: () => { toast.success("Template updated"); onSuccess(); onClose(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // Reset form when template changes
+  const prevTemplate = useRef(template);
+  if (prevTemplate.current !== template) {
+    prevTemplate.current = template;
+    setName(template?.name ?? "");
+    setCategory(template?.category ?? defaultCategory);
+    setBody(template?.body ?? "");
+    setIsActive(template?.isActive !== 0);
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (template) {
+      updateMutation.mutate({ id: template.id, name, category: category as any, body, isActive: isActive });
+    } else {
+      createMutation.mutate({ name, category: category as any, body, isActive: isActive });
+    }
+  };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="bg-card border-border max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-foreground">{template ? "Edit Template" : "New Template"}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm text-foreground">Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Warm Follow-Up" required />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-foreground">Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {LIB_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-foreground">Message Body</Label>
+            <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Hi {name}, just following up…" rows={4} required />
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch checked={isActive} onCheckedChange={setIsActive} />
+            <Label className="text-sm text-foreground">Active</Label>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {template ? "Save Changes" : "Create Template"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

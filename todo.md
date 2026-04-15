@@ -319,3 +319,17 @@
 - [x] Update org.listMembers tRPC procedure to expose the enriched fields
 - [x] Update OrgPage member table to show: name, email/phone, role, joined date, last login date
 - [x] Show "Never" if lastSignedIn is null
+
+## Drip Page Enhancements
+- [x] Add clone drip sequence backend tRPC procedure
+- [x] Add rename drip sequence support (already exists via updateDripSequence, just expose in UI)
+- [x] Embed Template Library section at the bottom of DripPage (after drip sequence samples)
+- [x] Add lightbulb A-B test tip blurb above the template library section on DripPage
+- [x] Add Clone button to each drip sequence card
+- [x] Add inline rename (edit name) to each drip sequence card
+- [ ] Remove Template Library from sidebar nav (it's now embedded in Drip page) — kept for now per user preference
+
+## Analytics Page
+- [x] Create analytics tRPC procedure returning: reply rate, avg reply time, leads by milestone, messages sent over time, top reply categories
+- [x] Build AnalyticsPage.tsx with charts: reply time histogram, lead milestone funnel, messages sent per day, reply category breakdown
+- [x] Add Analytics route to sidebar nav

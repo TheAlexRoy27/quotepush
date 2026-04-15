@@ -70,6 +70,66 @@ export async function updateDripSequence(
   return getDripSequenceById(id);
 }
 
+export async function cloneDripSequence(
+  id: number,
+  orgId: number,
+  newName: string
+): Promise<DripSequence | undefined> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const original = await getDripSequenceById(id);
+  if (!original) throw new Error("Sequence not found");
+  const steps = await listDripSteps(id);
+
+  // Create the new sequence (inactive by default)
+  const newSeq = await createDripSequence({
+    orgId,
+    name: newName,
+    triggerCategory: original.triggerCategory,
+    isActive: 0,
+  });
+  if (!newSeq) throw new Error("Failed to create cloned sequence");
+
+  // Build a map of old step id → new step id for branch parent references
+  const idMap = new Map<number, number>();
+
+  // First pass: copy linear steps (no parentStepId)
+  const linearSteps = steps.filter((s) => !s.parentStepId);
+  for (const step of linearSteps) {
+    const result = await db.insert(dripSteps).values({
+      sequenceId: newSeq.id,
+      stepNumber: step.stepNumber,
+      name: step.name,
+      body: step.body,
+      delayAmount: step.delayAmount,
+      delayUnit: step.delayUnit,
+      branchType: null,
+      parentStepId: null,
+    });
+    const newId = (result as unknown as [{ insertId: number }])[0]?.insertId;
+    idMap.set(step.id, newId);
+  }
+
+  // Second pass: copy branch steps, remapping parentStepId
+  const branchSteps = steps.filter((s) => !!s.parentStepId);
+  for (const step of branchSteps) {
+    const newParentId = idMap.get(step.parentStepId!);
+    if (!newParentId) continue;
+    await db.insert(dripSteps).values({
+      sequenceId: newSeq.id,
+      stepNumber: step.stepNumber,
+      name: step.name,
+      body: step.body,
+      delayAmount: step.delayAmount,
+      delayUnit: step.delayUnit,
+      branchType: step.branchType,
+      parentStepId: newParentId,
+    });
+  }
+
+  return getDripSequenceById(newSeq.id);
+}
+
 export async function deleteDripSequence(id: number): Promise<{ success: boolean }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

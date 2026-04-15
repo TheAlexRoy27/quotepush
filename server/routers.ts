@@ -62,6 +62,7 @@ import {
   upsertFlowRule,
 } from "./flowDb";
 import {
+  cloneDripSequence,
   createDripSequence,
   deleteDripSequence,
   enrollLeadInSequence,
@@ -78,13 +79,12 @@ import {
   deleteDripStep,
   seedDefaultDripSequences,
 } from "./dripDb";
-import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES } from "../drizzle/schema";
+import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials } from "../drizzle/schema";
 import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
 import bcrypt from "bcryptjs";
 import { getDb } from "./db";
-import { ownerCredentials } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { and, asc, eq, gte, sql } from "drizzle-orm";
 
 const LeadStatusEnum = z.enum(["Pending", "Sent", "Replied", "Scheduled", "X-Dated"]);
 const ReplyCategoryEnum = z.enum(REPLY_CATEGORIES);
@@ -932,6 +932,21 @@ const dripRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(({ input }) => deleteDripSequence(input.id)),
 
+  cloneSequence: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        name: z.string().min(1).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const original = await getDripSequenceById(input.id);
+      if (!original) throw new TRPCError({ code: "NOT_FOUND", message: "Sequence not found" });
+      const newName = input.name ?? `${original.name} (Copy)`;
+      return cloneDripSequence(input.id, orgId, newName);
+    }),
+
   // ─── Steps ───────────────────────────────────────────────────────────────────
   upsertStep: protectedProcedure
     .input(
@@ -1012,6 +1027,106 @@ const adminRouter = router({
 
 // ─── App Router ─────────────────────────────────────────────────────────────
 
+// ─── Analytics Router ───────────────────────────────────────────────────────
+
+const analyticsRouter = router({
+  overview: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    const db = await getDb();
+    if (!db) return null;
+
+    // Lead milestone breakdown
+    const leadRows = await db
+      .select({ status: leads.status, count: sql<number>`count(*)` })
+      .from(leads)
+      .where(eq(leads.orgId, orgId))
+      .groupBy(leads.status);
+
+    // Messages sent per day (last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const msgRows = await db
+      .select({
+        day: sql<string>`DATE(${messages.sentAt})`,
+        direction: messages.direction,
+        count: sql<number>`count(*)`,
+      })
+      .from(messages)
+      .where(and(eq(messages.orgId, orgId), gte(messages.sentAt, thirtyDaysAgo)))
+      .groupBy(sql`DATE(${messages.sentAt})`, messages.direction);
+
+    // Reply category breakdown
+    const categoryRows = await db
+      .select({ category: messageClassifications.category, count: sql<number>`count(*)` })
+      .from(messageClassifications)
+      .innerJoin(messages, eq(messageClassifications.messageId, messages.id))
+      .where(eq(messages.orgId, orgId))
+      .groupBy(messageClassifications.category);
+
+    // Average reply time (time between outbound message and next inbound from same lead)
+    const replyTimeRows = await db
+      .select({
+        leadId: messages.leadId,
+        direction: messages.direction,
+        sentAt: messages.sentAt,
+      })
+      .from(messages)
+      .where(eq(messages.orgId, orgId))
+      .orderBy(messages.leadId, messages.sentAt);
+
+    // Compute reply times in minutes
+    const replyTimes: number[] = [];
+    const byLead = new Map<number, typeof replyTimeRows>();
+    for (const row of replyTimeRows) {
+      if (!byLead.has(row.leadId)) byLead.set(row.leadId, []);
+      byLead.get(row.leadId)!.push(row);
+    }
+    for (const msgs of Array.from(byLead.values())) {
+      for (let i = 1; i < msgs.length; i++) {
+        if (msgs[i].direction === "inbound" && msgs[i - 1].direction === "outbound") {
+          const diff = (new Date(msgs[i].sentAt).getTime() - new Date(msgs[i - 1].sentAt).getTime()) / 60000;
+          if (diff >= 0 && diff <= 10080) replyTimes.push(Math.round(diff)); // cap at 1 week
+        }
+      }
+    }
+
+    // Bucket reply times: <5m, 5-30m, 30m-2h, 2-24h, 1-7d
+    const buckets = [
+      { label: "< 5 min", min: 0, max: 5, count: 0 },
+      { label: "5–30 min", min: 5, max: 30, count: 0 },
+      { label: "30 min–2 hr", min: 30, max: 120, count: 0 },
+      { label: "2–24 hr", min: 120, max: 1440, count: 0 },
+      { label: "1–7 days", min: 1440, max: 10080, count: 0 },
+    ];
+    for (const t of replyTimes) {
+      for (const b of buckets) {
+        if (t >= b.min && t < b.max) { b.count++; break; }
+      }
+    }
+    const avgReplyMinutes = replyTimes.length
+      ? Math.round(replyTimes.reduce((a, b) => a + b, 0) / replyTimes.length)
+      : null;
+
+    // Total leads, total messages
+    const totalLeads = leadRows.reduce((s, r) => s + Number(r.count), 0);
+    const totalMessages = msgRows.reduce((s, r) => s + Number(r.count), 0);
+    const totalReplies = msgRows
+      .filter((r) => r.direction === "inbound")
+      .reduce((s, r) => s + Number(r.count), 0);
+
+    return {
+      totalLeads,
+      totalMessages,
+      totalReplies,
+      replyRate: totalMessages > 0 ? Math.round((totalReplies / totalMessages) * 100) : 0,
+      avgReplyMinutes,
+      leadsByMilestone: leadRows.map((r) => ({ status: r.status, count: Number(r.count) })),
+      messagesPerDay: msgRows.map((r) => ({ day: r.day, direction: r.direction, count: Number(r.count) })),
+      replyCategories: categoryRows.map((r) => ({ category: r.category, count: Number(r.count) })),
+      replyTimeBuckets: buckets,
+    };
+  }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -1033,6 +1148,7 @@ export const appRouter = router({
   billing: billingRouter,
   admin: adminRouter,
   drip: dripRouter,
+  analytics: analyticsRouter,
 });
 
 
