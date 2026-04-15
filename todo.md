@@ -388,3 +388,6 @@
 - [x] Add consentAcceptedAt timestamp to users table (schema + migration)
 - [x] Capture consentAcceptedAt on phone/email sign-up (set to current UTC timestamp)
 - [x] Display consentAcceptedAt in Admin Panel user list and Org member details
+
+## Landing Page Footer Links
+- [x] Add /terms and /privacy links to the landing page footer

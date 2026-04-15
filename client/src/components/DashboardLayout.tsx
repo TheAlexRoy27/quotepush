@@ -149,6 +149,15 @@ export default function DashboardLayout({
             </p>
           </div>
         </div>
+
+        {/* Footer */}
+        <footer className="mt-10 text-center text-xs text-muted-foreground/60 space-x-4">
+          <a href="/terms" className="hover:text-muted-foreground transition-colors underline underline-offset-2">Terms of Service</a>
+          <span>·</span>
+          <a href="/privacy" className="hover:text-muted-foreground transition-colors underline underline-offset-2">Privacy Policy</a>
+          <span>·</span>
+          <span>© {new Date().getFullYear()} QuotePush.io</span>
+        </footer>
       </div>
     );
   }
