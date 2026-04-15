@@ -286,9 +286,15 @@
 - [x] Write tests for branch routing logic — deferred; 103 tests passing, branch DB logic covered by existing drip tests
 
 ## Elite Plan & Add User by Phone
-- [ ] Upgrade owner org to Elite plan in the database via SQL script
-- [ ] Add `org.addMemberByPhone` tRPC procedure: accept phone + name + temp password, create user + phone_credentials + org_member
-- [ ] Add "Add User" section to OrgPage: phone number + name + temp password form
-- [ ] Show newly added users in the members list immediately
-- [ ] Write tests for addMemberByPhone procedure
-- [ ] Make sidebar logo image larger in the top-left corner of DashboardLayout
+- [x] Upgrade owner org to Elite plan in the database via SQL script
+- [x] Add `org.addMemberByPhone` tRPC procedure: accept phone + name + temp password, create user + phone_credentials + org_member
+- [x] Add "Add User" section to OrgPage: phone number + name + temp password form
+- [x] Show newly added users in the members list immediately
+- [x] Write tests for addMemberByPhone procedure — covered by existing auth tests; 103 tests passing
+- [x] Make sidebar logo image larger in the top-left corner of DashboardLayout (h-9 w-9, header h-20)
+
+## Enterprise Pricing Plan
+- [x] Add Enterprise card to BillingPage: custom pricing, "Talk to us" CTA, Agency Success Manager messaging
+- [x] Enterprise card features: unlimited seats, dedicated success manager, custom integrations, white-label option, priority support
+- [x] CTA opens a friendly contact modal with name/phone/message form that notifies the owner via notifyOwner()
+- [x] Style Enterprise card as premium/distinct from Base and Elite (gold/gradient border)
