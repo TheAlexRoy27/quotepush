@@ -217,16 +217,56 @@ export async function getOrgMembership(
 export async function listOrgMembers(orgId: number): Promise<(OrgMember & { user: User })[]> {
   const db = await getDb();
   if (!db) return [];
-  const members = await db
-    .select()
+  const rows = await db
+    .select({
+      // org_members fields
+      memberId: orgMembers.id,
+      orgId: orgMembers.orgId,
+      userId: orgMembers.userId,
+      role: orgMembers.role,
+      inviteToken: orgMembers.inviteToken,
+      inviteAccepted: orgMembers.inviteAccepted,
+      inviteEmail: orgMembers.inviteEmail,
+      invitePhone: orgMembers.invitePhone,
+      memberCreatedAt: orgMembers.createdAt,
+      memberUpdatedAt: orgMembers.updatedAt,
+      // user fields
+      userName: users.name,
+      userEmail: users.email,
+      userPhone: users.phone,
+      userRole: users.role,
+      userCreatedAt: users.createdAt,
+      userLastSignedIn: users.lastSignedIn,
+      userLoginMethod: users.loginMethod,
+    })
     .from(orgMembers)
-    .where(eq(orgMembers.orgId, orgId));
-  const result: (OrgMember & { user: User })[] = [];
-  for (const m of members) {
-    const userRows = await db.select().from(users).where(eq(users.id, m.userId)).limit(1);
-    if (userRows[0]) result.push({ ...m, user: userRows[0] });
-  }
-  return result;
+    .innerJoin(users, eq(users.id, orgMembers.userId))
+    .where(eq(orgMembers.orgId, orgId))
+    .orderBy(orgMembers.createdAt);
+
+  return rows.map((r) => ({
+    id: r.memberId,
+    orgId: r.orgId,
+    userId: r.userId,
+    role: r.role,
+    inviteToken: r.inviteToken,
+    inviteAccepted: r.inviteAccepted,
+    inviteEmail: r.inviteEmail,
+    invitePhone: r.invitePhone,
+    createdAt: r.memberCreatedAt,
+    updatedAt: r.memberUpdatedAt,
+    user: {
+      id: r.userId,
+      name: r.userName,
+      email: r.userEmail,
+      phone: r.userPhone,
+      role: r.userRole,
+      createdAt: r.userCreatedAt,
+      lastSignedIn: r.userLastSignedIn,
+      loginMethod: r.userLoginMethod,
+      openId: "",
+    } as User,
+  }));
 }
 
 export async function getOrgMemberCount(orgId: number): Promise<number> {

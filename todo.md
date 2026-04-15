@@ -313,3 +313,9 @@
 - [x] Add X-Dated to all status dropdowns, filter selects, and badge color maps
 - [x] Update filter label "All Statuses" → "All Milestones" on Leads page
 - [x] Update column header and badge display text throughout
+
+## Member Details for Org Owner
+- [x] Update listOrgMembers DB helper to JOIN users table and return email, phone, lastSignedIn, createdAt (join date)
+- [x] Update org.listMembers tRPC procedure to expose the enriched fields
+- [x] Update OrgPage member table to show: name, email/phone, role, joined date, last login date
+- [x] Show "Never" if lastSignedIn is null

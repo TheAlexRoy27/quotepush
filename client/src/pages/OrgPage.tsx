@@ -20,6 +20,9 @@ import {
   Copy,
   Building2,
   Lock,
+  Clock,
+  Mail,
+  Phone,
 } from "lucide-react";
 
 const ROLE_ICONS: Record<string, React.ReactNode> = {
@@ -232,57 +235,86 @@ export default function OrgPage() {
           ) : members.length === 0 ? (
             <div className="text-center py-8 text-sm text-muted-foreground">No team members yet.</div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {members.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40"
+                  className="p-4 rounded-lg bg-muted/30 border border-border/40 space-y-3"
                 >
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
-                    {(member.user.name ?? member.user.email ?? "?")[0].toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {member.user.name ?? member.user.email ?? member.user.phone ?? "Unknown"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {member.user.email ?? member.user.phone ?? ""}
-                      {!member.inviteAccepted && <span className="ml-1 text-amber-400">(pending)</span>}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      {ROLE_ICONS[member.role]}
-                      {member.role === "owner" ? (
-                        <span className="text-xs text-amber-400 font-medium">Owner</span>
-                      ) : isOwnerOrAdmin && (member.role as string) !== "owner" ? (
-                        <Select
-                          value={member.role}
-                          onValueChange={(v) => handleRoleChange(member.id, v as "admin" | "member")}
-                        >
-                          <SelectTrigger className="h-6 text-xs border-none bg-transparent p-0 w-16 focus:ring-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="member">Member</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span>{ROLE_LABELS[member.role]}</span>
-                      )}
+                  {/* Top row: avatar + name + role controls + remove */}
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary shrink-0">
+                      {(member.user.name ?? member.user.email ?? "?")[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {member.user.name ?? member.user.email ?? member.user.phone ?? "Unknown"}
+                        </p>
+                        {!member.inviteAccepted && (
+                          <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">Pending</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                        {ROLE_ICONS[member.role]}
+                        {member.role === "owner" ? (
+                          <span className="text-amber-400 font-medium">Owner</span>
+                        ) : isOwnerOrAdmin && (member.role as string) !== "owner" ? (
+                          <Select
+                            value={member.role}
+                            onValueChange={(v) => handleRoleChange(member.id, v as "admin" | "member")}
+                          >
+                            <SelectTrigger className="h-5 text-xs border-none bg-transparent p-0 w-16 focus:ring-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="member">Member</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span>{ROLE_LABELS[member.role]}</span>
+                        )}
+                      </div>
                     </div>
                     {isOwnerOrAdmin && (member.role as string) !== "owner" && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 text-muted-foreground hover:text-rose-400"
+                        className="h-7 w-7 text-muted-foreground hover:text-rose-400 shrink-0"
                         onClick={() => handleRemove(member.id)}
                         disabled={removeMutation.isPending}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
+                  </div>
+
+                  {/* Detail row: contact + join date + last login */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-border/30">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      {member.user.email ? (
+                        <><Mail className="h-3 w-3 shrink-0" /><span className="truncate">{member.user.email}</span></>
+                      ) : member.user.phone ? (
+                        <><Phone className="h-3 w-3 shrink-0" /><span className="truncate">{member.user.phone}</span></>
+                      ) : (
+                        <span className="italic">No contact info</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Users className="h-3 w-3 shrink-0" />
+                      <span>Joined {member.createdAt ? new Date(member.createdAt).toLocaleDateString() : "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      {member.user.lastSignedIn ? (
+                        <span className="text-emerald-400">
+                          Last login {new Date(member.user.lastSignedIn).toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground italic">Never logged in</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
