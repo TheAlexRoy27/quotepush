@@ -445,4 +445,4 @@
 - [x] Move My Dashboard to top of sidebar nav
 - [x] Make /my-dashboard the default route (/ and /leads redirect to /my-dashboard after login)
 - [x] Embed full analytics charts (message activity, lead milestones, reply time, reply intent, trend) in bottom half of UsageDashboardPage
-- [ ] My Dashboard: placeholder boxes with hover tooltip for all empty chart/stat areas
+- [x] My Dashboard: placeholder boxes with hover tooltip for all empty chart/stat areas

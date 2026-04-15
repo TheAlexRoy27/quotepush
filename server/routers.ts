@@ -1263,13 +1263,13 @@ const analyticsRouter = router({
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const msgRows = await db
       .select({
-        day: sql<string>`DATE(${messages.sentAt})`,
+        day: sql<string>`DATE_FORMAT(${messages.sentAt}, '%Y-%m-%d')`,
         direction: messages.direction,
         count: sql<number>`count(*)`,
       })
       .from(messages)
       .where(and(eq(messages.orgId, orgId), gte(messages.sentAt, thirtyDaysAgo)))
-      .groupBy(sql`DATE(${messages.sentAt})`, messages.direction);
+      .groupBy(sql`DATE_FORMAT(${messages.sentAt}, '%Y-%m-%d')`, messages.direction);
 
     // Reply category breakdown
     const categoryRows = await db
@@ -1463,13 +1463,13 @@ const usageDashboardRouter = router({
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const msgRows = await db
       .select({
-        day: sql<string>`DATE(${messages.sentAt})`,
+        day: sql<string>`DATE_FORMAT(${messages.sentAt}, '%Y-%m-%d')`,
         direction: messages.direction,
         count: sql<number>`count(*)`,
       })
       .from(messages)
       .where(and(eq(messages.orgId, orgId), gte(messages.sentAt, thirtyDaysAgo)))
-      .groupBy(sql`DATE(${messages.sentAt})`, messages.direction);
+      .groupBy(sql`DATE_FORMAT(${messages.sentAt}, '%Y-%m-%d')`, messages.direction);
 
     const org = await getOrganizationById(orgId);
     const replyRate = totalSent > 0 ? Math.round((totalReplies / totalSent) * 100) : 0;
