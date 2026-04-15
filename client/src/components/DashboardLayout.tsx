@@ -92,7 +92,7 @@ export default function DashboardLayout({
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-favicon-hsV6w9Xq6ruPjUPpEDFYpV.webp"
               alt="QuotePush.io"
-              className="h-16 w-16 rounded-2xl shadow-lg"
+              className="h-28 w-28 rounded-3xl shadow-xl"
             />
             <div className="text-center">
               <h1 className="text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
