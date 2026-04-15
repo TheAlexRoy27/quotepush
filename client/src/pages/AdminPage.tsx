@@ -217,7 +217,7 @@ export default function AdminPage() {
   const eliteCount = accounts.filter((a) => a.plan === "elite").length;
   const activeCount = accounts.filter((a) => a.subscriptionStatus === "active").length;
 
-  // Auth guard — redirect in effect, never in render
+  // Auth guard redirect in effect, never in render
   useEffect(() => {
     if (!loading && !user) {
       setLocation("/auth");
@@ -377,13 +377,13 @@ export default function AdminPage() {
                     <td className="px-5 py-4">
                       {org.ownerName || org.ownerEmail ? (
                         <div>
-                          <p className="text-foreground">{org.ownerName ?? "—"}</p>
+                          <p className="text-foreground">{org.ownerName ?? ""}</p>
                           <p className="text-xs text-muted-foreground">
                             {org.ownerEmail ?? org.ownerPhone ?? ""}
                           </p>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground"></span>
                       )}
                     </td>
                     <td className="px-5 py-4 text-right">

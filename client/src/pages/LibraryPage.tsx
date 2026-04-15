@@ -169,7 +169,7 @@ function TemplateEditor({ open, onClose, folders, initial, onSave, saving }: Tem
         <div className="space-y-4 py-2">
           <div>
             <label className="text-sm font-medium mb-1 block">Template Name</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hot Lead — Book Now" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hot Lead Book Now" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

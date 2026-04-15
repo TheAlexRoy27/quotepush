@@ -84,7 +84,7 @@ function StatCard({
 // ─── Format avg reply time ────────────────────────────────────────────────────
 
 function formatMinutes(mins: number | null): string {
-  if (mins === null) return "—";
+  if (mins === null) return "";
   if (mins < 60) return `${mins}m`;
   if (mins < 1440) return `${Math.round(mins / 60)}h`;
   return `${Math.round(mins / 1440)}d`;
@@ -201,7 +201,7 @@ export default function AnalyticsPage() {
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div>
             <p className="text-sm font-semibold text-foreground">Message Activity</p>
-            <p className="text-xs text-muted-foreground">Outbound vs inbound — last 30 days</p>
+            <p className="text-xs text-muted-foreground">Outbound vs inbound last 30 days</p>
           </div>
           {msgChartFormatted.length === 0 ? (
             <div className="flex items-center justify-center h-52 text-muted-foreground/40 text-sm">

@@ -180,10 +180,10 @@ function SmsBubble({
         <Clock className="h-3 w-3" />
         {branchType ? (
           <span className={`font-medium ${branchType === "positive" ? "text-emerald-400" : "text-amber-400"}`}>
-            {branchType === "positive" ? "✓ Positive reply" : "✗ Negative reply"} —
+            {branchType === "positive" ? "✓ Positive reply" : "✗ Negative reply"} 
           </span>
         ) : (
-          <span>Step {stepNum} —</span>
+          <span>Step {stepNum} </span>
         )}
         {" "}{delayLabel}
       </span>
@@ -294,7 +294,7 @@ function StepEditor({
         <div className={`flex items-center gap-1.5 text-xs font-medium ${branchType === "positive" ? "text-emerald-400" : "text-amber-400"}`}>
           {branchType === "positive" ? <ThumbsUp className="h-3.5 w-3.5" /> : <ThumbsDown className="h-3.5 w-3.5" />}
           {branchType === "positive" ? "Positive Reply Branch" : "Negative Reply Branch"}
-          <span className="text-muted-foreground font-normal ml-1">— sent when lead replies {branchType === "positive" ? "positively (e.g. Yes, Interested)" : "negatively (e.g. Not now, Maybe later)"}</span>
+          <span className="text-muted-foreground font-normal ml-1"> sent when lead replies {branchType === "positive" ? "positively (e.g. Yes, Interested)" : "negatively (e.g. Not now, Maybe later)"}</span>
         </div>
       )}
       <div className="grid grid-cols-2 gap-3">
@@ -569,7 +569,7 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(seq.name);
   const [abTestOpen, setAbTestOpen] = useState(false);
-  const [abVariantName, setAbVariantName] = useState(`${seq.name} — Variant B`);
+  const [abVariantName, setAbVariantName] = useState(`${seq.name} Variant B`);
   const utils = trpc.useUtils();
 
   const upsertStep = trpc.drip.upsertStep.useMutation({
@@ -708,7 +708,7 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
               variant="outline"
               size="sm"
               className="h-8 px-3 text-xs gap-1.5 border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
-              onClick={() => { setAbVariantName(`${seq.name} — Variant B`); setAbTestOpen(true); }}
+              onClick={() => { setAbVariantName(`${seq.name} Variant B`); setAbTestOpen(true); }}
             >
               <Sparkles className="h-3.5 w-3.5" />
               A/B Test
@@ -909,7 +909,7 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                   ))}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground/60 pt-1">
                     <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    Sequence ends — or stops early if lead replies
+                    Sequence ends or stops early if lead replies
                   </div>
                 </div>
               ) : (
@@ -932,7 +932,7 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
               Create A/B Test Variant
             </DialogTitle>
             <DialogDescription>
-              A copy of <span className="font-medium text-foreground">"{seq.name}"</span> will be created. Rename it, then tweak one thing — tone, timing, or CTA — and compare reply rates.
+              A copy of <span className="font-medium text-foreground">"{seq.name}"</span> will be created. Rename it, then tweak one thing tone, timing, or CTA and compare reply rates.
             </DialogDescription>
           </DialogHeader>
 
@@ -943,7 +943,7 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                 autoFocus
                 value={abVariantName}
                 onChange={(e) => setAbVariantName(e.target.value)}
-                placeholder={`${seq.name} — Variant B`}
+                placeholder={`${seq.name} Variant B`}
                 className="text-sm"
               />
             </div>
@@ -954,7 +954,7 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
               </p>
               <ul className="text-xs text-muted-foreground space-y-1">
                 <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> <span><strong className="text-foreground">Tone:</strong> Try casual vs. professional, or short vs. detailed</span></li>
-                <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> <span><strong className="text-foreground">Timing:</strong> Adjust delays — e.g. same day vs. 3 days later</span></li>
+                <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> <span><strong className="text-foreground">Timing:</strong> Adjust delays e.g. same day vs. 3 days later</span></li>
                 <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">→</span> <span><strong className="text-foreground">CTA:</strong> "Reply YES" vs. "Click my link" vs. "Call me"</span></li>
               </ul>
             </div>
@@ -965,7 +965,7 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
             <Button
               size="sm"
               className="bg-amber-500 hover:bg-amber-600 text-white gap-1.5"
-              onClick={() => abTest.mutate({ id: seq.id, name: abVariantName || `${seq.name} — Variant B` })}
+              onClick={() => abTest.mutate({ id: seq.id, name: abVariantName || `${seq.name} Variant B` })}
               disabled={abTest.isPending || !abVariantName.trim()}
             >
               {abTest.isPending ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Creating…</> : <><Sparkles className="h-3.5 w-3.5" /> Create Variant</>}
@@ -981,11 +981,11 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
 
 const QUICK_STARTS = [
   {
-    label: "Insurance Agent — Form Lead",
+    label: "Insurance Agent Form Lead",
     icon: "🛡️",
     description: "Thank form fill → A/B branch on reply",
     steps: [
-      { name: "Thank You + Availability Ask", delayAmount: 0, delayUnit: "days" as const, body: "Hi {{firstName}}, thanks so much for filling out the form! I'd love to connect — is Monday a good time for a quick 10-min call? Just reply YES or let me know what works!" },
+      { name: "Thank You + Availability Ask", delayAmount: 0, delayUnit: "days" as const, body: "Hi {{firstName}}, thanks so much for filling out the form! I'd love to connect is Monday a good time for a quick 10-min call? Just reply YES or let me know what works!" },
     ],
   },
   {
@@ -994,7 +994,7 @@ const QUICK_STARTS = [
     description: "Immediate + Day 3 + Day 7",
     steps: [
       { name: "Immediate Follow-up", delayAmount: 0, delayUnit: "days" as const, body: "Hi {{firstName}}, thanks for your interest! I'd love to get you a quote. When's a good time to connect?" },
-      { name: "Day 3 Check-in", delayAmount: 3, delayUnit: "days" as const, body: "Hey {{firstName}}, just circling back — did you get a chance to think about your quote? Happy to answer any questions." },
+      { name: "Day 3 Check-in", delayAmount: 3, delayUnit: "days" as const, body: "Hey {{firstName}}, just circling back did you get a chance to think about your quote? Happy to answer any questions." },
       { name: "Day 7 Final", delayAmount: 7, delayUnit: "days" as const, body: "Hi {{firstName}}, last follow-up from me. If you're still interested, I'm here to help. Just reply and I'll get you taken care of!" },
     ],
   },
@@ -1003,8 +1003,8 @@ const QUICK_STARTS = [
     icon: "🌱",
     description: "Day 1 + Day 3 + Day 5",
     steps: [
-      { name: "Day 1 Intro", delayAmount: 1, delayUnit: "days" as const, body: "Hi {{firstName}}, I wanted to share a bit more about what we offer. Would love to walk you through it — reply anytime!" },
-      { name: "Day 3 Value", delayAmount: 3, delayUnit: "days" as const, body: "Hey {{firstName}}, here's a quick link to see what others are saying: {{link}} — let me know if you have questions!" },
+      { name: "Day 1 Intro", delayAmount: 1, delayUnit: "days" as const, body: "Hi {{firstName}}, I wanted to share a bit more about what we offer. Would love to walk you through it reply anytime!" },
+      { name: "Day 3 Value", delayAmount: 3, delayUnit: "days" as const, body: "Hey {{firstName}}, here's a quick link to see what others are saying: {{link}} let me know if you have questions!" },
       { name: "Day 5 CTA", delayAmount: 5, delayUnit: "days" as const, body: "Hi {{firstName}}, ready to move forward? Just reply YES and I'll get your quote ready within the hour." },
     ],
   },
@@ -1013,9 +1013,9 @@ const QUICK_STARTS = [
     icon: "⚡",
     description: "5 min + 30 min + 2 hr",
     steps: [
-      { name: "5 Min Follow-up", delayAmount: 5, delayUnit: "minutes" as const, body: "Hi {{firstName}}, just wanted to make sure you got my last message. I'm standing by to help — any questions?" },
+      { name: "5 Min Follow-up", delayAmount: 5, delayUnit: "minutes" as const, body: "Hi {{firstName}}, just wanted to make sure you got my last message. I'm standing by to help any questions?" },
       { name: "30 Min Check-in", delayAmount: 30, delayUnit: "minutes" as const, body: "Hey {{firstName}}, still here if you need me! Takes just 2 minutes to get your quote started." },
-      { name: "2 Hr Final", delayAmount: 120, delayUnit: "minutes" as const, body: "Hi {{firstName}}, I'll leave the door open — whenever you're ready, just reply and I'll take care of you right away." },
+      { name: "2 Hr Final", delayAmount: 120, delayUnit: "minutes" as const, body: "Hi {{firstName}}, I'll leave the door open whenever you're ready, just reply and I'll take care of you right away." },
     ],
   },
 ];
@@ -1093,7 +1093,7 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
 
               <div className="space-y-2">
                 <Label className="font-medium flex items-center gap-1.5">
-                  Trigger — When should this drip start?
+                  Trigger When should this drip start?
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1119,7 +1119,7 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
                       </div>
                       <p className="text-xs text-muted-foreground leading-snug">
                         {cat === "Interested"
-                          ? "Lead replied positively — ready to move forward or get a quote."
+                          ? "Lead replied positively ready to move forward or get a quote."
                           : "Lead is curious but wants details before committing."}
                       </p>
                     </button>
@@ -1158,7 +1158,7 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
                         {qs.steps.map((s, si) => (
                           <div key={si} className="flex items-start gap-2 text-xs text-muted-foreground">
                             <span className="h-4 w-4 rounded-full bg-violet-500/20 text-violet-300 flex items-center justify-center shrink-0 font-bold text-[10px]">{si + 1}</span>
-                            <span><strong>{s.name}</strong> — {s.delayAmount} {s.delayUnit} delay</span>
+                            <span><strong>{s.name}</strong> {s.delayAmount} {s.delayUnit} delay</span>
                           </div>
                         ))}
                       </div>
@@ -1227,7 +1227,7 @@ export default function DripPage() {
             <h1 className="text-2xl font-bold text-foreground">Text Drip Sequences</h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-lg">
               Build automated follow-up sequences that trigger when the AI detects a lead's intent.
-              Each sequence sends messages on your schedule — and stops the moment a lead replies.
+              Each sequence sends messages on your schedule and stops the moment a lead replies.
             </p>
           </div>
           <Button onClick={() => setWizardOpen(true)} className="shrink-0">
@@ -1284,7 +1284,7 @@ export default function DripPage() {
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-emerald-400" />
                   <span className="text-sm font-semibold text-foreground">Interested</span>
-                  <span className="text-xs text-muted-foreground">— lead replied positively</span>
+                  <span className="text-xs text-muted-foreground"> lead replied positively</span>
                   <Badge variant="outline" className="text-xs ml-auto">{interestedSeqs.length} sequence{interestedSeqs.length !== 1 ? "s" : ""}</Badge>
                 </div>
                 {interestedSeqs.map((seq) => (
@@ -1297,7 +1297,7 @@ export default function DripPage() {
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-blue-400" />
                   <span className="text-sm font-semibold text-foreground">Wants More Info</span>
-                  <span className="text-xs text-muted-foreground">— lead is curious, not committed</span>
+                  <span className="text-xs text-muted-foreground"> lead is curious, not committed</span>
                   <Badge variant="outline" className="text-xs ml-auto">{wantsMoreSeqs.length} sequence{wantsMoreSeqs.length !== 1 ? "s" : ""}</Badge>
                 </div>
                 {wantsMoreSeqs.map((seq) => (

@@ -99,7 +99,7 @@ function LogRow({ log }: { log: { id: number; status: "success" | "error" | "ski
         onClick={() => setExpanded(!expanded)}
       >
         <StatusIcon status={log.status} />
-        <span className="flex-1 text-sm text-white/80 truncate">{log.message ?? "—"}</span>
+        <span className="flex-1 text-sm text-white/80 truncate">{log.message ?? ""}</span>
         {log.leadId && (
           <span className="text-xs text-white/30 mr-2">Lead #{log.leadId}</span>
         )}
@@ -139,7 +139,7 @@ export default function WebhookPage() {
 
   const regenerateSecret = trpc.webhook.regenerateSecret.useMutation({
     onSuccess: () => {
-      toast.success("New secret generated — update your CRM webhook URL");
+      toast.success("New secret generated update your CRM webhook URL");
       refetchConfig();
     },
     onError: (e) => toast.error(e.message),

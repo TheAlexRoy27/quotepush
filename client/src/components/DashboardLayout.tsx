@@ -62,7 +62,7 @@ export default function DashboardLayout({
   const orgQuery = trpc.org.me.useQuery(undefined, {
     enabled: !!user,
     retry: false,
-    // Don't throw on error — FORBIDDEN just means the user needs onboarding
+    // Don't throw on error FORBIDDEN just means the user needs onboarding
     throwOnError: false,
   });
 
@@ -70,7 +70,7 @@ export default function DashboardLayout({
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  // Redirect to onboarding if user has no org — do this before rendering children
+  // Redirect to onboarding if user has no org do this before rendering children
   const needsOnboarding = user && !orgQuery.isLoading && orgQuery.data === null;
 
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function DashboardLayout({
               <h2 className="text-sm font-semibold text-indigo-300">They won't answer. But they will text back.</h2>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              The average American ignores <strong className="text-foreground">76% of unknown calls</strong> — but reads <strong className="text-foreground">98% of text messages</strong> within 3 minutes. Your leads aren't ghosting you. They're just waiting for the right medium.
+              The average American ignores <strong className="text-foreground">76% of unknown calls</strong> but reads <strong className="text-foreground">98% of text messages</strong> within 3 minutes. Your leads aren't ghosting you. They're just waiting for the right medium.
             </p>
             <div className="grid grid-cols-3 gap-3 pt-1">
               <div className="rounded-lg bg-background/40 px-3 py-2 text-center">
@@ -141,7 +141,7 @@ export default function DashboardLayout({
               </div>
             </div>
             <p className="text-[11px] text-indigo-300/70 italic">
-              QuotePush.io turns fresh leads into booked calls — automatically, one text at a time.
+              QuotePush.io turns fresh leads into booked calls automatically, one text at a time.
             </p>
           </div>
         </div>
@@ -379,7 +379,7 @@ function DashboardLayoutContent({
       </div>
 
       <SidebarInset>
-        {/* Sticky top bar — always visible on desktop, also on mobile */}
+        {/* Sticky top bar always visible on desktop, also on mobile */}
         <div className="flex border-b h-14 items-center justify-between bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
           <div className="flex items-center gap-2">
             {isMobile && (

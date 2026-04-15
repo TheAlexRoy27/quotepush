@@ -190,7 +190,7 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* Plan Cards — 3 columns */}
+      {/* Plan Cards 3 columns */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
         {/* Base Plan */}
@@ -229,7 +229,7 @@ export default function BillingPage() {
               onClick={() => handleSubscribe("base")}
             >
               {createCheckout.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {currentPlan === "base" && isActive ? "Current Plan" : "Subscribe — $199/mo"}
+              {currentPlan === "base" && isActive ? "Current Plan" : "Subscribe $199/mo"}
             </Button>
           </CardFooter>
         </Card>
@@ -274,7 +274,7 @@ export default function BillingPage() {
               onClick={() => handleSubscribe("elite")}
             >
               {createCheckout.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {currentPlan === "elite" && isActive ? "Current Plan" : "Subscribe — $249/mo"}
+              {currentPlan === "elite" && isActive ? "Current Plan" : "Subscribe $249/mo"}
             </Button>
           </CardFooter>
         </Card>

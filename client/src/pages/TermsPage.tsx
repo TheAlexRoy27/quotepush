@@ -101,8 +101,8 @@ export default function TermsPage() {
           <section>
             <h2 className="text-base font-semibold text-foreground mb-3">7. Intellectual Property</h2>
             <p>
-              All content, features, and functionality of the Service — including but not limited to software,
-              text, graphics, logos, and icons — are the exclusive property of QuotePush.io and are protected
+              All content, features, and functionality of the Service including but not limited to software,
+              text, graphics, logos, and icons are the exclusive property of QuotePush.io and are protected
               by applicable intellectual property laws. You may not reproduce, distribute, modify, or create
               derivative works without our express written permission.
             </p>

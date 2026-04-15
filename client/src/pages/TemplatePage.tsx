@@ -128,7 +128,7 @@ function SaveToLibraryModal({
             <Input
               value={libraryName}
               onChange={(e) => setLibraryName(e.target.value)}
-              placeholder="e.g. Initial Outreach — Interested Follow-up"
+              placeholder="e.g. Initial Outreach Interested Follow-up"
               className="bg-background border-border text-sm"
               autoFocus
             />
@@ -326,7 +326,7 @@ export default function TemplatePage() {
             <BookmarkPlus className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
             <p className="text-xs text-muted-foreground">
               Use <strong className="text-foreground">Save to Library</strong> to add this template to the{" "}
-              <strong className="text-foreground">Template Library</strong> as a reply template — assign it to a reply category and enable auto-flow.
+              <strong className="text-foreground">Template Library</strong> as a reply template assign it to a reply category and enable auto-flow.
             </p>
           </div>
         </div>

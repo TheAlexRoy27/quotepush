@@ -162,7 +162,7 @@ export default function OrgPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">{orgData?.org.name ?? "—"}</span>
+                  <span className="text-sm font-medium text-foreground">{orgData?.org.name ?? ""}</span>
                   {isOwnerOrAdmin && (
                     <button
                       onClick={() => { setOrgName(orgData?.org.name ?? ""); setEditingName(true); }}
@@ -181,7 +181,7 @@ export default function OrgPage() {
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
-            Your role: <span className="font-medium text-foreground capitalize">{orgData?.role ?? "—"}</span>
+            Your role: <span className="font-medium text-foreground capitalize">{orgData?.role ?? ""}</span>
           </div>
         </CardContent>
       </Card>
@@ -304,7 +304,7 @@ export default function OrgPage() {
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Users className="h-3 w-3 shrink-0" />
-                      <span>Joined {member.createdAt ? new Date(member.createdAt).toLocaleDateString() : "—"}</span>
+                      <span>Joined {member.createdAt ? new Date(member.createdAt).toLocaleDateString() : ""}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs">
                       <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -377,8 +377,8 @@ export default function OrgPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin — can manage leads and settings</SelectItem>
-                  <SelectItem value="member">Member — can view and send messages</SelectItem>
+                  <SelectItem value="admin">Admin can manage leads and settings</SelectItem>
+                  <SelectItem value="member">Member can view and send messages</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -439,8 +439,8 @@ export default function OrgPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Admin — can manage leads and settings</SelectItem>
-                    <SelectItem value="member">Member — can view and send messages</SelectItem>
+                    <SelectItem value="admin">Admin can manage leads and settings</SelectItem>
+                    <SelectItem value="member">Member can view and send messages</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

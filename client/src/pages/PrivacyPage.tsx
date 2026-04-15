@@ -44,7 +44,7 @@ export default function PrivacyPage() {
               <li>Lead data you import or enter: names, phone numbers, email addresses, company names</li>
               <li>Message content you create in templates and drip sequences</li>
               <li>Consent proof URLs you attach to lead records</li>
-              <li>Payment information (processed securely by Stripe — we do not store card details)</li>
+              <li>Payment information (processed securely by Stripe we do not store card details)</li>
             </ul>
             <p className="font-medium text-foreground mb-1">Information collected automatically:</p>
             <ul className="list-disc pl-5 space-y-1">
@@ -89,8 +89,8 @@ export default function PrivacyPage() {
                 honored. We will not send further messages to opted-out numbers.
               </li>
               <li>
-                <strong className="text-foreground">Consent records</strong> — including timestamps and proof
-                URLs — are stored to support your compliance obligations under the TCPA.
+                <strong className="text-foreground">Consent records</strong> including timestamps and proof
+                URLs are stored to support your compliance obligations under the TCPA.
               </li>
             </ul>
             <p className="mt-3">

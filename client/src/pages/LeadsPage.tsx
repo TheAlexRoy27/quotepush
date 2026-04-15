@@ -296,7 +296,7 @@ function CsvImportModal({ open, onClose, onSuccess }: {
           {step === "upload" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Upload any CSV file — we'll help you map the columns to lead fields in the next step.
+                Upload any CSV file we'll help you map the columns to lead fields in the next step.
               </p>
               <div
                 className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
@@ -338,10 +338,10 @@ function CsvImportModal({ open, onClose, onSuccess }: {
                       onValueChange={(v) => setColumnMap(prev => ({ ...prev, [field]: v === "__none__" ? "" : v }))}
                     >
                       <SelectTrigger className="bg-background border-border text-sm h-9">
-                        <SelectValue placeholder="— skip —" />
+                        <SelectValue placeholder=" skip " />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">— skip —</SelectItem>
+                        <SelectItem value="__none__"> skip </SelectItem>
                         {headers.map(h => (
                           <SelectItem key={h} value={h}>{h}</SelectItem>
                         ))}
@@ -430,8 +430,8 @@ function CsvImportModal({ open, onClose, onSuccess }: {
                       <tr key={i} className="border-t border-border hover:bg-muted/20">
                         <td className="px-3 py-1.5 text-foreground font-medium">{row.name}</td>
                         <td className="px-3 py-1.5 text-foreground font-mono text-[11px]">{row.phone}</td>
-                        <td className="px-3 py-1.5 text-muted-foreground">{row.company ?? "—"}</td>
-                        <td className="px-3 py-1.5 text-muted-foreground">{row.email ?? "—"}</td>
+                        <td className="px-3 py-1.5 text-muted-foreground">{row.company ?? ""}</td>
+                        <td className="px-3 py-1.5 text-muted-foreground">{row.email ?? ""}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -813,8 +813,8 @@ export default function LeadsPage() {
                   >
                     <td className="px-4 py-3 font-medium text-foreground">{lead.name}</td>
                     <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{lead.phone}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{lead.company ?? "—"}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{lead.email ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{lead.company ?? ""}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{lead.email ?? ""}</td>
                     <td className="px-4 py-3"><StatusBadge status={lead.status} /></td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">
                       {new Date(lead.createdAt).toLocaleDateString()}

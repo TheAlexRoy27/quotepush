@@ -25,7 +25,7 @@ export default function SettingsPage() {
     if (twilioConfig) {
       setAccountSid(twilioConfig.accountSid ?? "");
       setPhoneNumber(twilioConfig.phoneNumber ?? "");
-      // Auth token is never returned from backend — leave blank unless user re-enters
+      // Auth token is never returned from backend leave blank unless user re-enters
     }
     if (user?.phone) {
       setTestPhone(user.phone);
@@ -147,7 +147,7 @@ export default function SettingsPage() {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {twilioConfig ? "Leave blank to keep your existing token." : "Keep this secret — never share it publicly."}
+                {twilioConfig ? "Leave blank to keep your existing token." : "Keep this secret never share it publicly."}
               </p>
             </div>
 
@@ -162,7 +162,7 @@ export default function SettingsPage() {
                 placeholder="+15551234567"
                 className="font-mono text-sm"
               />
-              <p className="text-xs text-muted-foreground">E.164 format — must be a number you own in Twilio</p>
+              <p className="text-xs text-muted-foreground">E.164 format must be a number you own in Twilio</p>
             </div>
 
             <Button onClick={handleSave} disabled={isSaving} className="w-full gap-2">

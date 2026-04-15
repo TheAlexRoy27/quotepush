@@ -64,7 +64,7 @@ export default function OnboardingPage() {
               Create Your Organization
             </CardTitle>
             <CardDescription>
-              Your organization is your workspace — leads, templates, and settings all live here.
+              Your organization is your workspace leads, templates, and settings all live here.
             </CardDescription>
           </CardHeader>
           <CardContent>
