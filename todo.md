@@ -476,3 +476,10 @@
 - [x] Update trpc.referrals.trackVisit to also return the referrer's display name
 - [x] Store referrer name in AuthPage state alongside referrerId
 - [x] After successful sign-up with a valid referral code, show a personalized welcome toast that includes the referrer's first name
+
+## Open Graph / Link Preview
+- [x] Generate a 1200x630 OG preview image for QuotePush.io (logo + tagline)
+- [x] Upload OG image to CDN and get public URL
+- [x] Add og:title, og:description, og:image, og:url, og:type to index.html
+- [x] Add twitter:card, twitter:title, twitter:description, twitter:image to index.html
+- [x] Add apple-touch-icon and theme-color meta tags
