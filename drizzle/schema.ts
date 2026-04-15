@@ -416,3 +416,27 @@ export const referrals = mysqlTable("referrals", {
 
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = typeof referrals.$inferInsert;
+
+// ─── Appointments ─────────────────────────────────────────────────────────────
+// Booking records created when an agent sends a booking link to a lead.
+// The lead visits /book/:token and picks an available time slot.
+
+export const APPOINTMENT_STATUSES = ["pending", "booked", "cancelled"] as const;
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
+
+export const appointments = mysqlTable("appointments", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  leadId: int("leadId").notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  agentName: varchar("agentName", { length: 255 }).notNull(),
+  agentNote: text("agentNote"),                          // optional personal note shown on booking page
+  availableSlots: text("availableSlots").notNull(),      // JSON array of ISO datetime strings
+  bookedSlot: varchar("bookedSlot", { length: 64 }),    // ISO datetime string of chosen slot
+  status: mysqlEnum("status", APPOINTMENT_STATUSES).notNull().default("pending"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Appointment = typeof appointments.$inferSelect;
+export type InsertAppointment = typeof appointments.$inferInsert;

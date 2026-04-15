@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,11 +6,60 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, MessageSquare, Mail, Phone, ArrowRight, CheckCircle2, Lock } from "lucide-react";
+import { Loader2, Mail, Phone, ArrowRight, CheckCircle2, Lock, Gift, X } from "lucide-react";
 import { useLocation } from "wouter";
 
 type AuthMode = "login" | "signup";
 type AuthMethod = "phonepass" | "phone" | "email";
+
+// ─── Referral Code Input ──────────────────────────────────────────────────────
+
+function ReferralCodeField({
+  value,
+  onChange,
+  validState,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  validState: "idle" | "valid" | "invalid";
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="referral-code" className="text-xs flex items-center gap-1.5">
+        <Gift className="h-3 w-3 text-violet-400" />
+        Referral Code
+        <span className="text-muted-foreground font-normal">(optional)</span>
+      </Label>
+      <div className="relative">
+        <Input
+          id="referral-code"
+          placeholder="e.g. ALEX-4X2K"
+          value={value}
+          onChange={(e) => onChange(e.target.value.toUpperCase().trim())}
+          className={`h-9 text-sm font-mono tracking-wider pr-8 ${
+            validState === "valid"
+              ? "border-emerald-500/60 focus-visible:ring-emerald-500/30"
+              : validState === "invalid"
+              ? "border-rose-500/60 focus-visible:ring-rose-500/30"
+              : ""
+          }`}
+        />
+        {validState === "valid" && (
+          <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-400 pointer-events-none" />
+        )}
+        {validState === "invalid" && (
+          <X className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-400 pointer-events-none" />
+        )}
+      </div>
+      {validState === "valid" && (
+        <p className="text-xs text-emerald-400">Valid referral code applied!</p>
+      )}
+      {validState === "invalid" && (
+        <p className="text-xs text-rose-400">Code not found. Double-check and try again.</p>
+      )}
+    </div>
+  );
+}
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
@@ -18,6 +67,11 @@ export default function AuthPage() {
 
   const [mode, setMode] = useState<AuthMode>("login");
   const [method, setMethod] = useState<AuthMethod>("phonepass");
+
+  // Shared referral code state (one field, shared across all tabs)
+  const [referralCode, setReferralCode] = useState("");
+  const [referralState, setReferralState] = useState<"idle" | "valid" | "invalid">("idle");
+  const [referrerId, setReferrerId] = useState<number | null>(null);
 
   // Phone + password state
   const [ppPhone, setPpPhone] = useState("");
@@ -44,6 +98,70 @@ export default function AuthPage() {
   const loginPhoneMutation = trpc.customAuth.loginPhone.useMutation();
   const loginEmailMutation = trpc.customAuth.loginEmail.useMutation();
   const registerEmailMutation = trpc.customAuth.registerEmail.useMutation();
+  const trackVisitMutation = trpc.referrals.trackVisit.useMutation();
+  const recordSignupMutation = trpc.referrals.recordSignup.useMutation();
+
+  // Pre-fill referral code from ?ref= query param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      const code = ref.toUpperCase().trim();
+      setReferralCode(code);
+      setMode("signup");
+      // Auto-validate
+      trackVisitMutation.mutateAsync({ code }).then((res) => {
+        if (res.valid && res.referrerId) {
+          setReferralState("valid");
+          setReferrerId(res.referrerId);
+        } else {
+          setReferralState("invalid");
+        }
+      }).catch(() => setReferralState("invalid"));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Validate referral code when user stops typing (debounced)
+  useEffect(() => {
+    if (!referralCode || mode !== "signup") {
+      setReferralState("idle");
+      setReferrerId(null);
+      return;
+    }
+    if (referralCode.length < 4) {
+      setReferralState("idle");
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await trackVisitMutation.mutateAsync({ code: referralCode });
+        if (res.valid && res.referrerId) {
+          setReferralState("valid");
+          setReferrerId(res.referrerId);
+        } else {
+          setReferralState("invalid");
+          setReferrerId(null);
+        }
+      } catch {
+        setReferralState("invalid");
+        setReferrerId(null);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referralCode, mode]);
+
+  // Helper: record referral attribution after a successful signup
+  const recordReferral = async (newUserId: number) => {
+    if (referrerId && referralState === "valid") {
+      try {
+        await recordSignupMutation.mutateAsync({ referrerId, referredId: newUserId });
+      } catch {
+        // Non-fatal — don't block the signup
+      }
+    }
+  };
 
   // ── Phone + Password handlers ──────────────────────────────────────────────
 
@@ -79,8 +197,8 @@ export default function AuthPage() {
         password: ppPassword,
         name: ppName.trim(),
         orgName: ppOrgName.trim(),
-      });
-      if (result.success) {
+      });        if (result.success) {
+        if (result.user?.id) await recordReferral(result.user.id);
         toast.success("Account created! Welcome to QuotePush.io.");
         utils.auth.me.invalidate();
         navigate("/");
@@ -90,7 +208,7 @@ export default function AuthPage() {
     }
   };
 
-  // ── Phone OTP handlers ─────────────────────────────────────────────────────
+  // ── Phone OTP handlers─────────────────────────────────────────────────────
 
   const handleSendOtp = async () => {
     if (!phone.trim()) return;
@@ -117,6 +235,7 @@ export default function AuthPage() {
         orgName: phoneOrgName.trim() || undefined,
       });
       if (result.success) {
+        if (result.isNew && result.user?.id) await recordReferral(result.user.id);
         toast.success(result.isNew ? "Welcome to QuotePush.io!" : "Welcome back!");
         utils.auth.me.invalidate();
         navigate("/");
@@ -154,6 +273,7 @@ export default function AuthPage() {
         orgName: emailOrgName.trim(),
       });
       if (result.success) {
+        if (result.user?.id) await recordReferral(result.user.id);
         toast.success("Account created! Welcome to QuotePush.io.");
         utils.auth.me.invalidate();
         navigate("/");
@@ -269,6 +389,14 @@ export default function AuthPage() {
                     onKeyDown={(e) => e.key === "Enter" && (mode === "login" ? handlePhonePasswordLogin() : handlePhonePasswordRegister())}
                   />
                 </div>
+                {/* Referral code — signup only */}
+                {mode === "signup" && (
+                  <ReferralCodeField
+                    value={referralCode}
+                    onChange={setReferralCode}
+                    validState={referralState}
+                  />
+                )}
                 <Button
                   className="w-full gap-2"
                   onClick={mode === "login" ? handlePhonePasswordLogin : handlePhonePasswordRegister}
@@ -332,6 +460,14 @@ export default function AuthPage() {
                     onKeyDown={(e) => e.key === "Enter" && (mode === "login" ? handleEmailLogin() : handleEmailRegister())}
                   />
                 </div>
+                {/* Referral code — signup only */}
+                {mode === "signup" && (
+                  <ReferralCodeField
+                    value={referralCode}
+                    onChange={setReferralCode}
+                    validState={referralState}
+                  />
+                )}
                 <Button
                   className="w-full"
                   onClick={mode === "login" ? handleEmailLogin : handleEmailRegister}
@@ -384,6 +520,14 @@ export default function AuthPage() {
                         onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
                       />
                     </div>
+                    {/* Referral code — signup only, shown before sending OTP */}
+                    {mode === "signup" && (
+                      <ReferralCodeField
+                        value={referralCode}
+                        onChange={setReferralCode}
+                        validState={referralState}
+                      />
+                    )}
                     <Button
                       className="w-full gap-2"
                       onClick={handleSendOtp}
@@ -421,7 +565,7 @@ export default function AuthPage() {
                       disabled={loginPhoneMutation.isPending || otp.length !== 6}
                     >
                       {loginPhoneMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Verify & {mode === "signup" ? "Create Account" : "Sign In"}
+                      Verify &amp; {mode === "signup" ? "Create Account" : "Sign In"}
                     </Button>
                     <button
                       onClick={() => { setOtpSent(false); setOtp(""); }}

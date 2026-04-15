@@ -127,6 +127,13 @@
       "when": 1776259206083,
       "tag": "0017_crazy_exiles",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1776265528862,
+      "tag": "0018_handy_hellfire_club",
+      "breakpoints": true
     }
   ]
 }

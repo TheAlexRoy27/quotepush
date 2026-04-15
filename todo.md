@@ -446,3 +446,28 @@
 - [x] Make /my-dashboard the default route (/ and /leads redirect to /my-dashboard after login)
 - [x] Embed full analytics charts (message activity, lead milestones, reply time, reply intent, trend) in bottom half of UsageDashboardPage
 - [x] My Dashboard: placeholder boxes with hover tooltip for all empty chart/stat areas
+
+## Appointment Booking via SMS (Casual Tone)
+- [ ] Add `appointments` table: id, orgId, leadId, token (unique), agentName, agentPhone, availableSlots (JSON), bookedSlot (datetime), status (pending/booked/cancelled), notes, createdAt, updatedAt
+- [ ] Run migration and apply SQL
+- [ ] tRPC: booking.createBookingLink — generate unique token, store appointment record, return public URL
+- [ ] tRPC: booking.getByToken — public procedure, returns lead name + agent name + available slots
+- [ ] tRPC: booking.confirmSlot — public procedure, lead picks a slot, marks appointment booked, updates lead status to Scheduled, notifies agent
+- [ ] tRPC: booking.listForOrg — protected, list all bookings with lead info and status
+- [ ] tRPC: booking.cancelBooking — protected, cancel a booking
+- [ ] Public booking page at /book/:token — no auth required, casual friendly tone
+- [ ] Booking page: shows agent name, friendly copy ("Hey [name]! We only need about 10 minutes..."), available time slots as clickable cards
+- [ ] Booking page: confirmation screen after slot selected ("You're all set! Talk soon.")
+- [ ] "Send Booking Link" button on Leads page per-lead action row
+- [ ] SMS copy: casual, low-pressure ("Hey [firstName], I'd love to connect for just 10 min — no pressure, just want to get you the best quote possible. Grab a time that works for you:")
+- [ ] On booking confirmed: auto-update lead status to Scheduled, send confirmation SMS to lead, notify agent via push notification
+- [ ] Bookings section in sidebar nav
+- [ ] Bookings dashboard page: table of all appointments with status badges, lead name, booked time
+- [ ] Vitest: booking token generation and slot confirmation logic
+
+## Referral Code on Sign-Up
+- [x] Add referral code input field to OTP phone sign-up tab on AuthPage
+- [x] Add referral code input field to email registration form on AuthPage
+- [x] On successful sign-up (all paths), validate referral code via trpc.referrals.trackVisit, then call trpc.referrals.recordSignup to attribute the new user to the referrer
+- [x] Pre-fill referral code field if URL contains ?ref=CODE query param
+- [x] Show subtle validation feedback: green check when code is valid, red hint when invalid
