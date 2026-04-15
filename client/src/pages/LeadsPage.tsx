@@ -699,9 +699,9 @@ export default function LeadsPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-2rem)] gap-0">
+    <div className="relative flex h-[calc(100vh-56px)] gap-0 overflow-hidden">
       {/* Main panel */}
-      <div className={`flex flex-col flex-1 min-w-0 transition-all ${selectedLead ? "pr-0" : ""}`}>
+      <div className={`flex flex-col flex-1 min-w-0 overflow-hidden transition-all`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
           <div>
@@ -850,7 +850,7 @@ export default function LeadsPage() {
 
       {/* Conversation panel */}
       {selectedLead && (
-        <div className="w-96 shrink-0 ml-4 rounded-xl overflow-hidden border border-border">
+        <div className="w-full sm:w-96 shrink-0 sm:ml-4 rounded-xl overflow-hidden border border-border absolute sm:relative inset-0 sm:inset-auto z-10 sm:z-auto bg-background sm:bg-transparent">
           <ConversationPanel
             lead={selectedLead}
             onClose={() => setSelectedLead(null)}

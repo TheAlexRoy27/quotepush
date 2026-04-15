@@ -118,9 +118,9 @@ export default function DashboardLayout({
           </div>
 
           {/* SMS is the future callout */}
-          <div className="w-full rounded-xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-violet-500/5 p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📱</span>
+          <div className="w-full rounded-xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-violet-500/5 p-5 space-y-4 text-center">
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-3xl">📱</span>
               <h2 className="text-sm font-semibold text-indigo-300">They won't answer. But they will text back.</h2>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">

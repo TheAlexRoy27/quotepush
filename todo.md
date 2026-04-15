@@ -418,3 +418,6 @@
 
 - [x] Fire notifyOwner push notification on every new signup (all 3 paths)
 - [x] Verify all 3 signup paths (OTP, phone+password, email) create owner lead
+
+- [x] Center verbiage on landing/main page
+- [x] Fix remaining squeeze/overflow on Leads page mobile
