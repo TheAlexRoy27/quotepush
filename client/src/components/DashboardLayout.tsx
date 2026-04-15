@@ -29,6 +29,7 @@ import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: TrendingUp, label: "My Dashboard", path: "/my-dashboard" },
+  { icon: Bot, label: "AI Bot", path: "/bot" },
   { icon: Users, label: "Leads", path: "/leads" },
   { icon: FileText, label: "SMS Template", path: "/template" },
   { icon: BookOpen, label: "Template Library", path: "/library" },
@@ -39,7 +40,6 @@ const menuItems = [
   { icon: Settings, label: "Settings", path: "/settings" },
   { icon: Zap, label: "Auto-Promote", path: "/keyword-promotion" },
   { icon: Gift, label: "Referrals", path: "/referrals" },
-  { icon: Bot, label: "AI Bot", path: "/bot" },
 ];
 
 const adminMenuItems = [
