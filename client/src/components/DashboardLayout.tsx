@@ -195,6 +195,19 @@ function DashboardLayoutContent({
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
+  const EMOJI_KEY = "greeting-emoji";
+  const [greetingEmoji, setGreetingEmoji] = useState<"wave" | "callme">(() => {
+    return (localStorage.getItem(EMOJI_KEY) as "wave" | "callme") ?? "wave";
+  });
+
+  const toggleEmoji = () => {
+    setGreetingEmoji(prev => {
+      const next = prev === "wave" ? "callme" : "wave";
+      localStorage.setItem(EMOJI_KEY, next);
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (isCollapsed) {
       setIsResizing(false);
@@ -384,10 +397,14 @@ function DashboardLayoutContent({
           </div>
           {/* Wave greeting */}
           <div className="ml-auto flex items-center gap-1.5">
-            <span
-              className="text-xl select-none"
-              style={{ display: 'inline-block', animation: 'wave 2.2s ease-in-out infinite', transformOrigin: '70% 70%' }}
-            >👋</span>
+            <button
+              onClick={toggleEmoji}
+              className="text-xl select-none leading-none focus:outline-none hover:scale-125 transition-transform active:scale-110"
+              title={greetingEmoji === "wave" ? "Switch to call me" : "Switch to wave"}
+              style={greetingEmoji === "wave" ? { display: 'inline-block', animation: 'wave 2.2s ease-in-out infinite', transformOrigin: '70% 70%' } : { display: 'inline-block' }}
+            >
+              {greetingEmoji === "wave" ? "👋" : "🤙"}
+            </button>
             <span className="text-sm font-medium text-foreground/80">
               Hi, {user?.name?.split(' ')[0] ?? 'there'}!
             </span>
