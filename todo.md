@@ -304,7 +304,7 @@
 - [ ] Add AI "Generate with AI" button in the Add Step flow: sends sequence name, industry, trigger category, and previous step bodies to LLM and returns a clever next-step message
 - [ ] Add drip.generateNextStep tRPC procedure: accepts sequenceName, triggerCategory, previousSteps[], and returns a suggested message body
 - [ ] Show AI generation loading state with spinner and "Crafting your message..." text
-- [ ] Allow user to regenerate (try again) if they don't like the AI suggestion
+- [x] Allow user to regenerate (try again) if they don't like the AI suggestion
 - [ ] Pre-fill the step body textarea with the AI-generated message (fully editable before saving)
 
 ## Lead Milestones Rename
@@ -337,3 +337,10 @@
 ## Drip Sequence Edit & Copy-Message Cleanup
 - [x] Remove any read-only/disabled guards on sample (seeded) drip sequences so they can be edited, renamed, and cloned like custom ones (no guards existed — already editable)
 - [x] Remove the copy (clone) icon button from drip sequence cards
+
+## Drip Step Inline Editing & AI Generation (Active)
+- [x] Make delay amount and unit editable inline on timeline step cards (click to edit, save on blur/enter)
+- [x] Add drip.generateNextStep tRPC procedure: accepts sequenceName, triggerCategory, previousSteps[], returns suggested message body
+- [x] Add "Generate with AI" button in StepEditor: sends context to LLM, shows spinner + "Crafting your message..." text
+- [x] Allow user to regenerate (try again) if they don't like the AI suggestion
+- [x] Pre-fill step body textarea with AI-generated message (fully editable before saving)

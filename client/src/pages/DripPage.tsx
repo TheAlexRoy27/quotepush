@@ -53,6 +53,7 @@ import {
   Phone,
   Plus,
   Sparkles,
+  RefreshCw,
   ThumbsDown,
   ThumbsUp,
   Trash2,
@@ -202,6 +203,9 @@ function StepEditor({
   parentStepId,
   onSaved,
   onDeleted,
+  sequenceName,
+  triggerCategory,
+  previousSteps,
 }: {
   step?: DripStep | BranchStep;
   sequenceId: number;
@@ -210,6 +214,9 @@ function StepEditor({
   parentStepId?: number;
   onSaved: () => void;
   onDeleted?: () => void;
+  sequenceName?: string;
+  triggerCategory?: string;
+  previousSteps?: { stepNumber: number; name: string; body: string; delayAmount: number; delayUnit: string }[];
 }) {
   const isNew = !step || step.id === 0;
   const [name, setName] = useState(isNew ? "" : step.name);
@@ -240,6 +247,23 @@ function StepEditor({
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const generateAI = trpc.drip.generateNextStep.useMutation({
+    onSuccess: (data) => {
+      setBody(data.body);
+      toast.success("Message generated!", { description: "Feel free to edit before saving." });
+    },
+    onError: (e) => toast.error("AI generation failed: " + e.message),
+  });
+
+  function handleGenerate() {
+    generateAI.mutate({
+      sequenceName: sequenceName ?? "Drip Sequence",
+      triggerCategory: triggerCategory ?? "Interested",
+      stepNumber,
+      previousSteps: previousSteps ?? [],
+    });
+  }
 
   function insertVar(v: string) {
     const el = textareaRef.current;
@@ -313,9 +337,27 @@ function StepEditor({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium">Message</Label>
-          <span className={`text-xs ${chars > 160 ? "text-amber-400" : "text-muted-foreground"}`}>
-            {chars} chars · {segments} SMS segment{segments !== 1 ? "s" : ""}
-          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-xs gap-1 border-violet-500/40 text-violet-300 hover:bg-violet-500/10"
+              onClick={handleGenerate}
+              disabled={generateAI.isPending}
+            >
+              {generateAI.isPending ? (
+                <><Loader2 className="h-3 w-3 animate-spin" /> Crafting…</>
+              ) : body ? (
+                <><RefreshCw className="h-3 w-3" /> Regenerate</>
+              ) : (
+                <><Sparkles className="h-3 w-3" /> Generate with AI</>
+              )}
+            </Button>
+            <span className={`text-xs ${chars > 160 ? "text-amber-400" : "text-muted-foreground"}`}>
+              {chars} chars · {segments} SMS segment{segments !== 1 ? "s" : ""}
+            </span>
+          </div>
         </div>
         <Textarea
           ref={textareaRef}
@@ -520,12 +562,18 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
   const [expanded, setExpanded] = useState(false);
   const [addingStep, setAddingStep] = useState(false);
   const [editingStepId, setEditingStepId] = useState<number | null>(null);
+  const [editingDelayId, setEditingDelayId] = useState<number | null>(null);
+  const [delayEditAmount, setDelayEditAmount] = useState(0);
+  const [delayEditUnit, setDelayEditUnit] = useState<"minutes" | "days">("days");
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(seq.name);
   const utils = trpc.useUtils();
 
-  const toggleActive = trpc.drip.updateSequence.useMutation({
-    onSuccess: () => utils.drip.listSequences.invalidate(),
+  const upsertStep = trpc.drip.upsertStep.useMutation({
+    onSuccess: () => {
+      utils.drip.listSequences.invalidate();
+      setEditingDelayId(null);
+    },
     onError: (e) => toast.error(e.message),
   });
   const del = trpc.drip.deleteSequence.useMutation({
@@ -534,6 +582,10 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
       onDeleted();
       toast.success("Sequence deleted");
     },
+    onError: (e) => toast.error(e.message),
+  });
+  const toggleActive = trpc.drip.updateSequence.useMutation({
+    onSuccess: () => utils.drip.listSequences.invalidate(),
     onError: (e) => toast.error(e.message),
   });
   const rename = trpc.drip.updateSequence.useMutation({
@@ -667,10 +719,47 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                         <div className="flex-1 min-w-0 pt-0.5">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium text-foreground">{step.name}</p>
-                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded">
-                              <Clock className="h-3 w-3" />
-                              {step.delayAmount ?? step.delayDays} {step.delayUnit ?? "days"}
-                            </span>
+                            {editingDelayId === step.id ? (
+                              <span className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={delayEditAmount}
+                                  onChange={(e) => setDelayEditAmount(parseInt(e.target.value) || 0)}
+                                  className="h-6 w-14 text-xs px-1.5 py-0"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      upsertStep.mutate({ id: step.id, sequenceId: seq.id, stepNumber: step.stepNumber, delayAmount: delayEditAmount, delayUnit: delayEditUnit, name: step.name, body: step.body });
+                                    }
+                                    if (e.key === "Escape") setEditingDelayId(null);
+                                  }}
+                                />
+                                <Select value={delayEditUnit} onValueChange={(v) => setDelayEditUnit(v as "minutes" | "days")}>
+                                  <SelectTrigger className="h-6 w-24 text-xs px-1.5">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="minutes">Minutes</SelectItem>
+                                    <SelectItem value="days">Days</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Button size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); upsertStep.mutate({ id: step.id, sequenceId: seq.id, stepNumber: step.stepNumber, delayAmount: delayEditAmount, delayUnit: delayEditUnit, name: step.name, body: step.body }); }} disabled={upsertStep.isPending}>
+                                  {upsertStep.isPending ? "…" : "Save"}
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-6 px-1 text-xs" onClick={(e) => { e.stopPropagation(); setEditingDelayId(null); }}>✕</Button>
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded cursor-pointer hover:bg-muted/50 hover:text-foreground transition-colors"
+                                title="Click to edit delay"
+                                onClick={(e) => { e.stopPropagation(); setDelayEditAmount(step.delayAmount ?? step.delayDays ?? 0); setDelayEditUnit((step.delayUnit ?? "days") as "minutes" | "days"); setEditingDelayId(step.id); }}
+                              >
+                                <Clock className="h-3 w-3" />
+                                {step.delayAmount ?? step.delayDays} {step.delayUnit ?? "days"}
+                                <Pencil className="h-2.5 w-2.5 opacity-50" />
+                              </span>
+                            )}
                             {step.branchSteps && step.branchSteps.length > 0 && (
                               <span className="inline-flex items-center gap-1 text-xs text-violet-300 bg-violet-500/10 px-1.5 py-0.5 rounded">
                                 <GitBranch className="h-3 w-3" />
@@ -689,6 +778,9 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                             sequenceId={seq.id}
                             onSaved={() => setEditingStepId(null)}
                             onDeleted={() => setEditingStepId(null)}
+                            sequenceName={seq.name}
+                            triggerCategory={seq.triggerCategory ?? "Interested"}
+                            previousSteps={(seq.steps ?? []).filter((s) => s.stepNumber < step.stepNumber).map((s) => ({ stepNumber: s.stepNumber, name: s.name, body: s.body, delayAmount: s.delayAmount ?? 0, delayUnit: s.delayUnit ?? "days" }))}
                           />
                         </div>
                       )}
@@ -720,6 +812,9 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                   sequenceId={seq.id}
                   nextStepNumber={nextStepNumber}
                   onSaved={() => setAddingStep(false)}
+                  sequenceName={seq.name}
+                  triggerCategory={seq.triggerCategory ?? "Interested"}
+                  previousSteps={(seq.steps ?? []).map((s) => ({ stepNumber: s.stepNumber, name: s.name, body: s.body, delayAmount: s.delayAmount ?? 0, delayUnit: s.delayUnit ?? "days" }))}
                 />
               ) : (
                 <Button variant="outline" size="sm" className="w-full" onClick={() => setAddingStep(true)}>

@@ -39,6 +39,7 @@ import {
   getOrgTwilioConfig,
 } from "./orgDb";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { systemRouter } from "./_core/systemRouter";
@@ -1015,6 +1016,48 @@ const dripRouter = router({
     .query(({ input }) => listEnrollmentsForLead(input.leadId)),
 
   triggerCategories: protectedProcedure.query(() => DRIP_TRIGGER_CATEGORIES),
+
+  generateNextStep: protectedProcedure
+    .input(
+      z.object({
+        sequenceName: z.string(),
+        triggerCategory: z.string(),
+        stepNumber: z.number().min(1),
+        previousSteps: z.array(
+          z.object({
+            stepNumber: z.number(),
+            name: z.string(),
+            body: z.string(),
+            delayAmount: z.number(),
+            delayUnit: z.string(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { sequenceName, triggerCategory, stepNumber, previousSteps } = input;
+      const prevContext = previousSteps.length > 0
+        ? previousSteps.map((s) =>
+            `Step ${s.stepNumber} (after ${s.delayAmount} ${s.delayUnit}): "${s.body}"`
+          ).join("\n")
+        : "No previous steps — this is the first message.";
+
+      const systemPrompt = `You are an expert SMS copywriter for sales outreach. Write concise, friendly, and effective follow-up SMS messages. Always keep messages under 160 characters when possible. Use {{firstName}}, {{company}}, and {{link}} as placeholders where appropriate. Never use emojis. Return ONLY the message body text, no quotes, no labels.`;
+
+      const userPrompt = `Write step ${stepNumber} of a drip sequence called "${sequenceName}" for leads who responded with "${triggerCategory}" intent.\n\nPrevious steps in this sequence:\n${prevContext}\n\nWrite a natural follow-up message that continues the conversation. Be warm, brief, and move toward a call or meeting booking.`;
+
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      });
+
+      const raw = response?.choices?.[0]?.message?.content;
+      const body = (typeof raw === "string" ? raw : "").trim();
+      if (!body) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "AI generation failed" });
+      return { body };
+    }),
 });
 
 // ─── Admin Router ───────────────────────────────────────────────────────────
