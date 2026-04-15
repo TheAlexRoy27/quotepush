@@ -24,10 +24,12 @@ import {
   RefreshCw,
   CheckCircle,
   Clock,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
+import { useState } from "react";
 
 // ─── Color palettes ───────────────────────────────────────────────────────────
 const MILESTONE_COLORS: Record<string, string> = {
@@ -56,22 +58,84 @@ function formatMinutes(mins: number | null): string {
   return `${Math.round(mins / 1440)}d`;
 }
 
+// ─── Empty Placeholder Box ────────────────────────────────────────────────────
+// Shows a dashed box with a subtle grid pattern. On hover, shows a tooltip.
+function EmptyPlaceholder({ height = 220, label = "No data available yet" }: { height?: number; label?: string }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      className="relative w-full rounded-lg overflow-hidden cursor-default select-none"
+      style={{ height }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Dashed border box */}
+      <div className="absolute inset-0 border-2 border-dashed border-border/60 rounded-lg" />
+
+      {/* Subtle grid lines mimicking a chart background */}
+      <svg className="absolute inset-0 w-full h-full opacity-20" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-muted-foreground" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
+
+      {/* Fake bar silhouettes */}
+      <div className="absolute bottom-6 left-8 right-8 flex items-end gap-2 opacity-10">
+        {[55, 35, 70, 45, 80, 30, 60, 50, 75, 40, 65, 55].map((h, i) => (
+          <div
+            key={i}
+            className="flex-1 bg-muted-foreground rounded-t"
+            style={{ height: `${h}%` }}
+          />
+        ))}
+      </div>
+
+      {/* Hover tooltip */}
+      <div
+        className={`absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-200 ${hovered ? "opacity-100" : "opacity-0"}`}
+      >
+        <div className="bg-popover border border-border rounded-xl px-4 py-3 shadow-xl flex items-center gap-2 text-sm text-foreground">
+          <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span>{label}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({
-  icon, label, value, sub, color,
+  icon, label, value, sub, color, empty,
 }: {
-  icon: React.ReactNode; label: string; value: string | number; sub?: string; color: string;
+  icon: React.ReactNode; label: string; value?: string | number; sub?: string; color: string; empty?: boolean;
 }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4">
-      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${color}`}>
+    <div
+      className={`bg-card border border-border rounded-xl p-5 flex items-start gap-4 relative overflow-hidden ${empty ? "cursor-default" : ""}`}
+      onMouseEnter={() => empty && setHovered(true)}
+      onMouseLeave={() => empty && setHovered(false)}
+    >
+      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${color} ${empty ? "opacity-30" : ""}`}>
         {icon}
       </div>
-      <div>
+      <div className={empty ? "opacity-30" : ""}>
         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-2xl font-bold text-foreground mt-0.5">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+        <p className="text-2xl font-bold text-foreground mt-0.5">{empty ? "—" : value}</p>
+        {sub && <p className="text-xs text-muted-foreground mt-0.5">{empty ? "No data yet" : sub}</p>}
       </div>
+      {/* Hover tooltip for empty cards */}
+      {empty && hovered && (
+        <div className="absolute inset-0 flex items-center justify-center bg-card/80 backdrop-blur-sm rounded-xl">
+          <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg flex items-center gap-1.5 text-xs text-foreground">
+            <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />
+            No data available yet
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -110,6 +174,21 @@ function PlanBanner({ plan, status }: { plan: string | null; status: string | nu
   );
 }
 
+// ─── Chart Card wrapper ───────────────────────────────────────────────────────
+function ChartCard({ title, sub, children, hasData, emptyLabel, emptyHeight = 220 }: {
+  title: string; sub: string; children: React.ReactNode; hasData: boolean; emptyLabel?: string; emptyHeight?: number;
+}) {
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+      <div>
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{sub}</p>
+      </div>
+      {hasData ? children : <EmptyPlaceholder height={emptyHeight} label={emptyLabel} />}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function UsageDashboardPage() {
   const { data, isLoading, refetch, isFetching } = trpc.usageDashboard.stats.useQuery(undefined, {
@@ -134,18 +213,15 @@ export default function UsageDashboardPage() {
     );
   }
 
-  if (!data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-        <TrendingUp className="h-12 w-12 mb-3 opacity-30" />
-        <p className="text-sm">No usage data available yet.</p>
-      </div>
-    );
-  }
+  // Build chart data from usageDashboard (may be null if no org yet)
+  const usageData = data ?? {
+    totalLeads: 0, booked: 0, totalSent: 0, totalReplies: 0,
+    replyRate: 0, activeEnrollments: 0, messagesPerDay: [],
+    plan: null, subscriptionStatus: null,
+  };
 
-  // Build chart data from usageDashboard
   const dayMap = new Map<string, { day: string; outbound: number; inbound: number }>();
-  for (const row of data.messagesPerDay) {
+  for (const row of usageData.messagesPerDay) {
     if (!dayMap.has(row.day)) dayMap.set(row.day, { day: row.day, outbound: 0, inbound: 0 });
     const entry = dayMap.get(row.day)!;
     if (row.direction === "outbound") entry.outbound += row.count;
@@ -159,7 +235,8 @@ export default function UsageDashboardPage() {
       label: new Date(d.day + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     }));
 
-  const estimatedValue = data.booked * 500;
+  const estimatedValue = usageData.booked * 500;
+  const hasUsageData = usageData.totalSent > 0 || usageData.totalLeads > 0;
 
   // Analytics chart data
   const analyticsChartData = analytics
@@ -196,37 +273,56 @@ export default function UsageDashboardPage() {
       </div>
 
       {/* Plan Banner */}
-      <PlanBanner plan={data.plan} status={data.subscriptionStatus} />
+      <PlanBanner plan={usageData.plan} status={usageData.subscriptionStatus} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard icon={<Users className="h-5 w-5 text-indigo-400" />} label="Total Leads" value={data.totalLeads.toLocaleString()} color="bg-indigo-500/15" />
-        <StatCard icon={<MessageSquare className="h-5 w-5 text-blue-400" />} label="Messages Sent" value={data.totalSent.toLocaleString()} sub="All time" color="bg-blue-500/15" />
-        <StatCard icon={<TrendingUp className="h-5 w-5 text-emerald-400" />} label="Reply Rate" value={`${data.replyRate}%`} sub={`${data.totalReplies} total replies`} color="bg-emerald-500/15" />
-        <StatCard icon={<CalendarCheck className="h-5 w-5 text-amber-400" />} label="Leads Booked" value={data.booked.toLocaleString()} sub="Scheduled or X-Dated" color="bg-amber-500/15" />
-        <StatCard icon={<Zap className="h-5 w-5 text-violet-400" />} label="Active Drips" value={data.activeEnrollments.toLocaleString()} sub="Enrollments running" color="bg-violet-500/15" />
-        <StatCard icon={<CreditCard className="h-5 w-5 text-pink-400" />} label="Est. Pipeline Value" value={`$${estimatedValue.toLocaleString()}`} sub="At $500 avg per booked lead" color="bg-pink-500/15" />
+        <StatCard icon={<Users className="h-5 w-5 text-indigo-400" />} label="Total Leads" value={usageData.totalLeads.toLocaleString()} color="bg-indigo-500/15" empty={usageData.totalLeads === 0} />
+        <StatCard icon={<MessageSquare className="h-5 w-5 text-blue-400" />} label="Messages Sent" value={usageData.totalSent.toLocaleString()} sub="All time" color="bg-blue-500/15" empty={usageData.totalSent === 0} />
+        <StatCard icon={<TrendingUp className="h-5 w-5 text-emerald-400" />} label="Reply Rate" value={`${usageData.replyRate}%`} sub={`${usageData.totalReplies} total replies`} color="bg-emerald-500/15" empty={usageData.totalReplies === 0} />
+        <StatCard icon={<CalendarCheck className="h-5 w-5 text-amber-400" />} label="Leads Booked" value={usageData.booked.toLocaleString()} sub="Scheduled or X-Dated" color="bg-amber-500/15" empty={usageData.booked === 0} />
+        <StatCard icon={<Zap className="h-5 w-5 text-violet-400" />} label="Active Drips" value={usageData.activeEnrollments.toLocaleString()} sub="Enrollments running" color="bg-violet-500/15" empty={usageData.activeEnrollments === 0} />
+        <StatCard icon={<CreditCard className="h-5 w-5 text-pink-400" />} label="Est. Pipeline Value" value={`$${estimatedValue.toLocaleString()}`} sub="At $500 avg per booked lead" color="bg-pink-500/15" empty={estimatedValue === 0} />
       </div>
+
+      {/* Message Activity Chart */}
+      <ChartCard
+        title="Message Activity"
+        sub="Outbound vs inbound last 30 days"
+        hasData={chartData.length > 0}
+        emptyLabel="Send your first message to see activity"
+        emptyHeight={240}
+      >
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} interval={Math.max(0, Math.floor(chartData.length / 6) - 1)} />
+            <YAxis tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} axisLine={false} />
+            <Tooltip contentStyle={{ background: "#1c1c1e", border: "1px solid #2a2a2e", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: "#e5e7eb" }} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar dataKey="outbound" name="Outbound" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="inbound" name="Inbound" fill="#10b981" radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
 
       {/* ROI Summary */}
       <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 p-5">
         <p className="text-sm font-semibold text-foreground mb-1">Your ROI at a Glance</p>
         <p className="text-xs text-muted-foreground mb-4">Based on your activity, here is what QuotePush.io has generated for your pipeline.</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-          <div><p className="text-xl font-bold text-foreground">{data.totalSent}</p><p className="text-xs text-muted-foreground">Texts Sent</p></div>
-          <div><p className="text-xl font-bold text-emerald-400">{data.totalReplies}</p><p className="text-xs text-muted-foreground">Replies Received</p></div>
-          <div><p className="text-xl font-bold text-amber-400">{data.booked}</p><p className="text-xs text-muted-foreground">Leads Booked</p></div>
-          <div><p className="text-xl font-bold text-violet-400">${estimatedValue.toLocaleString()}</p><p className="text-xs text-muted-foreground">Est. Value Generated</p></div>
+          <div><p className={`text-xl font-bold ${hasUsageData ? "text-foreground" : "text-muted-foreground/40"}`}>{hasUsageData ? usageData.totalSent : "—"}</p><p className="text-xs text-muted-foreground">Texts Sent</p></div>
+          <div><p className={`text-xl font-bold ${usageData.totalReplies > 0 ? "text-emerald-400" : "text-muted-foreground/40"}`}>{usageData.totalReplies > 0 ? usageData.totalReplies : "—"}</p><p className="text-xs text-muted-foreground">Replies Received</p></div>
+          <div><p className={`text-xl font-bold ${usageData.booked > 0 ? "text-amber-400" : "text-muted-foreground/40"}`}>{usageData.booked > 0 ? usageData.booked : "—"}</p><p className="text-xs text-muted-foreground">Leads Booked</p></div>
+          <div><p className={`text-xl font-bold ${estimatedValue > 0 ? "text-violet-400" : "text-muted-foreground/40"}`}>{estimatedValue > 0 ? `$${estimatedValue.toLocaleString()}` : "—"}</p><p className="text-xs text-muted-foreground">Est. Value Generated</p></div>
         </div>
       </div>
 
       {/* ─── Analytics Section ─────────────────────────────────────────────── */}
       <div className="pt-4 border-t border-border">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-lg font-semibold text-foreground">Analytics</p>
-            <p className="text-xs text-muted-foreground">Visual overview of your lead engagement, reply times, and message activity.</p>
-          </div>
+        <div className="mb-4">
+          <p className="text-lg font-semibold text-foreground">Analytics</p>
+          <p className="text-xs text-muted-foreground">Visual overview of your lead engagement, reply times, and message activity.</p>
         </div>
 
         {analyticsLoading ? (
@@ -235,50 +331,34 @@ export default function UsageDashboardPage() {
               <div key={i} className="h-72 bg-card border border-border rounded-xl animate-pulse" />
             ))}
           </div>
-        ) : analytics ? (
+        ) : (
           <div className="space-y-6">
             {/* Analytics KPI row */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={<Users className="h-5 w-5 text-indigo-400" />} label="Total Leads" value={analytics.totalLeads.toLocaleString()} color="bg-indigo-500/15" />
-              <StatCard icon={<MessageSquare className="h-5 w-5 text-blue-400" />} label="Msgs (30d)" value={analytics.totalMessages.toLocaleString()} color="bg-blue-500/15" />
-              <StatCard icon={<TrendingUp className="h-5 w-5 text-emerald-400" />} label="Reply Rate" value={`${analytics.replyRate}%`} sub={`${analytics.totalReplies} replies`} color="bg-emerald-500/15" />
-              <StatCard icon={<Clock className="h-5 w-5 text-amber-400" />} label="Avg Reply Time" value={formatMinutes(analytics.avgReplyMinutes)} sub={analytics.avgReplyMinutes !== null ? "from first outbound" : "No replies yet"} color="bg-amber-500/15" />
+              <StatCard icon={<Users className="h-5 w-5 text-indigo-400" />} label="Total Leads" value={analytics?.totalLeads.toLocaleString()} color="bg-indigo-500/15" empty={!analytics || analytics.totalLeads === 0} />
+              <StatCard icon={<MessageSquare className="h-5 w-5 text-blue-400" />} label="Msgs (30d)" value={analytics?.totalMessages.toLocaleString()} color="bg-blue-500/15" empty={!analytics || analytics.totalMessages === 0} />
+              <StatCard icon={<TrendingUp className="h-5 w-5 text-emerald-400" />} label="Reply Rate" value={`${analytics?.replyRate ?? 0}%`} sub={`${analytics?.totalReplies ?? 0} replies`} color="bg-emerald-500/15" empty={!analytics || analytics.totalReplies === 0} />
+              <StatCard icon={<Clock className="h-5 w-5 text-amber-400" />} label="Avg Reply Time" value={formatMinutes(analytics?.avgReplyMinutes ?? null)} sub={analytics?.avgReplyMinutes != null ? "from first outbound" : "No replies yet"} color="bg-amber-500/15" empty={!analytics || analytics.avgReplyMinutes === null} />
             </div>
 
             {/* Charts row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Message Activity */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Message Activity</p>
-                  <p className="text-xs text-muted-foreground">Outbound vs inbound last 30 days</p>
-                </div>
-                {analyticsChartData.length === 0 ? (
-                  <div className="flex items-center justify-center h-52 text-muted-foreground/40 text-sm">No message data yet</div>
-                ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={analyticsChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} interval={Math.max(0, Math.floor(analyticsChartData.length / 6) - 1)} />
-                      <YAxis tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} axisLine={false} />
-                      <Tooltip contentStyle={{ background: "#1c1c1e", border: "1px solid #2a2a2e", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: "#e5e7eb" }} />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <Bar dataKey="outbound" name="Outbound" fill="#3b82f6" radius={[3, 3, 0, 0]} />
-                      <Bar dataKey="inbound" name="Inbound" fill="#10b981" radius={[3, 3, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
+              <ChartCard title="Message Activity" sub="Outbound vs inbound last 30 days" hasData={analyticsChartData.length > 0} emptyLabel="No message data yet">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={analyticsChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} interval={Math.max(0, Math.floor(analyticsChartData.length / 6) - 1)} />
+                    <YAxis tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ background: "#1c1c1e", border: "1px solid #2a2a2e", borderRadius: 8, fontSize: 12 }} labelStyle={{ color: "#e5e7eb" }} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Bar dataKey="outbound" name="Outbound" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="inbound" name="Inbound" fill="#10b981" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
 
-              {/* Lead Milestones Pie */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Lead Milestones</p>
-                  <p className="text-xs text-muted-foreground">Current distribution across all leads</p>
-                </div>
-                {analytics.leadsByMilestone.length === 0 ? (
-                  <div className="flex items-center justify-center h-52 text-muted-foreground/40 text-sm">No leads yet</div>
-                ) : (
+              <ChartCard title="Lead Milestones" sub="Current distribution across all leads" hasData={!!(analytics && analytics.leadsByMilestone.length > 0)} emptyLabel="Add leads to see milestone breakdown">
+                {analytics && analytics.leadsByMilestone.length > 0 && (
                   <div className="flex items-center gap-4">
                     <ResponsiveContainer width="60%" height={200}>
                       <PieChart>
@@ -301,20 +381,13 @@ export default function UsageDashboardPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </ChartCard>
             </div>
 
             {/* Charts row 2 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Reply Time Distribution */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Reply Time Distribution</p>
-                  <p className="text-xs text-muted-foreground">How quickly leads respond to your messages</p>
-                </div>
-                {analytics.replyTimeBuckets.every((b) => b.count === 0) ? (
-                  <div className="flex items-center justify-center h-52 text-muted-foreground/40 text-sm">No reply data yet</div>
-                ) : (
+              <ChartCard title="Reply Time Distribution" sub="How quickly leads respond to your messages" hasData={!!(analytics && analytics.replyTimeBuckets.some((b) => b.count > 0))} emptyLabel="No reply data yet">
+                {analytics && (
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={analytics.replyTimeBuckets} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                       <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#6b7280" }} tickLine={false} />
@@ -328,17 +401,10 @@ export default function UsageDashboardPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 )}
-              </div>
+              </ChartCard>
 
-              {/* Reply Intent Breakdown */}
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Reply Intent Breakdown</p>
-                  <p className="text-xs text-muted-foreground">How leads are classified when they reply</p>
-                </div>
-                {analytics.replyCategories.length === 0 ? (
-                  <div className="flex items-center justify-center h-52 text-muted-foreground/40 text-sm">No classified replies yet</div>
-                ) : (
+              <ChartCard title="Reply Intent Breakdown" sub="How leads are classified when they reply" hasData={!!(analytics && analytics.replyCategories.length > 0)} emptyLabel="No classified replies yet">
+                {analytics && analytics.replyCategories.length > 0 && (
                   <div className="space-y-3 pt-2">
                     {analytics.replyCategories
                       .sort((a, b) => b.count - a.count)
@@ -360,16 +426,12 @@ export default function UsageDashboardPage() {
                       })}
                   </div>
                 )}
-              </div>
+              </ChartCard>
             </div>
 
             {/* Reply Trend Line */}
-            {analyticsChartData.length > 1 && (
-              <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Reply Trend</p>
-                  <p className="text-xs text-muted-foreground">Inbound replies over the last 30 days</p>
-                </div>
+            <ChartCard title="Reply Trend" sub="Inbound replies over the last 30 days" hasData={analyticsChartData.length > 1} emptyLabel="No trend data yet" emptyHeight={180}>
+              {analyticsChartData.length > 1 && (
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={analyticsChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -379,11 +441,9 @@ export default function UsageDashboardPage() {
                     <Line type="monotone" dataKey="inbound" name="Replies" stroke="#10b981" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                   </LineChart>
                 </ResponsiveContainer>
-              </div>
-            )}
+              )}
+            </ChartCard>
           </div>
-        ) : (
-          <div className="flex items-center justify-center h-40 text-muted-foreground/40 text-sm">No analytics data yet. Start sending messages to see your charts.</div>
         )}
       </div>
     </div>
