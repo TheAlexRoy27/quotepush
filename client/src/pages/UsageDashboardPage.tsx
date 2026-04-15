@@ -124,7 +124,7 @@ function StatCard({
       </div>
       <div className={empty ? "opacity-30" : ""}>
         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-2xl font-bold text-foreground mt-0.5">{empty ? "—" : value}</p>
+        <p className="text-2xl font-bold text-foreground mt-0.5">{empty ? "-" : value}</p>
         {sub && <p className="text-xs text-muted-foreground mt-0.5">{empty ? "No data yet" : sub}</p>}
       </div>
       {/* Hover tooltip for empty cards */}
@@ -311,10 +311,10 @@ export default function UsageDashboardPage() {
         <p className="text-sm font-semibold text-foreground mb-1">Your ROI at a Glance</p>
         <p className="text-xs text-muted-foreground mb-4">Based on your activity, here is what QuotePush.io has generated for your pipeline.</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-          <div><p className={`text-xl font-bold ${hasUsageData ? "text-foreground" : "text-muted-foreground/40"}`}>{hasUsageData ? usageData.totalSent : "—"}</p><p className="text-xs text-muted-foreground">Texts Sent</p></div>
-          <div><p className={`text-xl font-bold ${usageData.totalReplies > 0 ? "text-emerald-400" : "text-muted-foreground/40"}`}>{usageData.totalReplies > 0 ? usageData.totalReplies : "—"}</p><p className="text-xs text-muted-foreground">Replies Received</p></div>
-          <div><p className={`text-xl font-bold ${usageData.booked > 0 ? "text-amber-400" : "text-muted-foreground/40"}`}>{usageData.booked > 0 ? usageData.booked : "—"}</p><p className="text-xs text-muted-foreground">Leads Booked</p></div>
-          <div><p className={`text-xl font-bold ${estimatedValue > 0 ? "text-violet-400" : "text-muted-foreground/40"}`}>{estimatedValue > 0 ? `$${estimatedValue.toLocaleString()}` : "—"}</p><p className="text-xs text-muted-foreground">Est. Value Generated</p></div>
+          <div><p className={`text-xl font-bold ${hasUsageData ? "text-foreground" : "text-muted-foreground/40"}`}>{hasUsageData ? usageData.totalSent : "-"}</p><p className="text-xs text-muted-foreground">Texts Sent</p></div>
+          <div><p className={`text-xl font-bold ${usageData.totalReplies > 0 ? "text-emerald-400" : "text-muted-foreground/40"}`}>{usageData.totalReplies > 0 ? usageData.totalReplies : "-"}</p><p className="text-xs text-muted-foreground">Replies Received</p></div>
+          <div><p className={`text-xl font-bold ${usageData.booked > 0 ? "text-amber-400" : "text-muted-foreground/40"}`}>{usageData.booked > 0 ? usageData.booked : "-"}</p><p className="text-xs text-muted-foreground">Leads Booked</p></div>
+          <div><p className={`text-xl font-bold ${estimatedValue > 0 ? "text-violet-400" : "text-muted-foreground/40"}`}>{estimatedValue > 0 ? `$${estimatedValue.toLocaleString()}` : "-"}</p><p className="text-xs text-muted-foreground">Est. Value Generated</p></div>
         </div>
       </div>
 

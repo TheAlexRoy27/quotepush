@@ -1,6 +1,6 @@
 /**
  * Tests for the drip enrollment and scheduler logic.
- * Uses in-memory mocks — no real DB or Twilio calls.
+ * Uses in-memory mocks - no real DB or Twilio calls.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 

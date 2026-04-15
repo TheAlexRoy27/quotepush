@@ -58,7 +58,7 @@ async function processDripEnrollment(
 
   const step = await getDripStepByNumber(sequenceId, currentStep);
   if (!step) {
-    // No more steps — sequence is complete
+    // No more steps - sequence is complete
     await completeEnrollment(enrollmentId);
     console.log(`[DripScheduler] Enrollment ${enrollmentId} completed (no step ${currentStep})`);
     return;

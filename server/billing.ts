@@ -100,7 +100,7 @@ export async function handleStripeWebhook(payload: Buffer, sig: string): Promise
     return;
   }
 
-  console.log(`[Stripe Webhook] ${event.type} — ${event.id}`);
+  console.log(`[Stripe Webhook] ${event.type} - ${event.id}`);
 
   switch (event.type) {
     case "checkout.session.completed": {

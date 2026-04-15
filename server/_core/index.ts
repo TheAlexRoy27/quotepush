@@ -187,7 +187,7 @@ async function startServer() {
 
       await notifyOwner({
         title: `New reply from ${lead.name} [${category}]`,
-        content: `Lead ${lead.name} (${lead.company ?? "—"}) replied: "${body}"\n\nClassified as: ${category} (${confidence} confidence)`,
+        content: `Lead ${lead.name} (${lead.company ?? "-"}) replied: "${body}"\n\nClassified as: ${category} (${confidence} confidence)`,
       });
 
       // ─── AI Bot Auto-Reply ────────────────────────────────────────────
@@ -213,7 +213,7 @@ async function startServer() {
                 `Tone: ${toneGuide[botConfig.tone ?? "friendly"]}`,
                 botConfig.businessContext ? `Business context:\n${botConfig.businessContext}` : "",
                 botConfig.customInstructions ? `Rules:\n${botConfig.customInstructions}` : "",
-                `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Always be respectful of their time.`,
+                `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Never use em dashes (-). Always be respectful of their time.`,
                 `You have sent ${botReplies} bot replies so far. After ${botConfig.maxRepliesPerLead} total, a human agent will take over.`,
               ].filter(Boolean).join("\n\n");
 

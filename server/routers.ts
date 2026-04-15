@@ -184,7 +184,7 @@ const customAuthRouter = router({
                 phone: "email-only",
                 email: input.email,
                 company: input.orgName,
-                notes: `New signup via QuotePush.io (no plan yet) — email: ${input.email}`,
+                notes: `New signup via QuotePush.io (no plan yet) - email: ${input.email}`,
                 status: "Pending",
               });
             }
@@ -198,7 +198,7 @@ const customAuthRouter = router({
       try {
         await notifyOwner({
           title: `New signup: ${input.name}`,
-          content: `${input.name} just created an account on QuotePush.io.\nEmail: ${input.email}\nOrg: ${input.orgName}\nNo plan yet — follow up now!`,
+          content: `${input.name} just created an account on QuotePush.io.\nEmail: ${input.email}\nOrg: ${input.orgName}\nNo plan yet - follow up now!`,
         });
       } catch { /* non-fatal */ }
 
@@ -339,7 +339,7 @@ const customAuthRouter = router({
       try {
         await notifyOwner({
           title: `New signup: ${input.name}`,
-          content: `${input.name} just created an account on QuotePush.io.\nPhone: ${normalizedPhone}\nOrg: ${input.orgName}\nNo plan yet — follow up now!`,
+          content: `${input.name} just created an account on QuotePush.io.\nPhone: ${normalizedPhone}\nOrg: ${input.orgName}\nNo plan yet - follow up now!`,
         });
       } catch { /* non-fatal */ }
 
@@ -404,7 +404,7 @@ const customAuthRouter = router({
       let isNew = false;
 
       if (!user) {
-        // New user — require name + orgName
+        // New user - require name + orgName
         if (!input.name) throw new TRPCError({ code: "BAD_REQUEST", message: "Name is required for new accounts" });
         if (!input.orgName) throw new TRPCError({ code: "BAD_REQUEST", message: "Organization name is required for new accounts" });
         user = await createUserWithPhone(input.phone, input.name);
@@ -443,7 +443,7 @@ const customAuthRouter = router({
         try {
           await notifyOwner({
             title: `New signup: ${input.name}`,
-            content: `${input.name} just created an account on QuotePush.io.\nPhone: ${input.phone}\nOrg: ${input.orgName}\nNo plan yet — follow up now!`,
+            content: `${input.name} just created an account on QuotePush.io.\nPhone: ${input.phone}\nOrg: ${input.orgName}\nNo plan yet - follow up now!`,
           });
         } catch { /* non-fatal */ }
       } else {
@@ -588,7 +588,7 @@ const orgRouter = router({
       let userId: number;
 
       if (existingUser) {
-        // User exists — just add them to this org if not already a member
+        // User exists - just add them to this org if not already a member
         const members = await listOrgMembers(orgId);
         const alreadyMember = members.some(m => m.userId === existingUser.id);
         if (alreadyMember) {
@@ -630,7 +630,7 @@ const orgRouter = router({
       try {
         await sendSmsWithConfig(
           input.toPhone,
-          'QuotePush.io — Twilio test message. Your SMS integration is working!',
+          'QuotePush.io - Twilio test message. Your SMS integration is working!',
           config.accountSid,
           config.authToken,
           config.phoneNumber
@@ -1247,7 +1247,7 @@ const dripRouter = router({
         ? previousSteps.map((s) =>
             `Step ${s.stepNumber} (after ${s.delayAmount} ${s.delayUnit}): "${s.body}"`
           ).join("\n")
-        : "No previous steps — this is the first message.";
+        : "No previous steps - this is the first message.";
 
       const systemPrompt = `You are an expert SMS copywriter for sales outreach. Write concise, friendly, and effective follow-up SMS messages. Always keep messages under 160 characters when possible. Use {{firstName}}, {{company}}, and {{link}} as placeholders where appropriate. Never use emojis. Return ONLY the message body text, no quotes, no labels.`;
 
@@ -1588,8 +1588,8 @@ const botRouter = router({
         `Tone: ${toneGuide[input.tone ?? "friendly"]}`,
         input.businessContext ? `Business context:\n${input.businessContext}` : "",
         input.customInstructions ? `Rules:\n${input.customInstructions}` : "",
-        `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Always be respectful of their time.`,
-        `THIS IS A TEST SIMULATION — no real SMS will be sent.`,
+        `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Never use em dashes (-). Always be respectful of their time.`,
+        `THIS IS A TEST SIMULATION - no real SMS will be sent.`,
       ].filter(Boolean).join("\n\n");
 
       const messages: { role: "system" | "user" | "assistant"; content: string }[] = [

@@ -19,7 +19,7 @@ const TONE_OPTIONS = [
   { value: "direct", label: "Direct", description: "Concise, no-fluff, to the point" },
 ] as const;
 
-const DEFAULT_OPENING = "Hey {firstName}! This is {botName} — I just wanted to reach out real quick. We only need about 10 minutes of your time to gather a little info and get you the most ideal quote possible. No pressure at all — just here to help! Feel free to ask me anything. 😊";
+const DEFAULT_OPENING = "Hey {firstName}! This is {botName} - I just wanted to reach out real quick. We only need about 10 minutes of your time to gather a little info and get you the most ideal quote possible. No pressure at all - just here to help! Feel free to ask me anything. 😊";
 
 const DEFAULT_IDENTITY = "You are {botName}, a friendly insurance advisor. You help leads understand their options and schedule a quick 10-minute call with the agent. You are warm, respectful of their time, and never pushy.";
 
@@ -145,7 +145,7 @@ export default function BotConfigPage() {
             AI Text Bot
           </h1>
           <p className="text-muted-foreground mt-1">
-            Configure your bot to automatically text new leads and answer their questions — 24/7, on autopilot.
+            Configure your bot to automatically text new leads and answer their questions - 24/7, on autopilot.
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -170,7 +170,7 @@ export default function BotConfigPage() {
             <Info className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
             <div className="text-sm text-muted-foreground space-y-1">
               <p className="font-medium text-foreground">How it works</p>
-              <p>When a new lead is added, the bot automatically sends the <strong>Opening Message</strong>. If the lead replies with a question, the bot responds using your <strong>Business Context</strong> and configured tone — up to {maxReplies} replies per lead before handing off to you.</p>
+              <p>When a new lead is added, the bot automatically sends the <strong>Opening Message</strong>. If the lead replies with a question, the bot responds using your <strong>Business Context</strong> and configured tone - up to {maxReplies} replies per lead before handing off to you.</p>
             </div>
           </div>
         </CardContent>
@@ -330,7 +330,7 @@ export default function BotConfigPage() {
             <FlaskConical className="w-4 h-4 text-emerald-500" /> Test the Bot
           </CardTitle>
           <CardDescription>
-            Chat with your bot using the current settings above — no real SMS is sent.
+            Chat with your bot using the current settings above - no real SMS is sent.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -370,7 +370,7 @@ export default function BotConfigPage() {
               {/* Disclaimer */}
               <div className="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-600/10 border border-emerald-600/20 rounded-lg px-3 py-2">
                 <FlaskConical className="w-3 h-3 shrink-0" />
-                Test mode — no real SMS is sent. Replies use your current (unsaved) settings.
+                Test mode - no real SMS is sent. Replies use your current (unsaved) settings.
               </div>
 
               {/* SMS thread */}

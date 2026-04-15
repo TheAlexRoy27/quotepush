@@ -79,7 +79,7 @@ ${categoryList}
 
 ${FEW_SHOT_EXAMPLES}
 
-Always respond with valid JSON matching the schema exactly. Be decisive — pick the single best category.
+Always respond with valid JSON matching the schema exactly. Be decisive - pick the single best category.
 When in doubt between Interested and Other, prefer Interested if there is any positive signal.
 When in doubt between Unsubscribe and Not Interested, prefer Unsubscribe if the lead wants to stop texts.`;
 
@@ -138,11 +138,11 @@ Classify this reply into exactly one category.`;
     return parsed;
   } catch (err) {
     console.error("[Classifier] LLM classification failed:", err);
-    // Graceful fallback — don't break the webhook flow
+    // Graceful fallback - don't break the webhook flow
     return {
       category: "Wants More Info",
       confidence: "low",
-      reasoning: "Classification failed — defaulted to Wants More Info",
+      reasoning: "Classification failed - defaulted to Wants More Info",
     };
   }
 }

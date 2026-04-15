@@ -164,7 +164,7 @@ export default function AuthPage() {
         await recordSignupMutation.mutateAsync({ referrerId, referredId: newUserId });
         return referrerName ? referrerName.split(" ")[0] : null;
       } catch {
-        // Non-fatal — don't block the signup
+        // Non-fatal - don't block the signup
       }
     }
     return null;
@@ -174,7 +174,7 @@ export default function AuthPage() {
   const welcomeMessage = (isNew: boolean, referrerFirstName: string | null): string => {
     if (!isNew) return "Welcome back!";
     if (referrerFirstName) {
-      return `Welcome! ${referrerFirstName} sent you here — you're in good hands. 🎉`;
+      return `Welcome! ${referrerFirstName} sent you here - you're in good hands. 🎉`;
     }
     return "Account created! Welcome to QuotePush.io.";
   };
@@ -405,7 +405,7 @@ export default function AuthPage() {
                     onKeyDown={(e) => e.key === "Enter" && (mode === "login" ? handlePhonePasswordLogin() : handlePhonePasswordRegister())}
                   />
                 </div>
-                {/* Referral code — signup only */}
+                {/* Referral code - signup only */}
                 {mode === "signup" && (
                   <ReferralCodeField
                     value={referralCode}
@@ -476,7 +476,7 @@ export default function AuthPage() {
                     onKeyDown={(e) => e.key === "Enter" && (mode === "login" ? handleEmailLogin() : handleEmailRegister())}
                   />
                 </div>
-                {/* Referral code — signup only */}
+                {/* Referral code - signup only */}
                 {mode === "signup" && (
                   <ReferralCodeField
                     value={referralCode}
@@ -536,7 +536,7 @@ export default function AuthPage() {
                         onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
                       />
                     </div>
-                    {/* Referral code — signup only, shown before sending OTP */}
+                    {/* Referral code - signup only, shown before sending OTP */}
                     {mode === "signup" && (
                       <ReferralCodeField
                         value={referralCode}

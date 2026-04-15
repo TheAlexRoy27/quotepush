@@ -10,7 +10,7 @@ import { classifyReply } from "./replyClassifier";
 
 // ─── Reply Classifier Tests ───────────────────────────────────────────────────
 
-describe("classifyReply — soft-positive and opt-out phrases", () => {
+describe("classifyReply - soft-positive and opt-out phrases", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -161,7 +161,7 @@ describe("classifyReply", () => {
             content: JSON.stringify({
               category: "Wants More Info",
               confidence: "medium",
-              reasoning: "Lead is already a customer — classified as Wants More Info",
+              reasoning: "Lead is already a customer - classified as Wants More Info",
             }),
           },
         },
