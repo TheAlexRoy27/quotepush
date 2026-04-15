@@ -23,6 +23,7 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import KeywordPromotionPage from "./pages/KeywordPromotionPage";
 import ReferralPage from "./pages/ReferralPage";
+import UsageDashboardPage from "./pages/UsageDashboardPage";
 
 function Router() {
   return (
@@ -49,6 +50,7 @@ function Router() {
             <Route path={"/organization"} component={OrgPage} />
             <Route path={"/keyword-promotion"} component={KeywordPromotionPage} />
             <Route path={"/referrals"} component={ReferralPage} />
+            <Route path={"/my-dashboard"} component={UsageDashboardPage} />
             <Route path={"/404"} component={NotFound} />
             <Route component={NotFound} />
           </Switch>

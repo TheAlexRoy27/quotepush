@@ -96,7 +96,7 @@ import {
   deleteDripStep,
   seedDefaultDripSequences,
 } from "./dripDb";
-import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials, users } from "../drizzle/schema";
+import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials, users, leadDripEnrollments } from "../drizzle/schema";
 import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
 import bcrypt from "bcryptjs";
@@ -1423,6 +1423,71 @@ const referralsRouter = router({
     }),
 });
 
+// ─── Usage Dashboard Router ──────────────────────────────────────────────────
+const usageDashboardRouter = router({
+  stats: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    const db = await getDb();
+    if (!db) return null;
+
+    const totalLeadsRows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(leads)
+      .where(eq(leads.orgId, orgId));
+    const totalLeads = Number(totalLeadsRows[0]?.count ?? 0);
+
+    const bookedRows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(leads)
+      .where(and(eq(leads.orgId, orgId), sql`${leads.status} IN ('Scheduled','X-Dated')`));
+    const booked = Number(bookedRows[0]?.count ?? 0);
+
+    const sentRows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(and(eq(messages.orgId, orgId), eq(messages.direction, "outbound")));
+    const totalSent = Number(sentRows[0]?.count ?? 0);
+
+    const replyRows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(and(eq(messages.orgId, orgId), eq(messages.direction, "inbound")));
+    const totalReplies = Number(replyRows[0]?.count ?? 0);
+
+    const enrollRows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(leadDripEnrollments)
+      .where(and(eq(leadDripEnrollments.orgId, orgId), eq(leadDripEnrollments.status, "active")));
+    const activeEnrollments = Number(enrollRows[0]?.count ?? 0);
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const msgRows = await db
+      .select({
+        day: sql<string>`DATE(${messages.sentAt})`,
+        direction: messages.direction,
+        count: sql<number>`count(*)`,
+      })
+      .from(messages)
+      .where(and(eq(messages.orgId, orgId), gte(messages.sentAt, thirtyDaysAgo)))
+      .groupBy(sql`DATE(${messages.sentAt})`, messages.direction);
+
+    const org = await getOrganizationById(orgId);
+    const replyRate = totalSent > 0 ? Math.round((totalReplies / totalSent) * 100) : 0;
+
+    return {
+      totalLeads,
+      booked,
+      totalSent,
+      totalReplies,
+      replyRate,
+      activeEnrollments,
+      messagesPerDay: msgRows.map((r) => ({ day: r.day, direction: r.direction, count: Number(r.count) })),
+      plan: org?.plan ?? null,
+      subscriptionStatus: org?.subscriptionStatus ?? null,
+    };
+  }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -1449,6 +1514,7 @@ export const appRouter = router({
   notifications: notificationsRouter,
   keywordPromotion: keywordPromotionRouter,
   referrals: referralsRouter,
+  usageDashboard: usageDashboardRouter,
 });
 
 export type AppRouter = typeof appRouter;

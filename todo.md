@@ -423,15 +423,20 @@
 - [x] Fix remaining squeeze/overflow on Leads page mobile
 
 ## Auto-Milestone Promotion
-- [ ] Detect trigger keywords (yes, interested, call me, etc.) in inbound SMS webhook
-- [ ] Auto-advance lead milestone from Pending to Replied when keyword matched
-- [ ] Notify owner when a lead auto-promotes
-- [ ] Settings page UI to configure trigger keywords per org
+- [x] Detect trigger keywords (yes, interested, call me, etc.) in inbound SMS webhook
+- [x] Auto-advance lead milestone from Pending to Replied when keyword matched
+- [x] Notify owner when a lead auto-promotes
+- [x] Settings page UI to configure trigger keywords per org
 
 ## Referral Tracking
-- [ ] DB schema: referral_codes table (userId, code, createdAt) + referredBy column on users
-- [ ] Generate unique referral code on user creation
-- [ ] Referral link page: /ref/:code that stores code in cookie and redirects to signup
-- [ ] Credit referrer when referred user signs up
-- [ ] Referral dashboard page showing referrals, conversions, and credits
-- [ ] Fix text wrap: 'one text at a time' tagline should fit on one line
+- [x] DB schema: referral_codes table (userId, code, createdAt) + referredBy column on users
+- [x] Generate unique referral code on user creation
+- [x] Referral link page: /ref/:code that stores code in cookie and redirects to signup
+- [x] Credit referrer when referred user signs up
+- [x] Referral dashboard page showing referrals, conversions, and credits
+- [x] Fix text wrap: 'one text at a time' tagline should fit on one line
+
+## Usage Dashboard for Subscribers
+- [x] tRPC procedure: per-org usage stats (messages sent, reply rate, leads booked, active drips)
+- [x] Usage Dashboard page at /dashboard with stat cards and messages-per-day chart
+- [x] Add "My Dashboard" nav item to sidebar
