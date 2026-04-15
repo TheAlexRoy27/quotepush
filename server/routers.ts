@@ -811,12 +811,19 @@ const dripRouter = router({
   listSequences: protectedProcedure.query(async ({ ctx }) => {
     const orgId = await requireOrgId(ctx.user.id);
     const seqs = await listDripSequences(orgId);
-    // Attach steps to each sequence
+    // Attach steps (linear + branch children) to each sequence
     return Promise.all(
-      seqs.map(async (seq) => ({
-        ...seq,
-        steps: await listDripSteps(seq.id),
-      }))
+      seqs.map(async (seq) => {
+        const allSteps = await listDripSteps(seq.id);
+        // Separate linear steps from branch children
+        const linearSteps = allSteps.filter((s) => !s.branchType);
+        const branchSteps = allSteps.filter((s) => !!s.branchType);
+        return {
+          ...seq,
+          steps: linearSteps,
+          branchSteps, // branch children keyed by parentStepId
+        };
+      })
     );
   }),
 
@@ -863,6 +870,7 @@ const dripRouter = router({
   upsertStep: protectedProcedure
     .input(
       z.object({
+        id: z.number().optional(), // if provided, update by id
         sequenceId: z.number(),
         stepNumber: z.number().min(1),
         delayAmount: z.number().min(0),
@@ -870,11 +878,15 @@ const dripRouter = router({
         delayDays: z.number().min(0).optional(), // kept for backward compat
         name: z.string().min(1),
         body: z.string().min(1),
+        branchType: z.enum(["positive", "negative"]).nullable().optional(),
+        parentStepId: z.number().nullable().optional(),
       })
     )
     .mutation(({ input }) => upsertDripStep({
       ...input,
       delayDays: input.delayDays ?? input.delayAmount, // keep legacy field in sync
+      branchType: input.branchType ?? undefined,
+      parentStepId: input.parentStepId ?? undefined,
     })),
 
   deleteStep: protectedProcedure

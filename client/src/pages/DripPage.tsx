@@ -25,11 +25,14 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  GitBranch,
   HelpCircle,
   MessageSquare,
   Phone,
   Plus,
   Sparkles,
+  ThumbsDown,
+  ThumbsUp,
   Trash2,
   User,
   Zap,
@@ -39,15 +42,30 @@ import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type DripStep = {
+type BranchStep = {
   id: number;
   sequenceId: number;
   stepNumber: number;
-  delayDays: number;
   delayAmount: number;
   delayUnit: "minutes" | "days";
   name: string;
   body: string;
+  branchType: "positive" | "negative";
+  parentStepId: number;
+};
+
+type DripStep = {
+  id: number;
+  sequenceId: number;
+  stepNumber: number;
+  delayDays?: number;
+  delayAmount: number;
+  delayUnit: "minutes" | "days";
+  name: string;
+  body: string;
+  branchType?: string | null;
+  parentStepId?: number | null;
+  branchSteps?: BranchStep[];
 };
 
 type DripSequence = {
@@ -84,7 +102,7 @@ function renderPreview(body: string, firstName = "Alex", company = "Acme Co") {
   return body
     .replace(/\{\{firstName\}\}/g, firstName)
     .replace(/\{\{company\}\}/g, company)
-    .replace(/\{\{link\}\}/g, "https://quotenudge.com/quote/abc123");
+    .replace(/\{\{link\}\}/g, "https://cal.com/yourname/10min");
 }
 
 // ─── Variable Insert Button ───────────────────────────────────────────────────
@@ -111,15 +129,41 @@ function VarButton({
 
 // ─── SMS Bubble ───────────────────────────────────────────────────────────────
 
-function SmsBubble({ body, delay, unit, stepNum }: { body: string; delay: number; unit: string; stepNum: number }) {
+function SmsBubble({
+  body,
+  delay,
+  unit,
+  stepNum,
+  branchType,
+}: {
+  body: string;
+  delay: number;
+  unit: string;
+  stepNum: number;
+  branchType?: "positive" | "negative" | null;
+}) {
   const preview = renderPreview(body);
   const delayLabel = delay === 0 ? "Immediately" : `After ${delay} ${unit}`;
+  const bubbleColor = branchType === "positive"
+    ? "bg-emerald-600"
+    : branchType === "negative"
+    ? "bg-amber-600"
+    : "bg-[#1a8cff]";
+
   return (
     <div className="flex flex-col items-end gap-1">
       <span className="text-xs text-muted-foreground self-start flex items-center gap-1">
-        <Clock className="h-3 w-3" /> Step {stepNum} — {delayLabel}
+        <Clock className="h-3 w-3" />
+        {branchType ? (
+          <span className={`font-medium ${branchType === "positive" ? "text-emerald-400" : "text-amber-400"}`}>
+            {branchType === "positive" ? "✓ Positive reply" : "✗ Negative reply"} —
+          </span>
+        ) : (
+          <span>Step {stepNum} —</span>
+        )}
+        {" "}{delayLabel}
       </span>
-      <div className="max-w-[220px] bg-[#1a8cff] text-white text-sm px-3 py-2 rounded-2xl rounded-tr-sm shadow-sm leading-snug">
+      <div className={`max-w-[220px] ${bubbleColor} text-white text-sm px-3 py-2 rounded-2xl rounded-tr-sm shadow-sm leading-snug`}>
         {preview || <span className="opacity-50 italic">Your message here…</span>}
       </div>
     </div>
@@ -132,12 +176,16 @@ function StepEditor({
   step,
   sequenceId,
   nextStepNumber,
+  branchType,
+  parentStepId,
   onSaved,
   onDeleted,
 }: {
-  step?: DripStep;
+  step?: DripStep | BranchStep;
   sequenceId: number;
   nextStepNumber?: number;
+  branchType?: "positive" | "negative";
+  parentStepId?: number;
   onSaved: () => void;
   onDeleted?: () => void;
 }) {
@@ -145,7 +193,7 @@ function StepEditor({
   const [name, setName] = useState(isNew ? "" : step.name);
   const [body, setBody] = useState(isNew ? "" : step.body);
   const [delayAmount, setDelayAmount] = useState(
-    isNew ? (nextStepNumber === 1 ? 0 : 3) : (step.delayAmount ?? step.delayDays ?? 3)
+    isNew ? (nextStepNumber === 1 ? 0 : 3) : (step.delayAmount ?? 3)
   );
   const [delayUnit, setDelayUnit] = useState<"minutes" | "days">(
     isNew ? "days" : (step.delayUnit ?? "days")
@@ -187,23 +235,36 @@ function StepEditor({
   const chars = body.length;
   const segments = smsSegments(body);
 
+  const borderColor = branchType === "positive"
+    ? "border-emerald-500/40 bg-emerald-500/5"
+    : branchType === "negative"
+    ? "border-amber-500/40 bg-amber-500/5"
+    : "border-border bg-muted/20";
+
   return (
-    <div className="space-y-3 p-4 bg-muted/20 rounded-xl border border-border">
+    <div className={`space-y-3 p-4 rounded-xl border ${borderColor}`}>
+      {branchType && (
+        <div className={`flex items-center gap-1.5 text-xs font-medium ${branchType === "positive" ? "text-emerald-400" : "text-amber-400"}`}>
+          {branchType === "positive" ? <ThumbsUp className="h-3.5 w-3.5" /> : <ThumbsDown className="h-3.5 w-3.5" />}
+          {branchType === "positive" ? "Positive Reply Branch" : "Negative Reply Branch"}
+          <span className="text-muted-foreground font-normal ml-1">— sent when lead replies {branchType === "positive" ? "positively (e.g. Yes, Interested)" : "negatively (e.g. Not now, Maybe later)"}</span>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Step Label</Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={`e.g. Follow-up ${stepNumber}`}
+            placeholder={branchType === "positive" ? "e.g. Book a Call" : "e.g. Soft Exit"}
             className="h-8 text-sm"
           />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-medium flex items-center gap-1">
             Send After
-            {stepNumber === 1 && (
-              <span className="text-muted-foreground font-normal">(0 = send immediately on enrollment)</span>
+            {stepNumber === 1 && !branchType && (
+              <span className="text-muted-foreground font-normal">(0 = immediately)</span>
             )}
           </Label>
           <div className="flex gap-2">
@@ -238,7 +299,13 @@ function StepEditor({
           ref={textareaRef}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Hi {{firstName}}, just following up on my last message…"
+          placeholder={
+            branchType === "positive"
+              ? "Great! Here's my calendar link to grab a quick 10-min call: {{link}}"
+              : branchType === "negative"
+              ? "No worries at all, {{firstName}}! If anything changes, here's my link: {{link}}"
+              : "Hi {{firstName}}, just following up…"
+          }
           rows={3}
           className="text-sm resize-none"
         />
@@ -250,7 +317,6 @@ function StepEditor({
         </div>
       </div>
 
-      {/* Live preview */}
       {body && (
         <div className="rounded-lg bg-muted/10 border border-border p-3 space-y-1">
           <p className="text-xs text-muted-foreground font-medium">Preview (sample data)</p>
@@ -276,11 +342,151 @@ function StepEditor({
           className="ml-auto h-7"
           disabled={!name || !body || upsert.isPending}
           onClick={() =>
-            upsert.mutate({ sequenceId, stepNumber, delayAmount, delayUnit, name, body })
+            upsert.mutate({
+              sequenceId,
+              stepNumber,
+              delayAmount,
+              delayUnit,
+              name,
+              body,
+              ...(step?.id && step.id !== 0 ? { id: step.id } : {}),
+              ...(branchType ? { branchType, parentStepId } : {}),
+            })
           }
         >
           {upsert.isPending ? "Saving…" : isNew ? "Add Step" : "Save Step"}
         </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Branch Fork Display ──────────────────────────────────────────────────────
+
+function BranchFork({
+  step,
+  sequenceId,
+}: {
+  step: DripStep;
+  sequenceId: number;
+}) {
+  const [editingBranch, setEditingBranch] = useState<"positive" | "negative" | null>(null);
+  const positiveBranch = step.branchSteps?.find((b) => b.branchType === "positive");
+  const negativeBranch = step.branchSteps?.find((b) => b.branchType === "negative");
+  const hasBranches = positiveBranch || negativeBranch;
+
+  if (!hasBranches && !step.branchSteps) return null;
+
+  return (
+    <div className="ml-10 mt-1 mb-2 space-y-2">
+      {/* Fork indicator */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
+        <GitBranch className="h-3.5 w-3.5" />
+        <span>Lead replies → A/B branch</span>
+      </div>
+
+      {/* Positive branch */}
+      <div className="border-l-2 border-emerald-500/40 pl-3 space-y-1">
+        <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+          <ThumbsUp className="h-3 w-3" />
+          Positive reply (Yes / Interested / Sure)
+        </div>
+        {positiveBranch ? (
+          <div>
+            <div
+              className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/10 transition-colors"
+              onClick={() => setEditingBranch(editingBranch === "positive" ? null : "positive")}
+            >
+              <p className="text-xs font-medium text-foreground">{positiveBranch.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{positiveBranch.body}</p>
+              <p className="text-xs text-muted-foreground/50 mt-0.5">
+                <Clock className="h-2.5 w-2.5 inline mr-0.5" />
+                {positiveBranch.delayAmount} {positiveBranch.delayUnit}
+              </p>
+            </div>
+            {editingBranch === "positive" && (
+              <div className="mt-2">
+                <StepEditor
+                  step={positiveBranch as unknown as DripStep}
+                  sequenceId={sequenceId}
+                  branchType="positive"
+                  parentStepId={step.id}
+                  onSaved={() => setEditingBranch(null)}
+                  onDeleted={() => setEditingBranch(null)}
+                />
+              </div>
+            )}
+          </div>
+        ) : (
+          editingBranch === "positive" ? (
+            <StepEditor
+              sequenceId={sequenceId}
+              nextStepNumber={step.stepNumber}
+              branchType="positive"
+              parentStepId={step.id}
+              onSaved={() => setEditingBranch(null)}
+            />
+          ) : (
+            <button
+              onClick={() => setEditingBranch("positive")}
+              className="text-xs text-emerald-400/60 hover:text-emerald-400 flex items-center gap-1 transition-colors"
+            >
+              <Plus className="h-3 w-3" /> Add positive reply message
+            </button>
+          )
+        )}
+      </div>
+
+      {/* Negative branch */}
+      <div className="border-l-2 border-amber-500/40 pl-3 space-y-1">
+        <div className="flex items-center gap-1.5 text-xs text-amber-400 font-medium">
+          <ThumbsDown className="h-3 w-3" />
+          Negative reply (Not now / Maybe later / No)
+        </div>
+        {negativeBranch ? (
+          <div>
+            <div
+              className="p-2 rounded-lg bg-amber-500/5 border border-amber-500/20 cursor-pointer hover:bg-amber-500/10 transition-colors"
+              onClick={() => setEditingBranch(editingBranch === "negative" ? null : "negative")}
+            >
+              <p className="text-xs font-medium text-foreground">{negativeBranch.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{negativeBranch.body}</p>
+              <p className="text-xs text-muted-foreground/50 mt-0.5">
+                <Clock className="h-2.5 w-2.5 inline mr-0.5" />
+                {negativeBranch.delayAmount} {negativeBranch.delayUnit}
+              </p>
+            </div>
+            {editingBranch === "negative" && (
+              <div className="mt-2">
+                <StepEditor
+                  step={negativeBranch as unknown as DripStep}
+                  sequenceId={sequenceId}
+                  branchType="negative"
+                  parentStepId={step.id}
+                  onSaved={() => setEditingBranch(null)}
+                  onDeleted={() => setEditingBranch(null)}
+                />
+              </div>
+            )}
+          </div>
+        ) : (
+          editingBranch === "negative" ? (
+            <StepEditor
+              sequenceId={sequenceId}
+              nextStepNumber={step.stepNumber}
+              branchType="negative"
+              parentStepId={step.id}
+              onSaved={() => setEditingBranch(null)}
+            />
+          ) : (
+            <button
+              onClick={() => setEditingBranch("negative")}
+              className="text-xs text-amber-400/60 hover:text-amber-400 flex items-center gap-1 transition-colors"
+            >
+              <Plus className="h-3 w-3" /> Add negative reply message
+            </button>
+          )
+        )}
       </div>
     </div>
   );
@@ -313,6 +519,7 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
     : "bg-blue-500/15 text-blue-300 border-blue-500/30";
   const nextStepNumber = (seq.steps?.length ?? 0) + 1;
   const duration = totalDuration(seq.steps ?? []);
+  const hasBranches = seq.steps?.some((s) => s.branchSteps && s.branchSteps.length > 0);
 
   return (
     <div className={`border rounded-xl overflow-hidden bg-card transition-all ${seq.isActive ? "border-border" : "border-border/50 opacity-70"}`}>
@@ -334,6 +541,12 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {duration}
+              </span>
+            )}
+            {hasBranches && (
+              <span className="inline-flex items-center gap-1 text-xs text-violet-300 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-full">
+                <GitBranch className="h-3 w-3" />
+                A/B branches
               </span>
             )}
           </div>
@@ -362,7 +575,6 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
 
               {seq.steps && seq.steps.length > 0 ? (
                 <div className="relative space-y-0">
-                  {/* Vertical line */}
                   <div className="absolute left-[15px] top-6 bottom-6 w-px bg-border" />
                   {seq.steps.map((step, idx) => (
                     <div key={step.id} className="relative">
@@ -370,7 +582,6 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                         className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/20 cursor-pointer transition-colors"
                         onClick={() => setEditingStepId(editingStepId === step.id ? null : step.id)}
                       >
-                        {/* Node */}
                         <div className="h-7 w-7 rounded-full bg-card border-2 border-violet-500/50 flex items-center justify-center text-xs font-bold text-violet-300 shrink-0 z-10">
                           {step.stepNumber}
                         </div>
@@ -381,10 +592,17 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                               <Clock className="h-3 w-3" />
                               {step.delayAmount ?? step.delayDays} {step.delayUnit ?? "days"}
                             </span>
+                            {step.branchSteps && step.branchSteps.length > 0 && (
+                              <span className="inline-flex items-center gap-1 text-xs text-violet-300 bg-violet-500/10 px-1.5 py-0.5 rounded">
+                                <GitBranch className="h-3 w-3" />
+                                {step.branchSteps.length} branch{step.branchSteps.length !== 1 ? "es" : ""}
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{step.body}</p>
                         </div>
                       </div>
+
                       {editingStepId === step.id && (
                         <div className="ml-10 mb-2">
                           <StepEditor
@@ -395,6 +613,10 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                           />
                         </div>
                       )}
+
+                      {/* A/B Branch Fork */}
+                      <BranchFork step={step} sequenceId={seq.id} />
+
                       {idx < seq.steps.length - 1 && (
                         <div className="flex items-center gap-2 ml-10 my-1">
                           <ArrowDown className="h-3.5 w-3.5 text-muted-foreground/50" />
@@ -448,15 +670,35 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                 Lead's View
               </p>
               {seq.steps && seq.steps.length > 0 ? (
-                <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
                   {seq.steps.map((step, idx) => (
-                    <div key={step.id} className="space-y-1.5">
+                    <div key={step.id} className="space-y-2">
                       <SmsBubble
                         body={step.body}
                         delay={step.delayAmount ?? step.delayDays ?? 0}
                         unit={step.delayUnit ?? "days"}
                         stepNum={step.stepNumber}
                       />
+
+                      {/* Show A/B branches in preview */}
+                      {step.branchSteps && step.branchSteps.length > 0 && (
+                        <div className="ml-2 pl-3 border-l-2 border-violet-500/20 space-y-2">
+                          <p className="text-xs text-violet-300/60 flex items-center gap-1">
+                            <GitBranch className="h-3 w-3" /> Lead replies…
+                          </p>
+                          {step.branchSteps.map((branch) => (
+                            <SmsBubble
+                              key={branch.id}
+                              body={branch.body}
+                              delay={branch.delayAmount}
+                              unit={branch.delayUnit}
+                              stepNum={step.stepNumber}
+                              branchType={branch.branchType}
+                            />
+                          ))}
+                        </div>
+                      )}
+
                       {idx < seq.steps.length - 1 && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground/50 pl-2">
                           <ArrowDown className="h-3 w-3" />
@@ -490,6 +732,14 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
 
 const QUICK_STARTS = [
   {
+    label: "Insurance Agent — Form Lead",
+    icon: "🛡️",
+    description: "Thank form fill → A/B branch on reply",
+    steps: [
+      { name: "Thank You + Availability Ask", delayAmount: 0, delayUnit: "days" as const, body: "Hi {{firstName}}, thanks so much for filling out the form! I'd love to connect — is Monday a good time for a quick 10-min call? Just reply YES or let me know what works!" },
+    ],
+  },
+  {
     label: "3-Step Follow-up",
     icon: "🚀",
     description: "Immediate + Day 3 + Day 7",
@@ -504,7 +754,7 @@ const QUICK_STARTS = [
     icon: "🌱",
     description: "Day 1 + Day 3 + Day 5",
     steps: [
-      { name: "Day 1 Intro", delayAmount: 1, delayUnit: "days" as const, body: "Hi {{firstName}}, I wanted to share a bit more about what we offer at {{company}}. Would love to walk you through it — reply anytime!" },
+      { name: "Day 1 Intro", delayAmount: 1, delayUnit: "days" as const, body: "Hi {{firstName}}, I wanted to share a bit more about what we offer. Would love to walk you through it — reply anytime!" },
       { name: "Day 3 Value", delayAmount: 3, delayUnit: "days" as const, body: "Hey {{firstName}}, here's a quick link to see what others are saying: {{link}} — let me know if you have questions!" },
       { name: "Day 5 CTA", delayAmount: 5, delayUnit: "days" as const, body: "Hi {{firstName}}, ready to move forward? Just reply YES and I'll get your quote ready within the hour." },
     ],
@@ -530,10 +780,11 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
   const [quickStart, setQuickStart] = useState<number | null>(null);
   const utils = trpc.useUtils();
 
+  const upsertStep = trpc.drip.upsertStep.useMutation();
+
   const create = trpc.drip.createSequence.useMutation({
     onSuccess: async (seq) => {
       utils.drip.listSequences.invalidate();
-      // If a quick-start was selected, seed the steps
       if (quickStart !== null && seq) {
         const qs = QUICK_STARTS[quickStart];
         for (let i = 0; i < qs.steps.length; i++) {
@@ -554,18 +805,14 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
     onError: (e) => toast.error(e.message),
   });
 
-  const upsertStep = trpc.drip.upsertStep.useMutation();
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg">
-        {/* Wizard header */}
         <div className="px-6 pt-6 pb-4 border-b border-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-foreground">New Drip Sequence</h2>
             <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors text-xl leading-none">×</button>
           </div>
-          {/* Step indicator */}
           <div className="flex items-center gap-2">
             {[1, 2].map((s) => (
               <div key={s} className="flex items-center gap-2">
@@ -589,7 +836,7 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Interested Lead Follow-up"
+                  placeholder="e.g. Insurance Form Lead Follow-up"
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground">Give it a name you'll recognize later.</p>
@@ -639,7 +886,7 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
                 <p className="text-sm font-medium text-foreground mb-0.5">Choose a Quick Start (optional)</p>
                 <p className="text-xs text-muted-foreground">Pre-fill your sequence with a proven follow-up pattern, or skip to build from scratch.</p>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {QUICK_STARTS.map((qs, i) => (
                   <button
                     key={i}
@@ -751,7 +998,7 @@ export default function DripPage() {
               { icon: <Zap className="h-4 w-4" />, label: "AI classifies intent" },
               { icon: <ArrowRight className="h-4 w-4" />, label: "Auto-Flow sends instant reply" },
               { icon: <User className="h-4 w-4" />, label: "Lead enrolled in drip" },
-              { icon: <Clock className="h-4 w-4" />, label: "Steps sent on schedule" },
+              { icon: <GitBranch className="h-4 w-4" />, label: "A/B branch on reply" },
               { icon: <Check className="h-4 w-4 text-emerald-400" />, label: "Stops on reply or opt-out", highlight: true },
             ].map((item, i) => (
               <div key={i} className={`flex flex-col items-center text-center gap-1.5 p-2 rounded-lg text-xs ${item.highlight ? "bg-emerald-500/10 text-emerald-300" : "bg-muted/20 text-muted-foreground"}`}>
@@ -792,7 +1039,7 @@ export default function DripPage() {
                   <Badge variant="outline" className="text-xs ml-auto">{interestedSeqs.length} sequence{interestedSeqs.length !== 1 ? "s" : ""}</Badge>
                 </div>
                 {interestedSeqs.map((seq) => (
-                  <SequenceCard key={seq.id} seq={seq} onDeleted={() => utils.drip.listSequences.invalidate()} />
+                  <SequenceCard key={seq.id} seq={seq as unknown as DripSequence} onDeleted={() => utils.drip.listSequences.invalidate()} />
                 ))}
               </section>
             )}
@@ -805,7 +1052,7 @@ export default function DripPage() {
                   <Badge variant="outline" className="text-xs ml-auto">{wantsMoreSeqs.length} sequence{wantsMoreSeqs.length !== 1 ? "s" : ""}</Badge>
                 </div>
                 {wantsMoreSeqs.map((seq) => (
-                  <SequenceCard key={seq.id} seq={seq} onDeleted={() => utils.drip.listSequences.invalidate()} />
+                  <SequenceCard key={seq.id} seq={seq as unknown as DripSequence} onDeleted={() => utils.drip.listSequences.invalidate()} />
                 ))}
               </section>
             )}

@@ -274,6 +274,10 @@ export type InsertDripSequence = typeof dripSequences.$inferInsert;
 export const DRIP_DELAY_UNITS = ["minutes", "days"] as const;
 export type DripDelayUnit = (typeof DRIP_DELAY_UNITS)[number];
 
+// Branch types for A/B reply-based branching
+export const DRIP_BRANCH_TYPES = ["positive", "negative"] as const;
+export type DripBranchType = (typeof DRIP_BRANCH_TYPES)[number];
+
 export const dripSteps = mysqlTable("drip_steps", {
   id: int("id").autoincrement().primaryKey(),
   sequenceId: int("sequenceId").notNull(),
@@ -284,6 +288,10 @@ export const dripSteps = mysqlTable("drip_steps", {
   delayDays: int("delayDays").notNull().default(3), // kept for backward compat
   name: varchar("name", { length: 255 }).notNull(),
   body: text("body").notNull(),
+  // A/B branching: if set, this step is a branch child of parentStepId
+  // null = linear step; 'positive' = sent when lead replies positively; 'negative' = sent when negative
+  branchType: mysqlEnum("branchType", DRIP_BRANCH_TYPES),
+  parentStepId: int("parentStepId"), // FK to dripSteps.id (self-referential)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

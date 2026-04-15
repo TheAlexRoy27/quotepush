@@ -71,6 +71,13 @@
       "when": 1776209110071,
       "tag": "0009_first_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1776211845152,
+      "tag": "0010_worried_chimera",
+      "breakpoints": true
     }
   ]
 }

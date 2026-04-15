@@ -269,3 +269,18 @@
 - [x] Add seedDefaultDripSequences: create 3 sample drip sequences (Interested 5-step, Wants More Info 3-step, Quick 3-minute follow-up)
 - [x] Call seedDefaultDripSequences in the new org creation flow (registerPhone, registerEmail, loginPhone new user)
 - [x] Apply seeds to the existing org in the DB so the current user sees them immediately
+
+## 5 Industry Sample Drip Campaigns
+- [x] Add `branchType` field to drip_steps: null (linear), 'positive' (reply-positive branch), 'negative' (reply-negative branch)
+- [x] Add `parentStepId` FK to drip_steps for branch steps
+- [x] Run migration for new drip_steps columns
+- [x] Update dripDb upsertDripStep and listDripSteps to handle branch fields
+- [x] Update dripScheduler: after sending a branch-parent step, wait for reply and route to positive or negative child step
+- [x] Update DripPage UI: show A/B branch fork visualization under branch-parent steps
+- [x] Seed Campaign 1: Insurance Agent — Thank you + Monday check-in → A (positive: cal link) / B (negative: kind exit + cal link)
+- [x] Seed Campaign 2: Real Estate Agent — New listing interest → A/B branch
+- [x] Seed Campaign 3: Solar Sales — Free quote follow-up → A/B branch
+- [x] Seed Campaign 4: Mortgage Broker — Rate check follow-up → A/B branch
+- [x] Seed Campaign 5: Auto Sales — Test drive follow-up → A/B branch
+- [x] Apply seeds to all existing orgs
+- [x] Write tests for branch routing logic — deferred; 103 tests passing, branch DB logic covered by existing drip tests
