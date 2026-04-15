@@ -28,16 +28,15 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: Users, label: "Leads", path: "/" },
+  { icon: TrendingUp, label: "My Dashboard", path: "/my-dashboard" },
+  { icon: Users, label: "Leads", path: "/leads" },
   { icon: FileText, label: "SMS Template", path: "/template" },
   { icon: BookOpen, label: "Template Library", path: "/library" },
   { icon: Zap, label: "Drip Sequences", path: "/drip" },
   { icon: Webhook, label: "CRM Webhook", path: "/webhook" },
-  { icon: BarChart2, label: "Analytics", path: "/analytics" },
   { icon: Building2, label: "Organization", path: "/organization" },
   { icon: CreditCard, label: "Billing", path: "/billing" },
   { icon: Settings, label: "Settings", path: "/settings" },
-  { icon: TrendingUp, label: "My Dashboard", path: "/my-dashboard" },
   { icon: Zap, label: "Auto-Promote", path: "/keyword-promotion" },
   { icon: Gift, label: "Referrals", path: "/referrals" },
 ];

@@ -440,3 +440,8 @@
 - [x] tRPC procedure: per-org usage stats (messages sent, reply rate, leads booked, active drips)
 - [x] Usage Dashboard page at /dashboard with stat cards and messages-per-day chart
 - [x] Add "My Dashboard" nav item to sidebar
+
+## My Dashboard as Default Page
+- [x] Move My Dashboard to top of sidebar nav
+- [x] Make /my-dashboard the default route (/ and /leads redirect to /my-dashboard after login)
+- [x] Embed full analytics charts (message activity, lead milestones, reply time, reply intent, trend) in bottom half of UsageDashboardPage

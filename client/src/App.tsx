@@ -38,7 +38,7 @@ function Router() {
       <Route>
         <DashboardLayout>
           <Switch>
-            <Route path={"/"} component={LeadsPage} />
+            <Route path={"/"} component={UsageDashboardPage} />
             <Route path={"/leads"} component={LeadsPage} />
             <Route path={"/template"} component={TemplatePage} />
             <Route path={"/settings"} component={SettingsPage} />
