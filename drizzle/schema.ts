@@ -214,6 +214,7 @@ export const flowTemplates = mysqlTable("flow_templates", {
   category: mysqlEnum("category", REPLY_CATEGORIES).notNull(),
   body: text("body").notNull(),
   isActive: int("isActive").notNull().default(1),
+  folderId: int("folderId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -351,3 +352,19 @@ export const ownerCredentials = mysqlTable("owner_credentials", {
 
 export type OwnerCredential = typeof ownerCredentials.$inferSelect;
 export type InsertOwnerCredential = typeof ownerCredentials.$inferInsert;
+
+// ─── Template Folders ─────────────────────────────────────────────────────────
+
+export const templateFolders = mysqlTable("template_folders", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  icon: varchar("icon", { length: 64 }).notNull().default("Folder"),
+  color: varchar("color", { length: 64 }).notNull().default("blue"),
+  sortOrder: int("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TemplateFolder = typeof templateFolders.$inferSelect;
+export type InsertTemplateFolder = typeof templateFolders.$inferInsert;

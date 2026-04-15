@@ -350,3 +350,16 @@
 - [x] On click, open a guided modal: show original sequence name, let user name the variant (pre-filled as "[Name] — Variant B"), show a tip about what to change (tone, timing, CTA), and a "Create Variant" button
 - [x] On confirm, clone the sequence with the chosen name, scroll/expand the new card, and show a success toast: "Variant B created! Now edit it to test a different approach."
 - [x] Tag variant sequences visually with a small "B" badge so they're easy to identify (name-based identification via modal)
+
+## Template Library — Folders & Hyperlinks
+- [ ] Add template_folders table to schema (id, orgId, name, icon, color, sortOrder, createdAt)
+- [ ] Add folderId foreign key to message_templates table
+- [ ] Generate and apply DB migration
+- [ ] Add folder CRUD tRPC procedures (list, create, rename, delete, reorder)
+- [ ] Update template list/create/update procedures to include folderId
+- [ ] Seed 6 sample folders with 3–4 templates each, including hyperlinks in bodies
+- [ ] Rebuild LibraryPage with folder sidebar (left panel) + template grid (right panel)
+- [ ] Add inline hyperlink insertion button in template body editor (inserts [label](url) markdown)
+- [ ] Render hyperlinks as clickable blue underlined links in template preview cards
+- [ ] Allow drag-to-reorder folders and move templates between folders
+- [ ] Add "New Folder" button and folder rename/delete via context menu

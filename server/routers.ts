@@ -54,12 +54,17 @@ import {
 } from "./webhookEngine";
 import {
   createFlowTemplate,
+  createTemplateFolder,
   deleteFlowTemplate,
+  deleteTemplateFolder,
   listFlowRules,
   listFlowTemplates,
+  listTemplateFolders,
   seedDefaultTemplates,
   seedFlowRules,
+  seedTemplateFolders,
   updateFlowTemplate,
+  updateTemplateFolder,
   upsertFlowRule,
 } from "./flowDb";
 import {
@@ -784,14 +789,14 @@ const flowTemplatesRouter = router({
     }),
 
   create: protectedProcedure
-    .input(z.object({ name: z.string().min(1), category: ReplyCategoryEnum, body: z.string().min(1), isActive: z.boolean().optional() }))
+    .input(z.object({ name: z.string().min(1), category: ReplyCategoryEnum, body: z.string().min(1), isActive: z.boolean().optional(), folderId: z.number().nullable().optional() }))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
-      return createFlowTemplate({ orgId, name: input.name, category: input.category, body: input.body, isActive: input.isActive === false ? 0 : 1 });
+      return createFlowTemplate({ orgId, name: input.name, category: input.category, body: input.body, isActive: input.isActive === false ? 0 : 1, folderId: input.folderId ?? null });
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.number(), name: z.string().min(1).optional(), category: ReplyCategoryEnum.optional(), body: z.string().min(1).optional(), isActive: z.boolean().optional() }))
+    .input(z.object({ id: z.number(), name: z.string().min(1).optional(), category: ReplyCategoryEnum.optional(), body: z.string().min(1).optional(), isActive: z.boolean().optional(), folderId: z.number().nullable().optional() }))
     .mutation(({ input }) => {
       const { id, isActive, ...rest } = input;
       return updateFlowTemplate(id, { ...rest, ...(isActive !== undefined ? { isActive: isActive ? 1 : 0 } : {}) });
@@ -806,6 +811,40 @@ const flowTemplatesRouter = router({
     await seedFlowRules(orgId);
     await seedDefaultTemplates(orgId);
     await seedDefaultDripSequences(orgId);
+    await seedTemplateFolders(orgId);
+    return { success: true };
+  }),
+});
+
+// ─── Template Folders Router ─────────────────────────────────────────────────────
+
+const templateFoldersRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    return listTemplateFolders(orgId);
+  }),
+
+  create: protectedProcedure
+    .input(z.object({ name: z.string().min(1), icon: z.string().optional(), color: z.string().optional(), sortOrder: z.number().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      return createTemplateFolder({ orgId, name: input.name, icon: input.icon ?? "Folder", color: input.color ?? "blue", sortOrder: input.sortOrder ?? 0 });
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.number(), name: z.string().min(1).optional(), icon: z.string().optional(), color: z.string().optional(), sortOrder: z.number().optional() }))
+    .mutation(({ input }) => {
+      const { id, ...rest } = input;
+      return updateTemplateFolder(id, rest);
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ input }) => deleteTemplateFolder(input.id)),
+
+  seed: protectedProcedure.mutation(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    await seedTemplateFolders(orgId);
     return { success: true };
   }),
 });
@@ -1187,6 +1226,7 @@ export const appRouter = router({
   sms: smsRouter,
   webhook: webhookRouter,
   flowTemplates: flowTemplatesRouter,
+  templateFolders: templateFoldersRouter,
   flowRules: flowRulesRouter,
   billing: billingRouter,
   admin: adminRouter,

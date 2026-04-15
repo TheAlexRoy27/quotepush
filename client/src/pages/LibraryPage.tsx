@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useState, useRef } from "react";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+
 import {
   Dialog,
   DialogContent,
@@ -14,12 +14,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,285 +30,205 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  FolderOpen,
+  Folder,
   Plus,
+  MoreVertical,
   Pencil,
   Trash2,
-  Zap,
+  Link,
+  Flame,
+  CalendarClock,
+  Lightbulb,
+  Handshake,
+  ShieldCheck,
+  BellOff,
   BookOpen,
   Loader2,
-  Sparkles,
-  MessageSquare,
-  Info,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
+  ExternalLink,
+  FolderPlus,
+  Search,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+const REPLY_CATEGORIES = ["Interested", "Not Interested", "Wants More Info", "Unsubscribe"] as const;
+type ReplyCategory = typeof REPLY_CATEGORIES[number];
 
-const CATEGORIES = [
-  "Interested",
-  "Not Interested",
-  "Wants More Info",
-  "Unsubscribe",
-] as const;
-
-type ReplyCategory = (typeof CATEGORIES)[number];
-
-const CATEGORY_META: Record<
-  ReplyCategory,
-  {
-    color: string;
-    bg: string;
-    border: string;
-    icon: string;
-    description: string;
-    triggerExamples: string[];
-  }
-> = {
-  Interested: {
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/20",
-    icon: "✅",
-    description: "Lead wants to move forward or schedule a call",
-    triggerExamples: ["Yes", "That works", "Sounds good", "Sure", "Let's do it", "Absolutely"],
-  },
-  "Not Interested": {
-    color: "text-rose-400",
-    bg: "bg-rose-500/10",
-    border: "border-rose-500/20",
-    icon: "🚫",
-    description: "Lead declines or is not interested",
-    triggerExamples: ["No thanks", "Not interested", "Not for us", "We're all set", "Pass"],
-  },
-  "Wants More Info": {
-    color: "text-amber-400",
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/20",
-    icon: "❓",
-    description: "Lead is asking questions or requesting details",
-    triggerExamples: ["How much?", "Tell me more", "What do you offer?", "How does it work?"],
-  },
-  Unsubscribe: {
-    color: "text-slate-400",
-    bg: "bg-slate-500/10",
-    border: "border-slate-500/20",
-    icon: "🔕",
-    description: "Lead wants to opt out of messages",
-    triggerExamples: ["STOP", "Unsubscribe", "Remove me", "Don't text me", "Opt out"],
-  },
+const CATEGORY_COLORS: Record<ReplyCategory, string> = {
+  "Interested": "bg-emerald-100 text-emerald-800 border-emerald-200",
+  "Not Interested": "bg-rose-100 text-rose-800 border-rose-200",
+  "Wants More Info": "bg-blue-100 text-blue-800 border-blue-200",
+  "Unsubscribe": "bg-gray-100 text-gray-700 border-gray-200",
 };
 
-const VARIABLE_HINTS = [
-  { tag: "{{firstName}}", desc: "Lead's first name (auto-capitalized)" },
-  { tag: "{{name}}", desc: "Lead's full name (auto-capitalized)" },
-  { tag: "{{company}}", desc: "Lead's company" },
-  { tag: "{{link}}", desc: "Scheduling / Calendly link" },
-];
+const FOLDER_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Flame, CalendarClock, Lightbulb, Handshake, ShieldCheck, BellOff, Folder, FolderOpen, BookOpen,
+};
 
-// ─── Template Card ────────────────────────────────────────────────────────────
+const FOLDER_COLOR_MAP: Record<string, string> = {
+  red: "text-red-500",
+  blue: "text-blue-500",
+  amber: "text-amber-500",
+  green: "text-emerald-500",
+  purple: "text-purple-500",
+  gray: "text-gray-400",
+};
 
-function TemplateCard({
-  template,
-  isLinked,
-  onEdit,
-  onDelete,
-}: {
-  template: { id: number; name: string; body: string; isActive: number };
-  isLinked: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const preview = template.body.slice(0, 120) + (template.body.length > 120 ? "…" : "");
-  return (
-    <div
-      className={`group relative bg-card border rounded-xl p-4 transition-all hover:border-primary/30 hover:shadow-md ${
-        template.isActive ? "border-border" : "border-border/40 opacity-60"
-      }`}
-    >
-      {isLinked && (
-        <span className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-          <Zap className="h-2.5 w-2.5" /> Auto-flow
-        </span>
-      )}
-      <div className="flex items-start justify-between gap-2 pr-16">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{template.name}</p>
-          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{preview}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
-        {!template.isActive && (
-          <span className="text-[10px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full">
-            Inactive
-          </span>
-        )}
-        <div className="ml-auto flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-            onClick={onEdit}
-          >
-            <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-            onClick={onDelete}
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+function renderBody(body: string) {
+  const parts: React.ReactNode[] = [];
+  const regex = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)|(https?:\/\/[^\s,]+)/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  while ((match = regex.exec(body)) !== null) {
+    if (match.index > last) {
+      parts.push(<span key={key++}>{body.slice(last, match.index)}</span>);
+    }
+    if (match[1] && match[2]) {
+      parts.push(
+        <a key={key++} href={match[2]} target="_blank" rel="noopener noreferrer"
+          className="text-blue-500 underline underline-offset-2 inline-flex items-center gap-0.5 hover:text-blue-400">
+          {match[1]}<ExternalLink className="h-3 w-3" />
+        </a>
+      );
+    } else if (match[3]) {
+      parts.push(
+        <a key={key++} href={match[3]} target="_blank" rel="noopener noreferrer"
+          className="text-blue-500 underline underline-offset-2 inline-flex items-center gap-0.5 hover:text-blue-400 break-all">
+          {match[3]}<ExternalLink className="h-3 w-3" />
+        </a>
+      );
+    }
+    last = match.index + match[0].length;
+  }
+  if (last < body.length) parts.push(<span key={key++}>{body.slice(last)}</span>);
+  return <span className="whitespace-pre-wrap">{parts}</span>;
 }
 
-// ─── Template Editor Modal ────────────────────────────────────────────────────
-
-function TemplateEditorModal({
-  open,
-  onClose,
-  defaultCategory,
-  template,
-  onSuccess,
-}: {
+interface TemplateEditorProps {
   open: boolean;
   onClose: () => void;
-  defaultCategory: ReplyCategory;
-  template?: {
-    id: number;
+  folders: Array<{ id: number; name: string }>;
+  initial?: {
+    id?: number;
     name: string;
-    category: string;
+    category: ReplyCategory;
     body: string;
-    isActive: number;
-  } | null;
-  onSuccess: () => void;
-}) {
-  const [name, setName] = useState(template?.name ?? "");
-  const [category, setCategory] = useState<ReplyCategory>(
-    (template?.category as ReplyCategory) ?? defaultCategory
-  );
-  const [body, setBody] = useState(template?.body ?? "");
-  const [isActive, setIsActive] = useState(template ? template.isActive === 1 : true);
-  const utils = trpc.useUtils();
-
-  const createMutation = trpc.flowTemplates.create.useMutation({
-    onSuccess: () => {
-      toast.success("Template created");
-      utils.flowTemplates.list.invalidate();
-      onSuccess();
-      onClose();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const updateMutation = trpc.flowTemplates.update.useMutation({
-    onSuccess: () => {
-      toast.success("Template updated");
-      utils.flowTemplates.list.invalidate();
-      onSuccess();
-      onClose();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const isLoading = createMutation.isPending || updateMutation.isPending;
-
-  const handleSubmit = () => {
-    if (!name.trim() || !body.trim()) {
-      toast.error("Name and body are required");
-      return;
-    }
-    if (template) {
-      updateMutation.mutate({ id: template.id, name, category, body, isActive });
-    } else {
-      createMutation.mutate({ name, category, body, isActive });
-    }
+    folderId?: number | null;
   };
+  onSave: (data: { name: string; category: ReplyCategory; body: string; folderId: number | null }) => void;
+  saving?: boolean;
+}
 
-  const insertVariable = (tag: string) => {
-    setBody((prev) => prev + tag);
-  };
+function TemplateEditor({ open, onClose, folders, initial, onSave, saving }: TemplateEditorProps) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [category, setCategory] = useState<ReplyCategory>(initial?.category ?? "Interested");
+  const [body, setBody] = useState(initial?.body ?? "");
+  const [folderId, setFolderId] = useState<number | null>(initial?.folderId ?? null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const [prevOpen, setPrevOpen] = useState(false);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setName(initial?.name ?? "");
+      setCategory(initial?.category ?? "Interested");
+      setBody(initial?.body ?? "");
+      setFolderId(initial?.folderId ?? null);
+    }
+  }
+
+  function insertLink() {
+    const ta = bodyRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = body.slice(start, end) || "Link Text";
+    const insertion = `[${selected}](https://yoursite.com)`;
+    const newBody = body.slice(0, start) + insertion + body.slice(end);
+    setBody(newBody);
+    setTimeout(() => {
+      ta.focus();
+      ta.setSelectionRange(start + selected.length + 3, start + insertion.length - 1);
+    }, 0);
+  }
+
+  const VARIABLE_TAGS = ["{{firstName}}", "{{name}}", "{{company}}", "{{link}}"];
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle className="text-foreground">
-            {template ? "Edit Template" : "New Template"}
-          </DialogTitle>
+          <DialogTitle>{initial?.id ? "Edit Template" : "New Template"}</DialogTitle>
         </DialogHeader>
-
         <div className="space-y-4 py-2">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Template Name</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Interested — Schedule Call"
-              className="bg-background border-border text-sm"
-            />
+          <div>
+            <label className="text-sm font-medium mb-1 block">Template Name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hot Lead — Book Now" />
           </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Reply Category</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as ReplyCategory)}>
-              <SelectTrigger className="bg-background border-border text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {CATEGORY_META[c].icon} {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Category</label>
+              <Select value={category} onValueChange={(v) => setCategory(v as ReplyCategory)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {REPLY_CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Folder</label>
+              <Select value={folderId?.toString() ?? "none"} onValueChange={(v) => setFolderId(v === "none" ? null : Number(v))}>
+                <SelectTrigger><SelectValue placeholder="No folder" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No folder</SelectItem>
+                  {folders.map((f) => (
+                    <SelectItem key={f.id} value={f.id.toString()}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Message Body</Label>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium">Message Body</label>
+              <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={insertLink}>
+                <Link className="h-3 w-3" /> Insert Link
+              </Button>
+            </div>
             <Textarea
+              ref={bodyRef}
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              placeholder="Write your follow-up message…"
-              className="bg-background border-border text-sm min-h-[120px] resize-none"
+              rows={7}
+              placeholder={"Hi {{firstName}}, ...\n\nUse [Label](https://url) to add hyperlinks."}
+              className="font-mono text-sm"
             />
-            <div className="flex flex-wrap gap-1.5 mt-1.5">
-              {VARIABLE_HINTS.map((v) => (
-                <button
-                  key={v.tag}
-                  type="button"
-                  onClick={() => insertVariable(v.tag)}
-                  title={v.desc}
-                  className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
-                >
-                  {v.tag}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {VARIABLE_TAGS.map((tag) => (
+                <button key={tag} type="button"
+                  onClick={() => setBody((b) => b + tag)}
+                  className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors">
+                  {tag}
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/50">
-            <div>
-              <p className="text-sm font-medium text-foreground">Active</p>
-              <p className="text-xs text-muted-foreground">Only active templates appear in flow rules</p>
-            </div>
-            <Switch checked={isActive} onCheckedChange={setIsActive} />
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Hyperlinks: <code className="bg-muted px-1 rounded">[Label](https://url)</code> or paste a bare URL
+            </p>
           </div>
         </div>
-
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isLoading}>
-            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {template ? "Save Changes" : "Create Template"}
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onSave({ name, category, body, folderId })} disabled={!name.trim() || !body.trim() || saving}>
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Saving…</> : "Save Template"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -317,456 +236,391 @@ function TemplateEditorModal({
   );
 }
 
-// ─── Flow Rule Card (redesigned) ──────────────────────────────────────────────
+const FOLDER_ICONS = ["Folder", "Flame", "CalendarClock", "Lightbulb", "Handshake", "ShieldCheck", "BellOff", "BookOpen"];
+const FOLDER_COLORS = ["blue", "red", "amber", "green", "purple", "gray"];
 
-function FlowRuleCard({
-  category,
-  rule,
-  templates,
-  onUpdate,
-}: {
-  category: ReplyCategory;
-  rule?: { id: number; templateId: number | null; autoSend: number } | null;
-  templates: { id: number; name: string; body: string; isActive: number }[];
-  onUpdate: () => void;
-}) {
-  const meta = CATEGORY_META[category];
-  const utils = trpc.useUtils();
-  const [expanded, setExpanded] = useState(false);
+interface FolderDialogProps {
+  open: boolean;
+  onClose: () => void;
+  initial?: { id?: number; name: string; icon: string; color: string };
+  onSave: (data: { name: string; icon: string; color: string }) => void;
+  saving?: boolean;
+}
 
-  const upsertMutation = trpc.flowRules.upsert.useMutation({
-    onSuccess: () => {
-      utils.flowRules.list.invalidate();
-      onUpdate();
-    },
-    onError: (e) => toast.error(e.message),
-  });
+function FolderDialog({ open, onClose, initial, onSave, saving }: FolderDialogProps) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [icon, setIcon] = useState(initial?.icon ?? "Folder");
+  const [color, setColor] = useState(initial?.color ?? "blue");
+  const [prevOpen, setPrevOpen] = useState(false);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setName(initial?.name ?? "");
+      setIcon(initial?.icon ?? "Folder");
+      setColor(initial?.color ?? "blue");
+    }
+  }
 
-  const activeTemplates = templates.filter((t) => t.isActive === 1);
-  const assignedTemplate = templates.find((t) => t.id === rule?.templateId);
-  const isAutoSend = rule?.autoSend === 1 && !!rule?.templateId;
-
-  const handleTemplateChange = (templateId: string) => {
-    upsertMutation.mutate({
-      category,
-      templateId: templateId === "none" ? null : Number(templateId),
-      autoSend: rule?.autoSend === 1,
-    });
-  };
-
-  const handleAutoSendToggle = (enabled: boolean) => {
-    upsertMutation.mutate({
-      category,
-      templateId: rule?.templateId ?? null,
-      autoSend: enabled,
-    });
+  const colorBg: Record<string, string> = {
+    blue: "bg-blue-400", red: "bg-red-400", amber: "bg-amber-400",
+    green: "bg-emerald-400", purple: "bg-purple-400", gray: "bg-gray-400",
   };
 
   return (
-    <div className={`rounded-xl border transition-all ${isAutoSend ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-card"}`}>
-      {/* Main row */}
-      <div className="flex items-center gap-4 p-4">
-        {/* Category badge */}
-        <div className={`flex items-center gap-2 min-w-[170px]`}>
-          <span
-            className={`text-xs font-medium px-2.5 py-1 rounded-full border ${meta.bg} ${meta.border} ${meta.color}`}
-          >
-            {meta.icon} {category}
-          </span>
-        </div>
-
-        {/* Arrow */}
-        <ArrowRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-
-        {/* Assigned template selector */}
-        <div className="flex-1 min-w-0">
-          <Select
-            value={rule?.templateId?.toString() ?? "none"}
-            onValueChange={handleTemplateChange}
-          >
-            <SelectTrigger className="h-8 text-xs bg-background border-border">
-              <SelectValue placeholder="No template assigned" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">
-                <span className="text-muted-foreground">No template assigned</span>
-              </SelectItem>
-              {activeTemplates.map((t) => (
-                <SelectItem key={t.id} value={t.id.toString()}>
-                  {t.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Auto-send toggle */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Switch
-            checked={isAutoSend}
-            onCheckedChange={handleAutoSendToggle}
-            disabled={!rule?.templateId}
-          />
-          <span className={`text-xs font-medium w-16 ${isAutoSend ? "text-emerald-400" : "text-muted-foreground"}`}>
-            {isAutoSend ? "⚡ Auto" : "Manual"}
-          </span>
-        </div>
-
-        {/* Expand toggle */}
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="text-muted-foreground hover:text-foreground transition-colors"
-          title={expanded ? "Collapse" : "Preview flow"}
-        >
-          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
-      </div>
-
-      {/* Expanded flow visualization */}
-      {expanded && (
-        <div className="px-4 pb-4 border-t border-border/40 pt-4 space-y-3">
-          {/* Trigger examples */}
-          <div className="flex items-start gap-3">
-            <div className="shrink-0 w-28 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide pt-1">
-              Lead replies with
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {meta.triggerExamples.map((ex) => (
-                <span
-                  key={ex}
-                  className={`text-xs px-2 py-0.5 rounded-full border ${meta.bg} ${meta.border} ${meta.color}`}
-                >
-                  "{ex}"
-                </span>
-              ))}
-              <span className="text-xs text-muted-foreground/60 self-center">…and similar</span>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{initial?.id ? "Rename Folder" : "New Folder"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Folder Name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hot Leads" />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">Icon</label>
+            <div className="flex flex-wrap gap-2">
+              {FOLDER_ICONS.map((ic) => {
+                const Ic = FOLDER_ICON_MAP[ic] ?? Folder;
+                return (
+                  <button key={ic} type="button" onClick={() => setIcon(ic)}
+                    className={`p-2 rounded-lg border-2 transition-colors ${icon === ic ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground"}`}>
+                    <Ic className="h-4 w-4" />
+                  </button>
+                );
+              })}
             </div>
           </div>
-
-          {/* Arrow connector */}
-          <div className="flex items-center gap-2 pl-28">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <div className="h-px w-4 bg-border" />
-              <ArrowRight className="h-3 w-3" />
-              <span className="text-[10px] uppercase tracking-wide font-medium">
-                {isAutoSend ? "QuotePush.io auto-sends" : "Suggested reply (manual)"}
-              </span>
-              <div className="h-px w-4 bg-border" />
+          <div>
+            <label className="text-sm font-medium mb-2 block">Color</label>
+            <div className="flex gap-2">
+              {FOLDER_COLORS.map((c) => (
+                <button key={c} type="button" onClick={() => setColor(c)}
+                  className={`h-7 w-7 rounded-full border-2 transition-all ${color === c ? "border-foreground scale-110" : "border-transparent"} ${colorBg[c]}`} />
+              ))}
             </div>
           </div>
-
-          {/* Assigned template preview */}
-          {assignedTemplate ? (
-            <div className="ml-28 rounded-lg bg-background border border-border p-3">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
-                {assignedTemplate.name}
-              </p>
-              <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                {assignedTemplate.body.slice(0, 200)}{assignedTemplate.body.length > 200 ? "…" : ""}
-              </p>
-            </div>
-          ) : (
-            <div className="ml-28 rounded-lg bg-muted/20 border border-dashed border-border p-3 text-center">
-              <p className="text-xs text-muted-foreground">No template assigned — select one above to enable this flow</p>
-            </div>
-          )}
         </div>
-      )}
-    </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onSave({ name, icon, color })} disabled={!name.trim() || saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+            {initial?.id ? "Save" : "Create Folder"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 export default function LibraryPage() {
-  const [activeCategory, setActiveCategory] = useState<ReplyCategory>("Interested");
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<{
-    id: number;
-    name: string;
-    category: string;
-    body: string;
-    isActive: number;
-  } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"library" | "flows">("library");
-
+  
   const utils = trpc.useUtils();
 
+  const { data: folders = [], isLoading: foldersLoading } = trpc.templateFolders.list.useQuery();
   const { data: allTemplates = [], isLoading: templatesLoading } = trpc.flowTemplates.list.useQuery(undefined);
-  const { data: flowRules = [], isLoading: rulesLoading } = trpc.flowRules.list.useQuery();
+
+  const [selectedFolderId, setSelectedFolderId] = useState<number | "all" | "unfiled">("all");
+  const [search, setSearch] = useState("");
+
+  const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<typeof allTemplates[0] | null>(null);
+  const [deleteTemplateId, setDeleteTemplateId] = useState<number | null>(null);
+
+  const createTemplateMutation = trpc.flowTemplates.create.useMutation({
+    onSuccess: () => { utils.flowTemplates.list.invalidate(); setTemplateEditorOpen(false); toast.success("Template created"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateTemplateMutation = trpc.flowTemplates.update.useMutation({
+    onSuccess: () => { utils.flowTemplates.list.invalidate(); setTemplateEditorOpen(false); setEditingTemplate(null); toast.success("Template saved"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteTemplateMutation = trpc.flowTemplates.delete.useMutation({
+    onSuccess: () => { utils.flowTemplates.list.invalidate(); setDeleteTemplateId(null); toast.success("Template deleted"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<typeof folders[0] | null>(null);
+  const [deleteFolderId, setDeleteFolderId] = useState<number | null>(null);
+
+  const createFolderMutation = trpc.templateFolders.create.useMutation({
+    onSuccess: () => { utils.templateFolders.list.invalidate(); setFolderDialogOpen(false); toast.success("Folder created"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateFolderMutation = trpc.templateFolders.update.useMutation({
+    onSuccess: () => { utils.templateFolders.list.invalidate(); setFolderDialogOpen(false); setEditingFolder(null); toast.success("Folder renamed"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteFolderMutation = trpc.templateFolders.delete.useMutation({
+    onSuccess: () => { utils.templateFolders.list.invalidate(); utils.flowTemplates.list.invalidate(); setDeleteFolderId(null); toast.success("Folder deleted"); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const seedMutation = trpc.flowTemplates.seed.useMutation({
-    onSuccess: () => {
-      toast.success("Default templates loaded");
-      utils.flowTemplates.list.invalidate();
-      utils.flowRules.list.invalidate();
-    },
-    onError: (e) => toast.error(e.message),
+    onSuccess: () => { utils.templateFolders.list.invalidate(); utils.flowTemplates.list.invalidate(); toast.success("Sample templates loaded!"); },
   });
 
-  const deleteMutation = trpc.flowTemplates.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Template deleted");
-      utils.flowTemplates.list.invalidate();
-      utils.flowRules.list.invalidate();
-      setDeleteTarget(null);
-    },
-    onError: (e) => toast.error(e.message),
+  const filteredTemplates = allTemplates.filter((t) => {
+    const matchesFolder =
+      selectedFolderId === "all" ? true :
+      selectedFolderId === "unfiled" ? !t.folderId :
+      t.folderId === selectedFolderId;
+    const matchesSearch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.body.toLowerCase().includes(search.toLowerCase());
+    return matchesFolder && matchesSearch;
   });
 
-  const categoryTemplates = allTemplates.filter((t) => t.category === activeCategory);
-  const linkedTemplateIds = new Set(flowRules.map((r) => r.templateId).filter(Boolean));
+  const sortedFolders = [...folders].sort((a, b) => a.sortOrder - b.sortOrder);
+  const isLoading = foldersLoading || templatesLoading;
+  const isSaving = createTemplateMutation.isPending || updateTemplateMutation.isPending;
+  const isFolderSaving = createFolderMutation.isPending || updateFolderMutation.isPending;
 
-  const openCreate = () => {
-    setEditingTemplate(null);
-    setEditorOpen(true);
-  };
+  function openNewTemplate() { setEditingTemplate(null); setTemplateEditorOpen(true); }
+  function openEditTemplate(t: typeof allTemplates[0]) { setEditingTemplate(t); setTemplateEditorOpen(true); }
 
-  const openEdit = (t: typeof editingTemplate) => {
-    setEditingTemplate(t);
-    setEditorOpen(true);
-  };
+  function handleSaveTemplate(data: { name: string; category: ReplyCategory; body: string; folderId: number | null }) {
+    if (editingTemplate?.id) {
+      updateTemplateMutation.mutate({ id: editingTemplate.id, ...data });
+    } else {
+      createTemplateMutation.mutate({ ...data, isActive: true, folderId: data.folderId ?? undefined });
+    }
+  }
+
+  function handleSaveFolder(data: { name: string; icon: string; color: string }) {
+    if (editingFolder?.id) {
+      updateFolderMutation.mutate({ id: editingFolder.id, ...data });
+    } else {
+      createFolderMutation.mutate({ ...data, sortOrder: folders.length });
+    }
+  }
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Template Library</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage reply templates and configure auto-flow rules for each lead response type.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {allTemplates.length === 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => seedMutation.mutate()}
-              disabled={seedMutation.isPending}
-              className="text-xs"
-            >
-              {seedMutation.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              Load Defaults
+    <div className="flex h-full min-h-0">
+      {/* Folder Sidebar */}
+      <aside className="w-56 shrink-0 border-r border-border flex flex-col bg-card/50">
+        <div className="p-3 border-b border-border">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Folders</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" title="New Folder"
+              onClick={() => { setEditingFolder(null); setFolderDialogOpen(true); }}>
+              <FolderPlus className="h-3.5 w-3.5" />
             </Button>
-          )}
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1.5" /> New Template
-          </Button>
+          </div>
         </div>
-      </div>
+        <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+          <button onClick={() => setSelectedFolderId("all")}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left ${selectedFolderId === "all" ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-foreground"}`}>
+            <BookOpen className="h-4 w-4 shrink-0" />
+            <span className="truncate">All Templates</span>
+            <span className="ml-auto text-xs text-muted-foreground">{allTemplates.length}</span>
+          </button>
 
-      {/* Tab switcher */}
-      <div className="flex items-center gap-1 bg-muted/30 border border-border rounded-lg p-1 w-fit">
-        <button
-          onClick={() => setActiveTab("library")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-            activeTab === "library"
-              ? "bg-card text-foreground shadow-sm border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <BookOpen className="h-3.5 w-3.5" /> Template Library
-        </button>
-        <button
-          onClick={() => setActiveTab("flows")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-            activeTab === "flows"
-              ? "bg-card text-foreground shadow-sm border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Zap className="h-3.5 w-3.5" /> Auto-Flow Rules
-        </button>
-      </div>
-
-      {/* ── Library Tab ── */}
-      {activeTab === "library" && (
-        <div className="flex gap-5">
-          {/* Category sidebar */}
-          <div className="w-52 shrink-0 space-y-1">
-            {CATEGORIES.map((cat) => {
-              const meta = CATEGORY_META[cat];
-              const count = allTemplates.filter((t) => t.category === cat).length;
-              const rule = flowRules.find((r) => r.category === cat);
-              const isAutoActive = rule?.autoSend === 1 && !!rule?.templateId;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all ${
-                    activeCategory === cat
-                      ? `${meta.bg} ${meta.border} border ${meta.color} font-medium`
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span>{meta.icon}</span>
-                    <span className="truncate">{cat}</span>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    {isAutoActive && (
-                      <span title="Auto-flow active" className="flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
-                        <Zap className="h-2 w-2" /> ON
-                      </span>
-                    )}
-                    {count > 0 && (
-                      <span className="text-xs bg-muted/50 px-1.5 py-0.5 rounded-full">{count}</span>
-                    )}
-                  </span>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : sortedFolders.map((folder) => {
+            const IconComp = FOLDER_ICON_MAP[folder.icon] ?? Folder;
+            const colorClass = FOLDER_COLOR_MAP[folder.color] ?? "text-blue-500";
+            const count = allTemplates.filter((t) => t.folderId === folder.id).length;
+            return (
+              <div key={folder.id} className="group relative">
+                <button onClick={() => setSelectedFolderId(folder.id)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left pr-8 ${selectedFolderId === folder.id ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-foreground"}`}>
+                  <IconComp className={`h-4 w-4 shrink-0 ${colorClass}`} />
+                  <span className="truncate">{folder.name}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{count}</span>
                 </button>
-              );
-            })}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="absolute right-1 top-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MoreVertical className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => { setEditingFolder(folder); setFolderDialogOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5 mr-2" /> Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={() => setDeleteFolderId(folder.id)}>
+                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete Folder
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            );
+          })}
+
+          {allTemplates.some((t) => !t.folderId) && (
+            <button onClick={() => setSelectedFolderId("unfiled")}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors text-left ${selectedFolderId === "unfiled" ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-muted-foreground"}`}>
+              <Folder className="h-4 w-4 shrink-0" />
+              <span className="truncate">Unfiled</span>
+              <span className="ml-auto text-xs">{allTemplates.filter((t) => !t.folderId).length}</span>
+            </button>
+          )}
+        </nav>
+
+        {allTemplates.length === 0 && (
+          <div className="p-3 border-t border-border">
+            <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}>
+              {seedMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              Load Sample Templates
+            </Button>
           </div>
+        )}
+      </aside>
 
-          {/* Template cards */}
-          <div className="flex-1 min-w-0">
-            <div className="mb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <span>{CATEGORY_META[activeCategory].icon}</span>
-                    {activeCategory}
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {CATEGORY_META[activeCategory].description}
-                  </p>
-                </div>
-                <Button size="sm" variant="outline" onClick={openCreate} className="text-xs h-7">
-                  <Plus className="h-3 w-3 mr-1" /> Add
-                </Button>
-              </div>
-            </div>
-
-            {templatesLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : categoryTemplates.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 border border-dashed border-border rounded-xl text-center gap-3">
-                <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
-                <div>
-                  <p className="text-sm text-muted-foreground">No templates for this category</p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    Create one or load defaults to get started
-                  </p>
-                </div>
-                <Button size="sm" variant="outline" onClick={openCreate} className="text-xs">
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Create Template
-                </Button>
-              </div>
-            ) : (
-              <div className="grid gap-3">
-                {categoryTemplates.map((t) => (
-                  <TemplateCard
-                    key={t.id}
-                    template={t}
-                    isLinked={linkedTemplateIds.has(t.id)}
-                    onEdit={() => openEdit(t)}
-                    onDelete={() => setDeleteTarget(t.id)}
-                  />
-                ))}
-              </div>
+      {/* Template Grid */}
+      <main className="flex-1 min-w-0 flex flex-col">
+        <div className="flex items-center gap-3 p-4 border-b border-border">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search templates…" className="pl-9 h-9" />
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            {folders.length === 0 && allTemplates.length === 0 && (
+              <Button variant="outline" size="sm" onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}>
+                {seedMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Load Samples
+              </Button>
             )}
+            <Button size="sm" onClick={openNewTemplate} className="gap-1">
+              <Plus className="h-4 w-4" /> New Template
+            </Button>
           </div>
         </div>
-      )}
 
-      {/* ── Auto-Flow Rules Tab ── */}
-      {activeTab === "flows" && (
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
-            <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <div className="text-sm text-muted-foreground">
-              <p>
-                When a lead replies, QuotePush.io uses AI to classify the intent and — if <strong className="text-foreground">Auto</strong> is on — instantly sends the assigned template back. Click the <strong className="text-foreground">↓ arrow</strong> on any row to see the full trigger phrases and template preview.
-              </p>
-              <p className="mt-1.5 text-xs">
-                <strong className="text-emerald-400">Interested</strong>, <strong className="text-rose-400">Not Interested</strong>, and <strong className="text-slate-400">Unsubscribe</strong> have auto-send <strong className="text-foreground">enabled by default</strong>.
-              </p>
+        <div className="flex-1 overflow-y-auto p-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-40">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          </div>
-
-          {/* Column headers */}
-          <div className="flex items-center gap-4 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            <span className="min-w-[170px]">Reply Category</span>
-            <span className="w-4" />
-            <span className="flex-1">Assigned Template</span>
-            <span className="w-28 text-center">Auto-send</span>
-            <span className="w-6" />
-          </div>
-
-          {rulesLoading ? (
-            <div className="flex items-center justify-center h-32">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          ) : filteredTemplates.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 text-center gap-3">
+              <BookOpen className="h-10 w-10 text-muted-foreground/40" />
+              <div>
+                <p className="font-medium text-muted-foreground">No templates here yet</p>
+                <p className="text-sm text-muted-foreground/70 mt-0.5">
+                  {search ? "Try a different search" : "Create a template or load the sample library"}
+                </p>
+              </div>
+              {!search && allTemplates.length === 0 && (
+                <Button variant="outline" size="sm" onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}>
+                  Load Sample Templates
+                </Button>
+              )}
             </div>
           ) : (
-            <div className="space-y-2">
-              {CATEGORIES.map((cat) => {
-                const rule = flowRules.find((r) => r.category === cat);
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredTemplates.map((t) => {
+                const folder = folders.find((f) => f.id === t.folderId);
+                const FolderIconComp = folder ? (FOLDER_ICON_MAP[folder.icon] ?? Folder) : null;
+                const folderColor = folder ? (FOLDER_COLOR_MAP[folder.color] ?? "text-blue-500") : "";
                 return (
-                  <FlowRuleCard
-                    key={cat}
-                    category={cat}
-                    rule={rule}
-                    templates={allTemplates}
-                    onUpdate={() => {}}
-                  />
+                  <div key={t.id} className="group bg-card border border-border rounded-xl p-4 flex flex-col gap-3 hover:border-primary/40 hover:shadow-sm transition-all">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm leading-snug truncate">{t.name}</p>
+                        {folder && FolderIconComp && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <FolderIconComp className={`h-3 w-3 ${folderColor}`} />
+                            <span className="text-xs text-muted-foreground truncate">{folder.name}</span>
+                          </div>
+                        )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditTemplate(t)}>
+                            <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTemplateId(t.id)}>
+                            <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    <Badge variant="outline" className={`text-xs self-start ${CATEGORY_COLORS[t.category as ReplyCategory] ?? ""}`}>
+                      {t.category}
+                    </Badge>
+
+                    <div className="text-sm text-muted-foreground leading-relaxed line-clamp-4 flex-1">
+                      {renderBody(t.body)}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                      <span className={`text-xs ${t.isActive ? "text-emerald-500" : "text-muted-foreground"}`}>
+                        {t.isActive ? "● Active" : "○ Inactive"}
+                      </span>
+                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openEditTemplate(t)}>
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
           )}
-
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/20 border border-border/50 mt-2">
-            <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
-            <p className="text-xs text-muted-foreground">
-              Only <strong className="text-foreground">active</strong> templates appear in the dropdown.
-              Auto-send is disabled when no template is assigned. Use the Template Library tab to create and manage templates.
-            </p>
-          </div>
         </div>
-      )}
+      </main>
 
-      {/* Template Editor Modal */}
-      <TemplateEditorModal
-        open={editorOpen}
-        onClose={() => {
-          setEditorOpen(false);
-          setEditingTemplate(null);
-        }}
-        defaultCategory={activeCategory}
-        template={editingTemplate}
-        onSuccess={() => {
-          utils.flowTemplates.list.invalidate();
-        }}
+      <TemplateEditor
+        open={templateEditorOpen}
+        onClose={() => { setTemplateEditorOpen(false); setEditingTemplate(null); }}
+        folders={folders}
+        initial={editingTemplate ? {
+          id: editingTemplate.id,
+          name: editingTemplate.name,
+          category: editingTemplate.category as ReplyCategory,
+          body: editingTemplate.body,
+          folderId: editingTemplate.folderId,
+        } : selectedFolderId !== "all" && selectedFolderId !== "unfiled" ? {
+          name: "", category: "Interested", body: "", folderId: selectedFolderId,
+        } : undefined}
+        onSave={handleSaveTemplate}
+        saving={isSaving}
       />
 
-      {/* Delete Confirm */}
-      <AlertDialog open={deleteTarget !== null} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent className="bg-card border-border">
+      <FolderDialog
+        open={folderDialogOpen}
+        onClose={() => { setFolderDialogOpen(false); setEditingFolder(null); }}
+        initial={editingFolder ? { id: editingFolder.id, name: editingFolder.name, icon: editingFolder.icon, color: editingFolder.color } : undefined}
+        onSave={handleSaveFolder}
+        saving={isFolderSaving}
+      />
+
+      <AlertDialog open={deleteTemplateId !== null} onOpenChange={(v) => !v && setDeleteTemplateId(null)}>
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">Delete Template?</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              This template will be permanently deleted and unlinked from any flow rules. This action
-              cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Delete Template?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteTarget !== null && deleteMutation.mutate({ id: deleteTarget })}
-              className="bg-rose-600 hover:bg-rose-500 text-white"
-            >
-              {deleteMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete"
-              )}
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTemplateId && deleteTemplateMutation.mutate({ id: deleteTemplateId })}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteFolderId !== null} onOpenChange={(v) => !v && setDeleteFolderId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Folder?</AlertDialogTitle>
+            <AlertDialogDescription>Templates inside will become unfiled. This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteFolderId && deleteFolderMutation.mutate({ id: deleteFolderId })}>
+              Delete Folder
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
