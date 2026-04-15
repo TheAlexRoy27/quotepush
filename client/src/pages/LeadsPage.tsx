@@ -12,7 +12,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import {
   Plus, Upload, Search, Send, Trash2, MessageSquare, RefreshCw,
   Users, Clock, CheckCircle2, Calendar, ChevronRight, X, Loader2, SendHorizonal,
-  Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp
+  Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp, ExternalLink
 } from "lucide-react";
 import type { Lead, Message } from "../../../drizzle/schema";
 
@@ -46,9 +46,9 @@ function StatCard({ label, value, icon: Icon, color }: {
 function AddLeadModal({ open, onClose, onSuccess }: {
   open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
-  const [form, setForm] = useState({ name: "", phone: "", company: "", email: "", notes: "" });
+  const [form, setForm] = useState({ name: "", phone: "", company: "", email: "", notes: "", consentUrl: "" });
   const createLead = trpc.leads.create.useMutation({
-    onSuccess: () => { toast.success("Lead added successfully"); onSuccess(); onClose(); setForm({ name: "", phone: "", company: "", email: "", notes: "" }); },
+    onSuccess: () => { toast.success("Lead added successfully"); onSuccess(); onClose(); setForm({ name: "", phone: "", company: "", email: "", notes: "", consentUrl: "" }); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -86,6 +86,20 @@ function AddLeadModal({ open, onClose, onSuccess }: {
               className="bg-input border-border text-foreground placeholder:text-muted-foreground resize-none"
               rows={2}
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="consentUrl" className="text-sm text-foreground flex items-center gap-1.5">
+              Consent Proof URL
+              <span className="text-xs text-muted-foreground font-normal">(opt-in documentation)</span>
+            </Label>
+            <Input
+              id="consentUrl"
+              placeholder="https://example.com/consent-screenshot.png"
+              value={form.consentUrl}
+              onChange={(e) => setForm(f => ({ ...f, consentUrl: e.target.value }))}
+              className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+            />
+            <p className="text-xs text-muted-foreground">Link to a webpage, screenshot, or document proving the lead gave consent to receive SMS.</p>
           </div>
         </div>
         <DialogFooter>
@@ -517,6 +531,22 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
           </button>
         </div>
       </div>
+
+      {/* Consent URL */}
+      {data?.lead?.consentUrl && (
+        <div className="px-5 py-2 border-b border-border flex items-center gap-2">
+          <span className="text-xs text-muted-foreground shrink-0">Consent:</span>
+          <a
+            href={data.lead.consentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-primary hover:underline truncate flex items-center gap-1"
+          >
+            {data.lead.consentUrl}
+            <ExternalLink className="h-3 w-3 shrink-0" />
+          </a>
+        </div>
+      )}
 
       {/* Milestone changer */}
       <div className="px-5 py-3 border-b border-border flex items-center gap-2">

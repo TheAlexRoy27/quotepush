@@ -19,6 +19,8 @@ import AdminPage from "./pages/AdminPage";
 import DripPage from "./pages/DripPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import OwnerLoginPage from "./pages/OwnerLoginPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
 
 function Router() {
   return (
@@ -28,6 +30,8 @@ function Router() {
       <Route path={"/invite/:token"} component={AcceptInvitePage} />
       <Route path={"/admin"} component={AdminPage} />
       <Route path={"/owner-login"} component={OwnerLoginPage} />
+      <Route path={"/terms"} component={TermsPage} />
+      <Route path={"/privacy"} component={PrivacyPage} />
       <Route>
         <DashboardLayout>
           <Switch>

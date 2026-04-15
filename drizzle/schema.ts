@@ -21,6 +21,7 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  consentAcceptedAt: timestamp("consentAcceptedAt"),
 });
 
 export type User = typeof users.$inferSelect;
@@ -126,6 +127,7 @@ export const leads = mysqlTable("leads", {
     .default("Pending")
     .notNull(),
   notes: text("notes"),
+  consentUrl: varchar("consentUrl", { length: 2048 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

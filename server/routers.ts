@@ -586,6 +586,7 @@ const leadsRouter = router({
       company: z.string().optional(),
       email: z.string().email().optional().or(z.literal("")),
       notes: z.string().optional(),
+      consentUrl: z.string().url().optional().or(z.literal("")),
     }))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
@@ -596,6 +597,7 @@ const leadsRouter = router({
         company: input.company ?? null,
         email: input.email || null,
         notes: input.notes ?? null,
+        consentUrl: input.consentUrl || null,
         status: "Pending",
       });
     }),
@@ -643,6 +645,7 @@ const leadsRouter = router({
       email: z.string().email().optional().or(z.literal("")),
       status: LeadStatusEnum.optional(),
       notes: z.string().optional(),
+      consentUrl: z.string().url().optional().or(z.literal("")),
     }))
     .mutation(({ input }) => {
       const { id, ...data } = input;

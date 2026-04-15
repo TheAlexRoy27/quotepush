@@ -378,3 +378,13 @@
 
 ## Auth Page — SMS Marketing Consent Disclosure
 - [x] Add SMS marketing consent disclosure text below the phone number field on the sign-up/login page so users acknowledge consent when providing their phone number
+
+## Compliance Features (3)
+- [x] Create /terms page (Terms of Service) with QuotePush.io-specific content
+- [x] Create /privacy page (Privacy Policy) with SMS data handling details
+- [x] Register /terms and /privacy routes in App.tsx (public, no auth required)
+- [x] Add consentUrl field to leads table (schema + migration)
+- [x] Show consentUrl input in Add Lead form and lead detail/edit panel
+- [x] Add consentAcceptedAt timestamp to users table (schema + migration)
+- [x] Capture consentAcceptedAt on phone/email sign-up (set to current UTC timestamp)
+- [x] Display consentAcceptedAt in Admin Panel user list and Org member details

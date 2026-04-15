@@ -23,6 +23,7 @@ import {
   Clock,
   Mail,
   Phone,
+  ShieldCheck,
 } from "lucide-react";
 
 const ROLE_ICONS: Record<string, React.ReactNode> = {
@@ -315,6 +316,12 @@ export default function OrgPage() {
                         <span className="text-muted-foreground italic">Never logged in</span>
                       )}
                     </div>
+                    {(member.user as typeof member.user & { consentAcceptedAt?: string | null }).consentAcceptedAt && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <ShieldCheck className="h-3 w-3 shrink-0 text-emerald-400" />
+                        <span>Consent accepted {new Date((member.user as typeof member.user & { consentAcceptedAt?: string | null }).consentAcceptedAt!).toLocaleDateString()}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

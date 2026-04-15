@@ -1,0 +1,1 @@
+ALTER TABLE `leads` ADD `consentUrl` varchar(2048);

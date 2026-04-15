@@ -61,6 +61,7 @@ export async function createUserWithPhone(phone: string, name?: string): Promise
     name: name ?? null,
     loginMethod: "phone_otp",
     lastSignedIn: new Date(),
+    consentAcceptedAt: new Date(),
   });
   const rows = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   if (!rows[0]) throw new Error("Failed to create user");
@@ -81,6 +82,7 @@ export async function createUserWithEmail(
     name: name ?? null,
     loginMethod: "email",
     lastSignedIn: new Date(),
+    consentAcceptedAt: new Date(),
   });
   const rows = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   if (!rows[0]) throw new Error("Failed to create user");
