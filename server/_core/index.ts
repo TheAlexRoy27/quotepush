@@ -105,6 +105,26 @@ async function startServer() {
         await updateLead(lead.id, { status: "Replied" });
       }
 
+      // ─── Keyword Promotion ────────────────────────────────────────────
+      try {
+        const { getActiveKeywordRules } = await import("../db");
+        const rules = await getActiveKeywordRules(lead.orgId);
+        const bodyLower = body.toLowerCase();
+        for (const rule of rules) {
+          if (bodyLower.includes(rule.keyword.toLowerCase())) {
+            await updateLead(lead.id, { status: rule.targetStatus });
+            await notifyOwner({
+              title: `Lead promoted: ${lead.name} is now "${rule.targetStatus}"`,
+              content: `Keyword "${rule.keyword}" detected in reply from ${lead.name} (${lead.phone}).\n\nMessage: "${body}"\n\nMilestone automatically advanced to: ${rule.targetStatus}`,
+            });
+            console.log(`[KeywordPromotion] Lead ${lead.id} promoted to ${rule.targetStatus} via keyword "${rule.keyword}"`);
+            break; // apply only the first matching rule
+          }
+        }
+      } catch (kpErr) {
+        console.error("[KeywordPromotion] Error:", kpErr);
+      }
+
       let category = "Wants More Info" as import("../../drizzle/schema").ReplyCategory;
       let confidence = "low" as "high" | "medium" | "low";
       try {

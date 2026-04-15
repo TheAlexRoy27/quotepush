@@ -5,6 +5,7 @@ import {
   mysqlTable,
   text,
   timestamp,
+  tinyint,
   varchar,
 } from "drizzle-orm/mysql-core";
 
@@ -371,3 +372,46 @@ export const templateFolders = mysqlTable("template_folders", {
 
 export type TemplateFolder = typeof templateFolders.$inferSelect;
 export type InsertTemplateFolder = typeof templateFolders.$inferInsert;
+
+// ─── Keyword Promotion Rules ────────────────────────────────────────────────
+// When an inbound SMS contains a trigger keyword, the lead's milestone is
+// automatically promoted to the target status.
+export const PROMOTION_TARGET_STATUSES = ["Replied", "Scheduled", "X-Dated"] as const;
+export type PromotionTargetStatus = (typeof PROMOTION_TARGET_STATUSES)[number];
+
+export const keywordPromotionRules = mysqlTable("keyword_promotion_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  keyword: varchar("keyword", { length: 100 }).notNull(),
+  targetStatus: mysqlEnum("targetStatus", PROMOTION_TARGET_STATUSES).notNull(),
+  isActive: tinyint("isActive").notNull().default(1),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type KeywordPromotionRule = typeof keywordPromotionRules.$inferSelect;
+export type InsertKeywordPromotionRule = typeof keywordPromotionRules.$inferInsert;
+
+// ─── Referral Codes ──────────────────────────────────────────────────────────
+export const referralCodes = mysqlTable("referral_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type InsertReferralCode = typeof referralCodes.$inferInsert;
+
+// ─── Referrals ───────────────────────────────────────────────────────────────
+// Tracks which user referred which new signup
+export const referrals = mysqlTable("referrals", {
+  id: int("id").autoincrement().primaryKey(),
+  referrerId: int("referrerId").notNull(),   // user who shared the link
+  referredId: int("referredId").notNull(),   // user who signed up via the link
+  convertedAt: timestamp("convertedAt"),     // set when referred user pays
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = typeof referrals.$inferInsert;

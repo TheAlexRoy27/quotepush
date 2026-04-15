@@ -21,6 +21,8 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import OwnerLoginPage from "./pages/OwnerLoginPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
+import KeywordPromotionPage from "./pages/KeywordPromotionPage";
+import ReferralPage from "./pages/ReferralPage";
 
 function Router() {
   return (
@@ -45,6 +47,8 @@ function Router() {
             <Route path={"/analytics"} component={AnalyticsPage} />
             <Route path={"/billing"} component={BillingPage} />
             <Route path={"/organization"} component={OrgPage} />
+            <Route path={"/keyword-promotion"} component={KeywordPromotionPage} />
+            <Route path={"/referrals"} component={ReferralPage} />
             <Route path={"/404"} component={NotFound} />
             <Route component={NotFound} />
           </Switch>

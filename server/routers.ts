@@ -3,17 +3,26 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
   bulkCreateLeads,
+  createKeywordRule,
   createLead,
   createMessage,
+  createReferral,
   deleteLead,
+  deleteKeywordRule,
+  getActiveKeywordRules,
   getDefaultTemplate,
   getExistingPhones,
   getLeadById,
   getLeadStats,
   getMessagesByLeadId,
+  getOrCreateReferralCode,
+  getReferralCodeByCode,
   getUnreadReplies,
+  listKeywordRules,
+  listReferrals,
   markMessagesReadForLead,
   listLeads,
+  updateKeywordRule,
   updateLead,
   updateTemplate,
 } from "./db";
@@ -1353,6 +1362,67 @@ const notificationsRouter = router({
     }),
 });
 
+// ─── Keyword Promotion Router ─────────────────────────────────────────────────
+const PromotionTargetStatusEnum = z.enum(["Replied", "Scheduled", "X-Dated"]);
+
+const keywordPromotionRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    return listKeywordRules(orgId);
+  }),
+
+  create: protectedProcedure
+    .input(z.object({ keyword: z.string().min(1).max(100), targetStatus: PromotionTargetStatusEnum }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      return createKeywordRule({ orgId, keyword: input.keyword.trim(), targetStatus: input.targetStatus });
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.number(), keyword: z.string().min(1).max(100).optional(), targetStatus: PromotionTargetStatusEnum.optional(), isActive: z.boolean().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireOrgId(ctx.user.id);
+      const { id, isActive, ...rest } = input;
+      return updateKeywordRule(id, { ...rest, ...(isActive !== undefined ? { isActive: isActive ? 1 : 0 } : {}) });
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireOrgId(ctx.user.id);
+      await deleteKeywordRule(input.id);
+      return { success: true };
+    }),
+});
+
+// ─── Referrals Router ──────────────────────────────────────────────────────────────
+const referralsRouter = router({
+  myCode: protectedProcedure.query(async ({ ctx }) => {
+    const code = await getOrCreateReferralCode(ctx.user.id);
+    return { code, link: `${ctx.req.headers.origin ?? ""}/ref/${code}` };
+  }),
+
+  myReferrals: protectedProcedure.query(async ({ ctx }) => {
+    return listReferrals(ctx.user.id);
+  }),
+
+  // Public: called when a referred user lands on /ref/:code
+  trackVisit: publicProcedure
+    .input(z.object({ code: z.string() }))
+    .mutation(async ({ input }) => {
+      const row = await getReferralCodeByCode(input.code);
+      return { valid: !!row, referrerId: row?.userId ?? null };
+    }),
+
+  // Called after a referred user signs up
+  recordSignup: publicProcedure
+    .input(z.object({ referrerId: z.number(), referredId: z.number() }))
+    .mutation(async ({ input }) => {
+      await createReferral({ referrerId: input.referrerId, referredId: input.referredId });
+      return { success: true };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -1377,7 +1447,8 @@ export const appRouter = router({
   drip: dripRouter,
   analytics: analyticsRouter,
   notifications: notificationsRouter,
+  keywordPromotion: keywordPromotionRouter,
+  referrals: referralsRouter,
 });
-
 
 export type AppRouter = typeof appRouter;

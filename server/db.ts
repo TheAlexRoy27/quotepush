@@ -4,10 +4,15 @@ import {
   InsertLead,
   InsertMessage,
   InsertSmsTemplate,
+  InsertKeywordPromotionRule,
+  InsertReferral,
   Lead,
+  keywordPromotionRules,
   leads,
   messageClassifications,
   messages,
+  referralCodes,
+  referrals,
   smsTemplates,
   users,
 } from "../drizzle/schema";
@@ -300,4 +305,88 @@ export async function getLeadStats(orgId: number) {
     if (row.status === "X-Dated") stats.xDated = count;
   }
   return stats;
+}
+
+// ─── Keyword Promotion Rules ─────────────────────────────────────────────────
+export async function listKeywordRules(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(keywordPromotionRules).where(eq(keywordPromotionRules.orgId, orgId));
+}
+
+export async function createKeywordRule(data: InsertKeywordPromotionRule) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(keywordPromotionRules).values(data);
+  const rows = await db.select().from(keywordPromotionRules).where(eq(keywordPromotionRules.id, (result as any).insertId)).limit(1);
+  return rows[0];
+}
+
+export async function updateKeywordRule(id: number, data: Partial<InsertKeywordPromotionRule>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(keywordPromotionRules).set(data).where(eq(keywordPromotionRules.id, id));
+  const rows = await db.select().from(keywordPromotionRules).where(eq(keywordPromotionRules.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function deleteKeywordRule(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(keywordPromotionRules).where(eq(keywordPromotionRules.id, id));
+}
+
+export async function getActiveKeywordRules(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(keywordPromotionRules).where(
+    and(eq(keywordPromotionRules.orgId, orgId), eq(keywordPromotionRules.isActive, 1))
+  );
+}
+
+// ─── Referral Codes ──────────────────────────────────────────────────────────
+export async function getOrCreateReferralCode(userId: number): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await db.select().from(referralCodes).where(eq(referralCodes.userId, userId)).limit(1);
+  if (existing[0]) return existing[0].code;
+  const code = Math.random().toString(36).slice(2, 10).toUpperCase() + userId.toString(36).toUpperCase();
+  await db.insert(referralCodes).values({ userId, code });
+  return code;
+}
+
+export async function getReferralCodeByCode(code: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(referralCodes).where(eq(referralCodes.code, code)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createReferral(data: InsertReferral) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(referrals).values(data);
+}
+
+export async function listReferrals(referrerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: referrals.id,
+    referredId: referrals.referredId,
+    convertedAt: referrals.convertedAt,
+    createdAt: referrals.createdAt,
+    referredName: users.name,
+    referredEmail: users.email,
+    referredPhone: users.phone,
+  })
+    .from(referrals)
+    .leftJoin(users, eq(referrals.referredId, users.id))
+    .where(eq(referrals.referrerId, referrerId));
+}
+
+export async function markReferralConverted(referredId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(referrals).set({ convertedAt: new Date() }).where(eq(referrals.referredId, referredId));
 }

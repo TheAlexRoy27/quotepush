@@ -421,3 +421,17 @@
 
 - [x] Center verbiage on landing/main page
 - [x] Fix remaining squeeze/overflow on Leads page mobile
+
+## Auto-Milestone Promotion
+- [ ] Detect trigger keywords (yes, interested, call me, etc.) in inbound SMS webhook
+- [ ] Auto-advance lead milestone from Pending to Replied when keyword matched
+- [ ] Notify owner when a lead auto-promotes
+- [ ] Settings page UI to configure trigger keywords per org
+
+## Referral Tracking
+- [ ] DB schema: referral_codes table (userId, code, createdAt) + referredBy column on users
+- [ ] Generate unique referral code on user creation
+- [ ] Referral link page: /ref/:code that stores code in cookie and redirects to signup
+- [ ] Credit referrer when referred user signs up
+- [ ] Referral dashboard page showing referrals, conversions, and credits
+- [ ] Fix text wrap: 'one text at a time' tagline should fit on one line

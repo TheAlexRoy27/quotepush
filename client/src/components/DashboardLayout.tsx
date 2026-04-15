@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, Bell, BookOpen, Building2, CreditCard, FileText, LogOut, MessageSquare, PanelLeft, Settings, Shield, Users, Webhook, Zap } from "lucide-react";
+import { BarChart2, Bell, BookOpen, Building2, CreditCard, FileText, Gift, LogOut, MessageSquare, PanelLeft, Settings, Shield, Users, Webhook, Zap } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -37,6 +37,8 @@ const menuItems = [
   { icon: Building2, label: "Organization", path: "/organization" },
   { icon: CreditCard, label: "Billing", path: "/billing" },
   { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: Zap, label: "Auto-Promote", path: "/keyword-promotion" },
+  { icon: Gift, label: "Referrals", path: "/referrals" },
 ];
 
 const adminMenuItems = [
@@ -141,7 +143,7 @@ export default function DashboardLayout({
               </div>
             </div>
             <p className="text-[11px] text-indigo-300/70 italic">
-              QuotePush.io turns fresh leads into booked calls automatically, one text at a time.
+              QuotePush.io turns fresh leads into booked calls. One text at a time.
             </p>
           </div>
         </div>
