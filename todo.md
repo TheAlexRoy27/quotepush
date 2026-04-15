@@ -333,3 +333,7 @@
 - [x] Create analytics tRPC procedure returning: reply rate, avg reply time, leads by milestone, messages sent over time, top reply categories
 - [x] Build AnalyticsPage.tsx with charts: reply time histogram, lead milestone funnel, messages sent per day, reply category breakdown
 - [x] Add Analytics route to sidebar nav
+
+## Drip Sequence Edit & Copy-Message Cleanup
+- [x] Remove any read-only/disabled guards on sample (seeded) drip sequences so they can be edited, renamed, and cloned like custom ones (no guards existed — already editable)
+- [x] Remove the copy (clone) icon button from drip sequence cards
