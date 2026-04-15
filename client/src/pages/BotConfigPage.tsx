@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Zap, MessageSquare, Info, Save, Sparkles } from "lucide-react";
+import { Bot, Zap, MessageSquare, Info, Save, Sparkles, Send, RotateCcw, FlaskConical } from "lucide-react";
 
 const TONE_OPTIONS = [
   { value: "friendly", label: "Friendly", description: "Warm, approachable, conversational" },
@@ -23,6 +23,8 @@ const DEFAULT_OPENING = "Hey {firstName}! This is {botName} — I just wanted to
 
 const DEFAULT_IDENTITY = "You are {botName}, a friendly insurance advisor. You help leads understand their options and schedule a quick 10-minute call with the agent. You are warm, respectful of their time, and never pushy.";
 
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
 export default function BotConfigPage() {
   const { data: config, isLoading } = trpc.bot.getConfig.useQuery();
   const saveConfig = trpc.bot.saveConfig.useMutation({
@@ -32,6 +34,7 @@ export default function BotConfigPage() {
     },
     onError: (e) => toast.error(e.message ?? "Failed to save"),
   });
+  const testMessage = trpc.bot.testMessage.useMutation();
   const utils = trpc.useUtils();
 
   const [enabled, setEnabled] = useState(false);
@@ -42,6 +45,13 @@ export default function BotConfigPage() {
   const [businessContext, setBusinessContext] = useState("");
   const [customInstructions, setCustomInstructions] = useState("");
   const [maxReplies, setMaxReplies] = useState(10);
+
+  // Test bot state
+  const [testLeadName, setTestLeadName] = useState("Sarah");
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [testInput, setTestInput] = useState("");
+  const [testStarted, setTestStarted] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (config) {
@@ -56,6 +66,10 @@ export default function BotConfigPage() {
     }
   }, [config]);
 
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory, testMessage.isPending]);
+
   const handleSave = () => {
     saveConfig.mutate({
       enabled,
@@ -67,6 +81,45 @@ export default function BotConfigPage() {
       customInstructions: customInstructions.trim() || undefined,
       maxRepliesPerLead: maxReplies,
     });
+  };
+
+  const startTest = () => {
+    const resolvedOpening = openingMessage
+      .replace(/\{botName\}/g, botName || "Alex")
+      .replace(/\{firstName\}/g, testLeadName || "there");
+    setChatHistory([{ role: "assistant", content: resolvedOpening }]);
+    setTestStarted(true);
+  };
+
+  const resetTest = () => {
+    setChatHistory([]);
+    setTestInput("");
+    setTestStarted(false);
+  };
+
+  const sendTestMessage = async () => {
+    const msg = testInput.trim();
+    if (!msg || testMessage.isPending) return;
+    setTestInput("");
+    const newHistory: ChatMessage[] = [...chatHistory, { role: "user", content: msg }];
+    setChatHistory(newHistory);
+    try {
+      const result = await testMessage.mutateAsync({
+        botName: botName || "Alex",
+        tone,
+        identity: identity || undefined,
+        businessContext: businessContext || undefined,
+        customInstructions: customInstructions || undefined,
+        history: newHistory.slice(0, -1), // exclude the just-added user message (it's in `message`)
+        message: msg,
+        leadName: testLeadName || "there",
+      });
+      setChatHistory([...newHistory, { role: "assistant", content: result.reply }]);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      toast.error(err?.message ?? "Bot failed to respond");
+      setChatHistory(newHistory); // keep user message
+    }
   };
 
   const previewOpening = openingMessage
@@ -267,6 +320,120 @@ export default function BotConfigPage() {
               <p className="text-sm text-muted-foreground">After this many bot replies, the conversation is handed off to you.</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ─── Test the Bot ─────────────────────────────────────────────────── */}
+      <Card className="border-emerald-600/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FlaskConical className="w-4 h-4 text-emerald-500" /> Test the Bot
+          </CardTitle>
+          <CardDescription>
+            Chat with your bot using the current settings above — no real SMS is sent.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Lead name input + start/reset */}
+          <div className="flex items-end gap-3">
+            <div className="space-y-1.5 flex-1">
+              <Label>Simulated Lead Name</Label>
+              <Input
+                value={testLeadName}
+                onChange={(e) => setTestLeadName(e.target.value)}
+                placeholder="e.g. Sarah"
+                maxLength={50}
+                disabled={testStarted}
+              />
+            </div>
+            {!testStarted ? (
+              <Button
+                onClick={startTest}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 shrink-0"
+              >
+                <FlaskConical className="w-4 h-4" /> Start Test
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={resetTest}
+                className="gap-2 shrink-0"
+              >
+                <RotateCcw className="w-4 h-4" /> Reset
+              </Button>
+            )}
+          </div>
+
+          {/* Chat window */}
+          {testStarted && (
+            <>
+              {/* Disclaimer */}
+              <div className="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-600/10 border border-emerald-600/20 rounded-lg px-3 py-2">
+                <FlaskConical className="w-3 h-3 shrink-0" />
+                Test mode — no real SMS is sent. Replies use your current (unsaved) settings.
+              </div>
+
+              {/* SMS thread */}
+              <div className="rounded-xl border bg-muted/20 p-4 h-72 overflow-y-auto flex flex-col gap-3">
+                {chatHistory.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex flex-col gap-0.5 ${msg.role === "assistant" ? "items-start" : "items-end"}`}
+                  >
+                    {msg.role === "assistant" && (
+                      <span className="text-[10px] text-muted-foreground ml-1 flex items-center gap-1">
+                        <Bot className="w-3 h-3 text-violet-400" /> {botName || "Bot"}
+                      </span>
+                    )}
+                    {msg.role === "user" && (
+                      <span className="text-[10px] text-muted-foreground mr-1">{testLeadName || "Lead"}</span>
+                    )}
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                        msg.role === "assistant"
+                          ? "bg-violet-600/20 text-foreground rounded-bl-sm border border-violet-600/20"
+                          : "bg-primary text-primary-foreground rounded-br-sm"
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                {testMessage.isPending && (
+                  <div className="flex items-start gap-2">
+                    <div className="bg-violet-600/20 border border-violet-600/20 rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm text-muted-foreground flex items-center gap-2">
+                      <span className="flex gap-1">
+                        <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce [animation-delay:0ms]" />
+                        <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                        <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                      </span>
+                      {botName || "Bot"} is typing...
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input row */}
+              <div className="flex gap-2">
+                <Input
+                  value={testInput}
+                  onChange={(e) => setTestInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendTestMessage(); } }}
+                  placeholder={`Reply as ${testLeadName || "the lead"}...`}
+                  disabled={testMessage.isPending}
+                  maxLength={500}
+                />
+                <Button
+                  onClick={sendTestMessage}
+                  disabled={!testInput.trim() || testMessage.isPending}
+                  className="bg-violet-600 hover:bg-violet-700 text-white shrink-0"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

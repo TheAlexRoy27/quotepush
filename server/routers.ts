@@ -1553,6 +1553,56 @@ const botRouter = router({
       const orgId = await requireOrgId(ctx.user.id);
       return upsertBotConfig(orgId, input);
     }),
+
+  testMessage: protectedProcedure
+    .input(z.object({
+      // Current bot config (may not be saved yet)
+      botName: z.string().optional(),
+      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct"]).optional(),
+      identity: z.string().optional(),
+      businessContext: z.string().optional(),
+      customInstructions: z.string().optional(),
+      // Conversation so far
+      history: z.array(z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+      })),
+      // The new message from the simulated lead
+      message: z.string().min(1).max(500),
+      // Optional lead first name for personalisation
+      leadName: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const botName = input.botName ?? "Alex";
+      const toneGuide: Record<string, string> = {
+        friendly: "Be warm, approachable, and conversational. Use casual language and the occasional emoji.",
+        professional: "Be polished and business-like. Avoid slang.",
+        casual: "Be relaxed and informal, like texting a friend.",
+        empathetic: "Be understanding and patient. Acknowledge their situation before responding.",
+        direct: "Be concise and to the point. No fluff.",
+      };
+      const firstName = input.leadName ?? "there";
+      const systemPrompt = [
+        input.identity?.replace(/\{botName\}/g, botName) ??
+          `You are ${botName}, a friendly insurance advisor helping leads get a quote.`,
+        `Tone: ${toneGuide[input.tone ?? "friendly"]}`,
+        input.businessContext ? `Business context:\n${input.businessContext}` : "",
+        input.customInstructions ? `Rules:\n${input.customInstructions}` : "",
+        `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Always be respectful of their time.`,
+        `THIS IS A TEST SIMULATION — no real SMS will be sent.`,
+      ].filter(Boolean).join("\n\n");
+
+      const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+        { role: "system", content: systemPrompt },
+        ...input.history,
+        { role: "user", content: input.message },
+      ];
+
+      const response = await invokeLLM({ messages });
+      const rawContent = response?.choices?.[0]?.message?.content;
+      const reply = typeof rawContent === "string" ? rawContent.trim() : "(no response)";
+      return { reply };
+    }),
 });
 
 export const appRouter = router({

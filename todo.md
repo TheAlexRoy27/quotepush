@@ -496,3 +496,10 @@
 - [x] Wire bot auto-reply into inbound SMS webhook: if bot enabled and under maxRepliesPerLead, fetch conversation history, call LLM with system prompt, send reply via Twilio
 - [x] Track bot reply count per lead (use messages table botReply flag)
 - [x] Show bot reply indicator in conversation thread ("Bot" badge on bot-sent messages)
+
+## Test the Bot Simulator
+- [x] Add botRouter.testMessage tRPC procedure: accepts conversation history + current bot config fields, calls LLM, returns bot reply (no SMS sent)
+- [x] Build Test Bot chat panel on BotConfigPage: SMS-style thread, input field, send button, clear button
+- [x] Show opening message preview as first bot bubble when simulator is opened
+- [x] Stream or show loading state while LLM is generating
+- [x] Show "Test mode — no real SMS sent" disclaimer
