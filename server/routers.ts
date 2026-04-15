@@ -181,6 +181,14 @@ const customAuthRouter = router({
         console.error("[Signup] Failed to create owner lead:", e);
       }
 
+      // Notify owner of new signup
+      try {
+        await notifyOwner({
+          title: `New signup: ${input.name}`,
+          content: `${input.name} just created an account on QuotePush.io.\nEmail: ${input.email}\nOrg: ${input.orgName}\nNo plan yet — follow up now!`,
+        });
+      } catch { /* non-fatal */ }
+
       // Issue JWT session
       const secret = new TextEncoder().encode(ENV.jwtSecret);
       const token = await new SignJWT({ userId: user.id, orgId: org.id })
@@ -310,6 +318,16 @@ const customAuthRouter = router({
             }
           }
         }
+      } catch (e) {
+        console.error("[Signup] Failed to create owner lead:", e);
+      }
+
+      // Notify owner of new signup
+      try {
+        await notifyOwner({
+          title: `New signup: ${input.name}`,
+          content: `${input.name} just created an account on QuotePush.io.\nPhone: ${normalizedPhone}\nOrg: ${input.orgName}\nNo plan yet — follow up now!`,
+        });
       } catch { /* non-fatal */ }
 
       // Store phone credential
@@ -407,6 +425,14 @@ const customAuthRouter = router({
         } catch (e) {
           console.error("[Signup] Failed to create owner lead:", e);
         }
+
+        // Notify owner of new signup
+        try {
+          await notifyOwner({
+            title: `New signup: ${input.name}`,
+            content: `${input.name} just created an account on QuotePush.io.\nPhone: ${input.phone}\nOrg: ${input.orgName}\nNo plan yet — follow up now!`,
+          });
+        } catch { /* non-fatal */ }
       } else {
         await updateUserLastSignedIn(user.id);
         const membership = await getOrgMembership(user.id);
