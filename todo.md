@@ -394,3 +394,10 @@
 
 ## Dashboard Wave Greeting
 - [x] Add waving hand emoji + "Hi, [FirstName]" greeting to top-right of dashboard header
+
+## Notification Bell
+- [x] Add hasUnreadReply flag on leads (or derive from messages) and tRPC procedure to count unread replies
+- [x] Add notification bell icon with badge to dashboard header
+- [x] Bell dropdown shows recent unread reply snippets with lead name + message preview
+- [x] Clicking a notification navigates to that lead's conversation
+- [x] Mark replies as read when conversation is opened

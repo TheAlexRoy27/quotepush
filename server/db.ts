@@ -196,6 +196,46 @@ export async function getMessageByTwilioSid(twilioSid: string) {
   return result[0];
 }
 
+export async function getUnreadReplies(orgId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({
+      messageId: messages.id,
+      leadId: messages.leadId,
+      body: messages.body,
+      sentAt: messages.sentAt,
+      leadName: leads.name,
+    })
+    .from(messages)
+    .innerJoin(leads, eq(leads.id, messages.leadId))
+    .where(
+      and(
+        eq(messages.orgId, orgId),
+        eq(messages.direction, "inbound"),
+        eq(messages.isRead, false)
+      )
+    )
+    .orderBy(desc(messages.sentAt))
+    .limit(20);
+  return rows;
+}
+
+export async function markMessagesReadForLead(leadId: number, orgId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(messages)
+    .set({ isRead: true })
+    .where(
+      and(
+        eq(messages.leadId, leadId),
+        eq(messages.orgId, orgId),
+        eq(messages.direction, "inbound")
+      )
+    );
+}
+
 // ─── SMS Templates ────────────────────────────────────────────────────────────
 
 const DEFAULT_TEMPLATE_BODY = `Hi {{firstName}}, I came across {{company}} and wanted to reach out personally.

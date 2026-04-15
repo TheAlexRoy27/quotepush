@@ -145,6 +145,7 @@ export const messages = mysqlTable("messages", {
   body: text("body").notNull(),
   twilioSid: varchar("twilioSid", { length: 64 }),
   twilioStatus: varchar("twilioStatus", { length: 32 }),
+  isRead: boolean("isRead").notNull().default(false),
   sentAt: timestamp("sentAt").defaultNow().notNull(),
 });
 

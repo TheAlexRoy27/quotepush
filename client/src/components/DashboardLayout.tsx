@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, BookOpen, Building2, CreditCard, FileText, LogOut, MessageSquare, PanelLeft, Settings, Shield, Users, Webhook, Zap } from "lucide-react";
+import { BarChart2, Bell, BookOpen, Building2, CreditCard, FileText, LogOut, MessageSquare, PanelLeft, Settings, Shield, Users, Webhook, Zap } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -117,35 +117,31 @@ export default function DashboardLayout({
             </Button>
           </div>
 
-          {/* SMS Consent Compliance notice */}
-          <div className="w-full rounded-xl border border-amber-500/30 bg-amber-500/5 p-5 space-y-3">
+          {/* SMS is the future callout */}
+          <div className="w-full rounded-xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-violet-500/5 p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-amber-400 text-base">⚠️</span>
-              <h2 className="text-sm font-semibold text-amber-300">SMS Consent Compliance Requirement</h2>
+              <span className="text-2xl">📱</span>
+              <h2 className="text-sm font-semibold text-indigo-300">They won't answer. But they will text back.</h2>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              You must provide <strong className="text-foreground">proof of consent</strong> to receive messaging collected from the consumer. Acceptable forms include:
+              The average American ignores <strong className="text-foreground">76% of unknown calls</strong> — but reads <strong className="text-foreground">98% of text messages</strong> within 3 minutes. Your leads aren't ghosting you. They're just waiting for the right medium.
             </p>
-            <ul className="text-xs text-muted-foreground space-y-1.5 list-none pl-0">
-              <li className="flex items-start gap-2">
-                <span className="text-amber-400 mt-0.5 shrink-0">›</span>
-                A <strong className="text-foreground">link to a website</strong> where the consumer gives consent
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-amber-400 mt-0.5 shrink-0">›</span>
-                A <strong className="text-foreground">hosted image file</strong> (screenshot) that demonstrates the opt-in
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-amber-400 mt-0.5 shrink-0">›</span>
-                A <strong className="text-foreground">link to a document</strong> that tells the story of the opt-in
-              </li>
-            </ul>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Multiple URLs are allowed. Every URL submitted must be{" "}
-              <strong className="text-foreground">reachable, resolvable, and publicly accessible</strong>.
-            </p>
-            <p className="text-xs text-amber-400/80 italic">
-              Consent proof is required by carriers and must be stored in your lead records before sending SMS campaigns.
+            <div className="grid grid-cols-3 gap-3 pt-1">
+              <div className="rounded-lg bg-background/40 px-3 py-2 text-center">
+                <p className="text-lg font-bold text-indigo-400">98%</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">SMS open rate</p>
+              </div>
+              <div className="rounded-lg bg-background/40 px-3 py-2 text-center">
+                <p className="text-lg font-bold text-violet-400">3 min</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">avg read time</p>
+              </div>
+              <div className="rounded-lg bg-background/40 px-3 py-2 text-center">
+                <p className="text-lg font-bold text-sky-400">45%</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">reply rate</p>
+              </div>
+            </div>
+            <p className="text-[11px] text-indigo-300/70 italic">
+              QuotePush.io turns fresh leads into booked calls — automatically, one text at a time.
             </p>
           </div>
         </div>
@@ -395,8 +391,10 @@ function DashboardLayoutContent({
               </span>
             )}
           </div>
+          {/* Notification Bell */}
+          <NotificationBellButton />
           {/* Wave greeting */}
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={toggleEmoji}
               className="text-xl select-none leading-none focus:outline-none hover:scale-125 transition-transform active:scale-110"
@@ -413,5 +411,108 @@ function DashboardLayoutContent({
         <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
     </>
+  );
+}
+
+// ─── Notification Bell ────────────────────────────────────────────────────────
+
+function NotificationBellButton() {
+  const [open, setOpen] = useState(false);
+  const [, setLocation] = useLocation();
+  const ref = useRef<HTMLDivElement>(null);
+  const utils = trpc.useUtils();
+
+  const { data } = trpc.notifications.unreadReplies.useQuery(undefined, {
+    refetchInterval: 30_000,
+  });
+
+  const markRead = trpc.notifications.markLeadRead.useMutation({
+    onSuccess: () => utils.notifications.unreadReplies.invalidate(),
+  });
+
+  const count = data?.count ?? 0;
+  const items = data?.items ?? [];
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  function handleItemClick(leadId: number) {
+    markRead.mutate({ leadId });
+    setOpen(false);
+    setLocation(`/?lead=${leadId}`);
+  }
+
+  function formatTime(d: Date | string) {
+    const date = new Date(d);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60_000);
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHrs = Math.floor(diffMins / 60);
+    if (diffHrs < 24) return `${diffHrs}h ago`;
+    return `${Math.floor(diffHrs / 24)}d ago`;
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={`Notifications${count > 0 ? ` (${count} unread)` : ""}`}
+      >
+        <Bell className="h-4 w-4 text-muted-foreground" />
+        {count > 0 && (
+          <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center leading-none">
+            {count > 9 ? "9+" : count}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-11 z-50 w-80 rounded-xl border border-border bg-popover shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <span className="text-sm font-semibold text-foreground">Unread Replies</span>
+            {count > 0 && (
+              <span className="text-xs text-muted-foreground">{count} new</span>
+            )}
+          </div>
+          {items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
+              <Bell className="h-7 w-7 opacity-30" />
+              <p className="text-sm">All caught up!</p>
+            </div>
+          ) : (
+            <ul className="max-h-72 overflow-y-auto divide-y divide-border">
+              {items.map(item => (
+                <li key={item.messageId}>
+                  <button
+                    onClick={() => handleItemClick(item.leadId)}
+                    className="w-full text-left px-4 py-3 hover:bg-accent/50 transition-colors group"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1" />
+                        <span className="text-sm font-medium text-foreground truncate">{item.leadName}</span>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground shrink-0">{formatTime(item.sentAt)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 ml-4 line-clamp-2">{item.body}</p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

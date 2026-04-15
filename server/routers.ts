@@ -11,6 +11,8 @@ import {
   getLeadById,
   getLeadStats,
   getMessagesByLeadId,
+  getUnreadReplies,
+  markMessagesReadForLead,
   listLeads,
   updateLead,
   updateTemplate,
@@ -572,10 +574,13 @@ const leadsRouter = router({
 
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
       const lead = await getLeadById(input.id);
       if (!lead) throw new TRPCError({ code: "NOT_FOUND", message: "Lead not found" });
       const msgs = await getMessagesByLeadId(input.id);
+      // Mark all inbound messages as read when conversation is opened
+      await markMessagesReadForLead(input.id, orgId);
       return { lead, messages: msgs };
     }),
 
@@ -1233,6 +1238,24 @@ const analyticsRouter = router({
   }),
 });
 
+// ─── Notifications Router ──────────────────────────────────────────────────
+
+const notificationsRouter = router({
+  unreadReplies: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    const replies = await getUnreadReplies(orgId);
+    return { count: replies.length, items: replies };
+  }),
+
+  markLeadRead: protectedProcedure
+    .input(z.object({ leadId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      await markMessagesReadForLead(input.leadId, orgId);
+      return { success: true };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -1256,6 +1279,7 @@ export const appRouter = router({
   admin: adminRouter,
   drip: dripRouter,
   analytics: analyticsRouter,
+  notifications: notificationsRouter,
 });
 
 
