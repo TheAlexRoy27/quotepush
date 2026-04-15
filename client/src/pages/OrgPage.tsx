@@ -53,6 +53,26 @@ export default function OrgPage() {
   const removeMutation = trpc.org.removeMember.useMutation();
   const updateRoleMutation = trpc.org.updateMemberRole.useMutation();
   const updateOrgMutation = trpc.org.update.useMutation();
+  const addByPhoneMutation = trpc.org.addMemberByPhone.useMutation();
+
+  const [addPhoneOpen, setAddPhoneOpen] = useState(false);
+  const [newPhone, setNewPhone] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<"admin" | "member">("member");
+
+  const handleAddByPhone = async () => {
+    if (!newPhone.trim() || !newName.trim() || !newPassword.trim()) return;
+    try {
+      await addByPhoneMutation.mutateAsync({ phone: newPhone.trim(), name: newName.trim(), password: newPassword.trim(), role: newRole });
+      toast.success(`${newName} added successfully! They can log in at /auth with their phone number and password.`);
+      setAddPhoneOpen(false);
+      setNewPhone(""); setNewName(""); setNewPassword(""); setNewRole("member");
+      utils.org.members.invalidate();
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to add member");
+    }
+  };
 
   const isElite = billingStatus?.plan === "elite";
   const isOwnerOrAdmin = orgData?.role === "owner" || orgData?.role === "admin";
@@ -174,15 +194,27 @@ export default function OrgPage() {
               </span>
             </div>
             {isOwnerOrAdmin && (
-              <Button
-                size="sm"
-                onClick={() => { setInviteOpen(true); setInviteUrl(null); }}
-                className="gap-1.5"
-                disabled={!isElite && members.filter(m => m.inviteAccepted).length >= 1}
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-                Invite Member
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setInviteOpen(true); setInviteUrl(null); }}
+                  className="gap-1.5"
+                  disabled={!isElite && members.filter(m => m.inviteAccepted).length >= 1}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Invite by Email
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setAddPhoneOpen(true)}
+                  className="gap-1.5"
+                  disabled={!isElite && members.filter(m => m.inviteAccepted).length >= 1}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Add by Phone
+                </Button>
+              </div>
             )}
           </div>
           {!isElite && (
@@ -258,6 +290,72 @@ export default function OrgPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add by Phone Dialog */}
+      <Dialog open={addPhoneOpen} onOpenChange={setAddPhoneOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Member by Phone</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Create a login for a new team member. They can sign in at <strong>/auth</strong> using their phone number and the password you set.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="new-name">Full Name</Label>
+              <Input
+                id="new-name"
+                placeholder="Jane Smith"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-phone">Mobile Number</Label>
+              <Input
+                id="new-phone"
+                placeholder="7605184325"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Digits only, no dashes or spaces.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Temporary Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="Min 6 characters"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Share this with them so they can log in. They can change it later.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={newRole} onValueChange={(v) => setNewRole(v as "admin" | "member")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin — can manage leads and settings</SelectItem>
+                  <SelectItem value="member">Member — can view and send messages</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setAddPhoneOpen(false)}>Cancel</Button>
+              <Button
+                onClick={handleAddByPhone}
+                disabled={addByPhoneMutation.isPending || !newPhone.trim() || !newName.trim() || !newPassword.trim()}
+              >
+                {addByPhoneMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Add Member
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Invite Dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>

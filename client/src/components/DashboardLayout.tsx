@@ -195,7 +195,7 @@ function DashboardLayoutContent({
           className="border-r-0"
           disableTransition={isResizing}
         >
-          <SidebarHeader className="h-16 justify-center">
+          <SidebarHeader className="h-20 justify-center">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button
                 onClick={toggleSidebar}
@@ -213,7 +213,7 @@ function DashboardLayoutContent({
                   <img
                     src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-favicon-hsV6w9Xq6ruPjUPpEDFYpV.webp"
                     alt="QuotePush.io"
-                    className="h-6 w-6 rounded-md shrink-0 object-cover"
+                    className="h-9 w-9 rounded-lg shrink-0 object-cover"
                   />
                   <span className="font-semibold tracking-tight truncate text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     QuotePush.io
@@ -228,7 +228,7 @@ function DashboardLayoutContent({
                   <img
                     src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-favicon-hsV6w9Xq6ruPjUPpEDFYpV.webp"
                     alt="QuotePush.io"
-                    className="h-6 w-6 rounded-md object-cover"
+                    className="h-9 w-9 rounded-lg object-cover"
                   />
                 </button>
               )}

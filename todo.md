@@ -284,3 +284,11 @@
 - [x] Seed Campaign 5: Auto Sales — Test drive follow-up → A/B branch
 - [x] Apply seeds to all existing orgs
 - [x] Write tests for branch routing logic — deferred; 103 tests passing, branch DB logic covered by existing drip tests
+
+## Elite Plan & Add User by Phone
+- [ ] Upgrade owner org to Elite plan in the database via SQL script
+- [ ] Add `org.addMemberByPhone` tRPC procedure: accept phone + name + temp password, create user + phone_credentials + org_member
+- [ ] Add "Add User" section to OrgPage: phone number + name + temp password form
+- [ ] Show newly added users in the members list immediately
+- [ ] Write tests for addMemberByPhone procedure
+- [ ] Make sidebar logo image larger in the top-left corner of DashboardLayout

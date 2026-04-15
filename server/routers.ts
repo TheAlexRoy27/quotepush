@@ -436,6 +436,72 @@ const orgRouter = router({
       return { org, role: "owner" as const };
     }),
 
+  // Add a new member directly by phone number + set their password
+  addMemberByPhone: protectedProcedure
+    .input(z.object({
+      phone: z.string().min(7),
+      name: z.string().min(1),
+      password: z.string().min(6),
+      role: z.enum(["admin", "member"]).default("member"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const org = await getOrganizationById(orgId);
+      if (!org) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Only Elite orgs can add unlimited members
+      if (org.plan === "base") {
+        const canAdd = await canAddMember(orgId);
+        if (!canAdd) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Base plan includes 1 seat. Upgrade to Elite for unlimited team members.",
+          });
+        }
+      }
+
+      const normalizedPhone = input.phone.replace(/\D/g, "");
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const { phoneCredentials } = await import("../drizzle/schema");
+
+      // Check if phone already registered
+      const existingUser = await findUserByPhone(normalizedPhone);
+      let userId: number;
+
+      if (existingUser) {
+        // User exists — just add them to this org if not already a member
+        const members = await listOrgMembers(orgId);
+        const alreadyMember = members.some(m => m.userId === existingUser.id);
+        if (alreadyMember) {
+          throw new TRPCError({ code: "CONFLICT", message: "This phone number is already a member of your organization." });
+        }
+        userId = existingUser.id;
+      } else {
+        // Create new user
+        const newUser = await createUserWithPhone(normalizedPhone, input.name);
+        userId = newUser.id;
+
+        // Set their password
+        const hash = await bcrypt.hash(input.password, 12);
+        const existingCred = await db.select().from(phoneCredentials).where(eq(phoneCredentials.phone, normalizedPhone)).limit(1);
+        if (existingCred.length === 0) {
+          await db.insert(phoneCredentials).values({ userId, phone: normalizedPhone, passwordHash: hash });
+        }
+      }
+
+      // Add to org
+      const { orgMembers: orgMembersTable } = await import("../drizzle/schema");
+      await db.insert(orgMembersTable).values({
+        orgId,
+        userId,
+        role: input.role,
+        inviteAccepted: 1,
+      });
+
+      return { success: true, phone: normalizedPhone, name: input.name };
+    }),
+
   // Twilio config per org
   getTwilioConfig: protectedProcedure.query(async ({ ctx }) => {
     const orgId = await requireOrgId(ctx.user.id);
