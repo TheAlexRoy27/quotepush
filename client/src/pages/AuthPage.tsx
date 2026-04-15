@@ -436,9 +436,21 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground">
-          By continuing, you agree to QuotePush.io's Terms of Service and Privacy Policy.
-        </p>
+        <div className="text-center space-y-2">
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
+            By providing your phone number and clicking <strong className="text-foreground">Create Account</strong> or{" "}
+            <strong className="text-foreground">Sign In</strong>, you expressly consent to receive recurring automated
+            marketing text messages (e.g. promotions, updates) from QuotePush.io at the number provided.
+            Consent is not a condition of purchase. Message &amp; data rates may apply.
+            Reply <strong className="text-foreground">STOP</strong> to unsubscribe at any time.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            By continuing, you also agree to QuotePush.io&apos;s{" "}
+            <a href="/terms" className="underline hover:text-foreground transition-colors">Terms of Service</a>{" "}
+            and{" "}
+            <a href="/privacy" className="underline hover:text-foreground transition-colors">Privacy Policy</a>.
+          </p>
+        </div>
       </div>
     </div>
   );

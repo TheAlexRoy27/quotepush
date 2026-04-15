@@ -375,3 +375,6 @@
 
 ## Landing Page — SMS Consent Compliance Section
 - [x] Add TCPA/SMS consent compliance callout section to the landing page (proof of consent, opt-in docs, public URL requirements)
+
+## Auth Page — SMS Marketing Consent Disclosure
+- [x] Add SMS marketing consent disclosure text below the phone number field on the sign-up/login page so users acknowledge consent when providing their phone number
