@@ -391,3 +391,6 @@
 
 ## Landing Page Footer Links
 - [x] Add /terms and /privacy links to the landing page footer
+
+## Dashboard Wave Greeting
+- [x] Add waving hand emoji + "Hi, [FirstName]" greeting to top-right of dashboard header

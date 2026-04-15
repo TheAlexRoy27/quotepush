@@ -370,20 +370,29 @@ function DashboardLayoutContent({
       </div>
 
       <SidebarInset>
-        {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
+        {/* Sticky top bar — always visible on desktop, also on mobile */}
+        <div className="flex border-b h-14 items-center justify-between bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="flex items-center gap-2">
+            {isMobile && (
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
-                  </span>
-                </div>
-              </div>
-            </div>
+            )}
+            {isMobile && (
+              <span className="tracking-tight text-foreground">
+                {activeMenuItem?.label ?? "Menu"}
+              </span>
+            )}
           </div>
-        )}
+          {/* Wave greeting */}
+          <div className="ml-auto flex items-center gap-1.5">
+            <span
+              className="text-xl select-none"
+              style={{ display: 'inline-block', animation: 'wave 2.2s ease-in-out infinite', transformOrigin: '70% 70%' }}
+            >👋</span>
+            <span className="text-sm font-medium text-foreground/80">
+              Hi, {user?.name?.split(' ')[0] ?? 'there'}!
+            </span>
+          </div>
+        </div>
         <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
     </>
