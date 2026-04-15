@@ -372,3 +372,6 @@
 - [x] Update Twilio send helper to read credentials from DB (per-org) instead of env vars (already done)
 - [x] Add Twilio Configuration section to SettingsPage: Account SID, Auth Token (masked), From Number, Save button, Test button
 - [x] Show connection status badge (Configured / Not Configured) in the section header
+
+## Landing Page — SMS Consent Compliance Section
+- [x] Add TCPA/SMS consent compliance callout section to the landing page (proof of consent, opt-in docs, public URL requirements)

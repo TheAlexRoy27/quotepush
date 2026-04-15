@@ -87,8 +87,9 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-sm w-full">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-12">
+        <div className="flex flex-col items-center gap-8 w-full max-w-md">
+          {/* Logo + headline */}
           <div className="flex flex-col items-center gap-5">
             <img
               src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-favicon-hsV6w9Xq6ruPjUPpEDFYpV.webp"
@@ -104,7 +105,9 @@ export default function DashboardLayout({
               </p>
             </div>
           </div>
-          <div className="w-full space-y-3">
+
+          {/* Sign in button */}
+          <div className="w-full">
             <Button
               onClick={() => { window.location.href = "/auth"; }}
               size="lg"
@@ -112,7 +115,38 @@ export default function DashboardLayout({
             >
               Sign in with Phone or Email
             </Button>
+          </div>
 
+          {/* SMS Consent Compliance notice */}
+          <div className="w-full rounded-xl border border-amber-500/30 bg-amber-500/5 p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-amber-400 text-base">⚠️</span>
+              <h2 className="text-sm font-semibold text-amber-300">SMS Consent Compliance Requirement</h2>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              You must provide <strong className="text-foreground">proof of consent</strong> to receive messaging collected from the consumer. Acceptable forms include:
+            </p>
+            <ul className="text-xs text-muted-foreground space-y-1.5 list-none pl-0">
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 mt-0.5 shrink-0">›</span>
+                A <strong className="text-foreground">link to a website</strong> where the consumer gives consent
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 mt-0.5 shrink-0">›</span>
+                A <strong className="text-foreground">hosted image file</strong> (screenshot) that demonstrates the opt-in
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 mt-0.5 shrink-0">›</span>
+                A <strong className="text-foreground">link to a document</strong> that tells the story of the opt-in
+              </li>
+            </ul>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Multiple URLs are allowed. Every URL submitted must be{" "}
+              <strong className="text-foreground">reachable, resolvable, and publicly accessible</strong>.
+            </p>
+            <p className="text-xs text-amber-400/80 italic">
+              Consent proof is required by carriers and must be stored in your lead records before sending SMS campaigns.
+            </p>
           </div>
         </div>
       </div>
