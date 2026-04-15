@@ -547,7 +547,10 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
   const clone = trpc.drip.cloneSequence.useMutation({
     onSuccess: () => {
       utils.drip.listSequences.invalidate();
-      toast.success("Sequence cloned! Find it below.");
+      toast.success(`"${seq.name}" cloned successfully!`, {
+        description: "A copy has been added below. You can now rename and edit it.",
+        duration: 4000,
+      });
     },
     onError: (e) => toast.error(e.message),
   });
