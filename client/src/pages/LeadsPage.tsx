@@ -703,22 +703,22 @@ export default function LeadsPage() {
       {/* Main panel */}
       <div className={`flex flex-col flex-1 min-w-0 transition-all ${selectedLead ? "pr-0" : ""}`}>
         {/* Header */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground tracking-tight">Leads</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight">Leads</h1>
             <p className="text-sm text-muted-foreground mt-1">Manage and reach out to your prospects</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {!twilioConfigured && (
               <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
                 Twilio not configured
               </span>
             )}
             <Button variant="outline" size="sm" onClick={exportToCSV} disabled={!leads.length} className="border-border text-foreground hover:bg-accent">
-              <Download className="h-4 w-4 mr-1.5" /> Export{leads.length > 0 ? ` ${leads.length}` : ""}
+              <Download className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Export{leads.length > 0 ? ` ${leads.length}` : ""}</span><span className="sm:hidden">Export</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setCsvOpen(true)} className="border-border text-foreground hover:bg-accent">
-              <Upload className="h-4 w-4 mr-1.5" /> Import CSV
+              <Upload className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Import CSV</span><span className="sm:hidden">Import</span>
             </Button>
             <Button size="sm" onClick={() => setAddOpen(true)}>
               <Plus className="h-4 w-4 mr-1.5" /> Add Lead
@@ -735,18 +735,18 @@ export default function LeadsPage() {
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="relative flex-1 min-w-[160px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, company, email..."
+              placeholder="Search leads..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 bg-input border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40 bg-input border-border text-foreground">
+            <SelectTrigger className="w-36 sm:w-40 bg-input border-border text-foreground">
               <SelectValue placeholder="All Milestones" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">

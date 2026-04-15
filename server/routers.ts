@@ -87,7 +87,7 @@ import {
   deleteDripStep,
   seedDefaultDripSequences,
 } from "./dripDb";
-import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials } from "../drizzle/schema";
+import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials, users } from "../drizzle/schema";
 import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
 import bcrypt from "bcryptjs";
@@ -264,6 +264,28 @@ const customAuthRouter = router({
       await seedFlowRules(org.id);
       await seedDefaultTemplates(org.id);
       await seedDefaultDripSequences(org.id);
+
+      // Auto-create a lead for the owner so new signups appear on the Leads page
+      try {
+        const db2 = await getDb();
+        if (db2 && ENV.ownerOpenId) {
+          const ownerRows = await db2.select().from(users).where(eq(users.openId, ENV.ownerOpenId)).limit(1);
+          const ownerUser = ownerRows[0];
+          if (ownerUser) {
+            const ownerMembership = await getOrgMembership(ownerUser.id).catch(() => null);
+            if (ownerMembership) {
+              await createLead({
+                orgId: ownerMembership.orgId,
+                name: input.name,
+                phone: normalizedPhone,
+                company: input.orgName,
+                notes: `New signup via QuotePush.io`,
+                status: "Pending",
+              });
+            }
+          }
+        }
+      } catch { /* non-fatal */ }
 
       // Store phone credential
       const hash = await bcrypt.hash(input.password, 12);

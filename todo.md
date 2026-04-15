@@ -401,3 +401,15 @@
 - [x] Bell dropdown shows recent unread reply snippets with lead name + message preview
 - [x] Clicking a notification navigates to that lead's conversation
 - [x] Mark replies as read when conversation is opened
+
+## Logo, Paywall, Lead Capture, Mobile Spacing
+- [ ] Increase logo size in sidebar header on all pages
+- [ ] Gate new signups behind Stripe checkout paywall before app access
+- [ ] Auto-create a lead record for the owner when a new user completes payment/signup
+- [ ] Fix mobile spacing issues in DashboardLayout and key pages
+- [x] Greeting emoji: wave animates once on mount, jiggle animates once when toggled to call-me
+- [x] Grey out Twilio number/phone field for unpaid users with clever upsell tooltip popup linking to Billing page
+- [x] Auto-create a lead record for the owner when a new user signs up
+
+- [x] Grey out Twilio number/phone field for unpaid users with clever upsell tooltip popup linking to Billing page
+- [x] Auto-create a lead record for the owner when a new user signs up

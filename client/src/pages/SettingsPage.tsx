@@ -6,11 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocation } from "wouter";
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const { data: isConfigured, refetch: refetchConfigured } = trpc.sms.isConfigured.useQuery();
   const { data: twilioConfig, isLoading: configLoading } = trpc.org.getTwilioConfig.useQuery();
+  const { data: billingStatus } = trpc.billing.getStatus.useQuery();
+  const isPaid = billingStatus?.subscriptionStatus === "active" || billingStatus?.subscriptionStatus === "trialing";
+  const [showUpsell, setShowUpsell] = useState(false);
+  const [, setLocation] = useLocation();
 
   const [accountSid, setAccountSid] = useState("");
   const [authToken, setAuthToken] = useState("");
@@ -88,7 +93,43 @@ export default function SettingsPage() {
       </div>
 
       {/* Twilio Credentials Form */}
-      <div className="bg-card border border-border rounded-xl p-5 space-y-5">
+      <div className="relative bg-card border border-border rounded-xl p-5 space-y-5">
+        {/* Upsell overlay for unpaid users */}
+        {!isPaid && (
+          <div
+            className="absolute inset-0 z-10 rounded-xl bg-background/60 backdrop-blur-[2px] flex items-center justify-center cursor-pointer"
+            onClick={() => setShowUpsell(v => !v)}
+          >
+            <div className="relative">
+              <div className="flex items-center gap-2 bg-card border border-border/80 shadow-xl rounded-xl px-4 py-3">
+                <span className="text-lg">🔒</span>
+                <span className="text-sm font-medium text-foreground">Unlock SMS Integration</span>
+              </div>
+              {showUpsell && (
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 bg-popover border border-border rounded-xl shadow-2xl p-4 text-center space-y-3 z-20">
+                  <p className="text-sm font-semibold text-foreground leading-snug">
+                    Solo business owner, agency of a handful, or are we talking 100s?
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    We have a plan built for exactly your scale. Pick one and start texting your leads today.
+                  </p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setLocation("/billing"); }}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Check out our plans →
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowUpsell(false); }}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Maybe later
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-foreground">Twilio Credentials</h2>

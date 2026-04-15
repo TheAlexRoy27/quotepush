@@ -195,6 +195,8 @@ function DashboardLayoutContent({
   const [greetingEmoji, setGreetingEmoji] = useState<"wave" | "callme">(() => {
     return (localStorage.getItem(EMOJI_KEY) as "wave" | "callme") ?? "wave";
   });
+  // animKey increments on each toggle so React remounts the element and the animation plays once
+  const [animKey, setAnimKey] = useState(0);
 
   const toggleEmoji = () => {
     setGreetingEmoji(prev => {
@@ -202,6 +204,7 @@ function DashboardLayoutContent({
       localStorage.setItem(EMOJI_KEY, next);
       return next;
     });
+    setAnimKey(k => k + 1);
   };
 
   useEffect(() => {
@@ -260,13 +263,13 @@ function DashboardLayoutContent({
               {!isCollapsed ? (
                 <button
                   onClick={() => setLocation("/")}
-                  className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+                  className="flex items-center gap-2.5 min-w-0 hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
                   aria-label="Go to home"
                 >
                   <img
                     src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-favicon-hsV6w9Xq6ruPjUPpEDFYpV.webp"
                     alt="QuotePush.io"
-                    className="h-9 w-9 rounded-lg shrink-0 object-cover"
+                    className="h-11 w-11 rounded-xl shrink-0 object-cover shadow-sm"
                   />
                   <span className="font-semibold tracking-tight truncate text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     QuotePush.io
@@ -281,7 +284,7 @@ function DashboardLayoutContent({
                   <img
                     src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-favicon-hsV6w9Xq6ruPjUPpEDFYpV.webp"
                     alt="QuotePush.io"
-                    className="h-9 w-9 rounded-lg object-cover"
+                    className="h-11 w-11 rounded-xl object-cover shadow-sm"
                   />
                 </button>
               )}
@@ -380,35 +383,41 @@ function DashboardLayoutContent({
 
       <SidebarInset>
         {/* Sticky top bar always visible on desktop, also on mobile */}
-        <div className="flex border-b h-14 items-center justify-between bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-          <div className="flex items-center gap-2">
+        <div className="flex border-b h-14 items-center justify-between bg-background/95 px-3 sm:px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40 gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {isMobile && (
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
+              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background shrink-0" />
             )}
             {isMobile && (
-              <span className="tracking-tight text-foreground">
+              <span className="text-sm font-medium tracking-tight text-foreground truncate max-w-[120px]">
                 {activeMenuItem?.label ?? "Menu"}
               </span>
             )}
           </div>
-          {/* Notification Bell */}
-          <NotificationBellButton />
-          {/* Wave greeting */}
-          <div className="flex items-center gap-2 ml-auto">
-            <button
-              onClick={toggleEmoji}
-              className="text-xl select-none leading-none focus:outline-none hover:scale-125 transition-transform active:scale-110"
-              title={greetingEmoji === "wave" ? "Switch to call me" : "Switch to wave"}
-              style={greetingEmoji === "wave" ? { display: 'inline-block', animation: 'wave 2.2s ease-in-out infinite', transformOrigin: '70% 70%' } : { display: 'inline-block' }}
-            >
-              {greetingEmoji === "wave" ? "👋" : "🤙"}
-            </button>
-            <span className="text-sm font-medium text-foreground/80">
-              Hi, {user?.name?.split(' ')[0] ?? 'there'}!
-            </span>
+          {/* Notification Bell + greeting pushed to right */}
+          <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
+            <NotificationBellButton />
+            {/* Wave greeting */}
+            <div className="flex items-center gap-1.5">
+              <button
+                key={animKey}
+                onClick={toggleEmoji}
+                className="text-xl select-none leading-none focus:outline-none hover:scale-110 transition-transform active:scale-95"
+                title={greetingEmoji === "wave" ? "Switch to call me" : "Switch to wave"}
+                style={greetingEmoji === "wave"
+                  ? { display: 'inline-block', animation: 'wave 1.2s ease-in-out 1 forwards', transformOrigin: '70% 70%' }
+                  : { display: 'inline-block', animation: 'jiggle 0.7s ease-in-out 1 forwards', transformOrigin: '50% 50%' }
+                }
+              >
+                {greetingEmoji === "wave" ? "👋" : "🤙"}
+              </button>
+              <span className="text-sm font-medium text-foreground/80 hidden sm:inline">
+                Hi, {user?.name?.split(' ')[0] ?? 'there'}!
+              </span>
+            </div>
           </div>
         </div>
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-x-hidden">{children}</main>
       </SidebarInset>
     </>
   );
