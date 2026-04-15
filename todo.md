@@ -300,12 +300,12 @@
 - [x] Style Enterprise card as premium/distinct from Base and Elite (gold/gradient border)
 
 ## Drip Step Inline Editing & AI Generation
-- [ ] Make delay amount and unit editable inline directly on the timeline step card (click to edit, save on blur/enter)
-- [ ] Add AI "Generate with AI" button in the Add Step flow: sends sequence name, industry, trigger category, and previous step bodies to LLM and returns a clever next-step message
-- [ ] Add drip.generateNextStep tRPC procedure: accepts sequenceName, triggerCategory, previousSteps[], and returns a suggested message body
-- [ ] Show AI generation loading state with spinner and "Crafting your message..." text
+- [x] Make delay amount and unit editable inline directly on the timeline step card (click to edit, save on blur/enter)
+- [x] Add AI "Generate with AI" button in the Add Step flow: sends sequence name, industry, trigger category, and previous step bodies to LLM and returns a clever next-step message
+- [x] Add drip.generateNextStep tRPC procedure: accepts sequenceName, triggerCategory, previousSteps[], and returns a suggested message body
+- [x] Show AI generation loading state with spinner and "Crafting your message..." text
 - [x] Allow user to regenerate (try again) if they don't like the AI suggestion
-- [ ] Pre-fill the step body textarea with the AI-generated message (fully editable before saving)
+- [x] Pre-fill the step body textarea with the AI-generated message (fully editable before saving)
 
 ## Lead Milestones Rename
 - [x] Rename all "Status" / "Statuses" labels in UI to "Milestone" / "Milestones"
@@ -352,14 +352,14 @@
 - [x] Tag variant sequences visually with a small "B" badge so they're easy to identify (name-based identification via modal)
 
 ## Template Library — Folders & Hyperlinks
-- [ ] Add template_folders table to schema (id, orgId, name, icon, color, sortOrder, createdAt)
-- [ ] Add folderId foreign key to message_templates table
-- [ ] Generate and apply DB migration
-- [ ] Add folder CRUD tRPC procedures (list, create, rename, delete, reorder)
-- [ ] Update template list/create/update procedures to include folderId
-- [ ] Seed 6 sample folders with 3–4 templates each, including hyperlinks in bodies
-- [ ] Rebuild LibraryPage with folder sidebar (left panel) + template grid (right panel)
-- [ ] Add inline hyperlink insertion button in template body editor (inserts [label](url) markdown)
-- [ ] Render hyperlinks as clickable blue underlined links in template preview cards
+- [x] Add template_folders table to schema (id, orgId, name, icon, color, sortOrder, createdAt)
+- [x] Add folderId foreign key to message_templates table
+- [x] Generate and apply DB migration
+- [x] Add folder CRUD tRPC procedures (list, create, rename, delete, reorder)
+- [x] Update template list/create/update procedures to include folderId
+- [x] Seed 6 sample folders with 3–4 templates each, including hyperlinks in bodies
+- [x] Rebuild LibraryPage with folder sidebar (left panel) + template grid (right panel)
+- [x] Add inline hyperlink insertion button in template body editor (inserts [label](url) markdown)
+- [x] Render hyperlinks as clickable blue underlined links in template preview cards
 - [ ] Allow drag-to-reorder folders and move templates between folders
-- [ ] Add "New Folder" button and folder rename/delete via context menu
+- [x] Add "New Folder" button and folder rename/delete via context menu
