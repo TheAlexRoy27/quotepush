@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Plus, Upload, Search, Send, Trash2, MessageSquare, RefreshCw,
   Users, Clock, CheckCircle2, Calendar, ChevronRight, ChevronLeft, X, Loader2, SendHorizonal,
@@ -566,6 +568,7 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
   const [bookingNote, setBookingNote] = useState("");
   const [bookingCreated, setBookingCreated] = useState<string | null>(null);
   const [dripOpen, setDripOpen] = useState(false);
+  const [dripConfirmSeq, setDripConfirmSeq] = useState<{ id: number; name: string; steps: unknown[] } | null>(null);
   const utils = trpc.useUtils();
 
   // Drip sequences
@@ -578,6 +581,7 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
     onSuccess: () => {
       toast.success("Drip sequence applied!");
       setDripOpen(false);
+      setDripConfirmSeq(null);
       utils.drip.leadEnrollments.invalidate({ leadId: lead.id });
     },
     onError: (e) => toast.error(e.message),
@@ -900,6 +904,36 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
         </DialogContent>
       </Dialog>
 
+      {/* Drip Confirm AlertDialog */}
+      {dripConfirmSeq && (
+        <AlertDialog open={!!dripConfirmSeq} onOpenChange={(o) => { if (!o) setDripConfirmSeq(null); }}>
+          <AlertDialogContent className="bg-card border-border">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-foreground flex items-center gap-2">
+                <Zap className="h-4 w-4 text-violet-400" />
+                Apply Drip Sequence?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-muted-foreground">
+                Enroll <span className="font-medium text-foreground">{lead.name}</span> in{" "}
+                <span className="font-medium text-foreground">{dripConfirmSeq.name}</span>?{" "}
+                Messages will begin sending automatically on the sequence schedule.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="border-border" onClick={() => setDripConfirmSeq(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={enrollDrip.isPending}
+                onClick={() => enrollDrip.mutate({ leadId: lead.id, sequenceId: dripConfirmSeq.id })}
+                className="bg-violet-600 hover:bg-violet-500 text-white"
+              >
+                {enrollDrip.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Yes, Apply Sequence
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
       {/* Apply Drip Sequence Dialog */}
       <Dialog open={dripOpen} onOpenChange={setDripOpen}>
         <DialogContent className="sm:max-w-md bg-card border-border">
@@ -924,7 +958,7 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
                   <button
                     key={seq.id}
                     disabled={enrollDrip.isPending}
-                    onClick={() => enrollDrip.mutate({ leadId: lead.id, sequenceId: seq.id })}
+                    onClick={() => setDripConfirmSeq(seq as { id: number; name: string; steps: unknown[] })}
                     className="w-full text-left rounded-lg border border-border bg-card hover:bg-accent transition-colors px-4 py-3 group"
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -951,6 +985,45 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
   );
 }
 
+// ─── Bulk Drip Confirm ───────────────────────────────────────────────────────
+
+function BulkDripConfirm({
+  seq, count, leadIds, onCancel, onSuccess,
+}: {
+  seq: { id: number; name: string };
+  count: number;
+  leadIds: number[];
+  onCancel: () => void;
+  onSuccess: () => void;
+}) {
+  const bulkEnroll = trpc.drip.bulkEnrollLeads.useMutation({
+    onSuccess: (result) => {
+      toast.success(`Enrolled ${result.enrolled} lead${result.enrolled !== 1 ? "s" : ""} in "${seq.name}"${result.skipped > 0 ? ` (${result.skipped} skipped)` : ""}`);
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  return (
+    <div className="py-2 space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Enroll <span className="font-medium text-foreground">{count} lead{count !== 1 ? "s" : ""}</span> in{" "}
+        <span className="font-medium text-foreground">{seq.name}</span>? Messages will begin sending automatically on the sequence schedule.
+      </p>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={onCancel} className="border-border">Back</Button>
+        <Button
+          disabled={bulkEnroll.isPending}
+          onClick={() => bulkEnroll.mutate({ leadIds, sequenceId: seq.id })}
+          className="bg-violet-600 hover:bg-violet-500 text-white"
+        >
+          {bulkEnroll.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+          Yes, Enroll {count} Lead{count !== 1 ? "s" : ""}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Leads Page ──────────────────────────────────────────────────────────
 
 export default function LeadsPage() {
@@ -961,6 +1034,9 @@ export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [bulkLink, setBulkLink] = useState("");
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDripOpen, setBulkDripOpen] = useState(false);
+  const [bulkDripSeq, setBulkDripSeq] = useState<{ id: number; name: string } | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -969,6 +1045,17 @@ export default function LeadsPage() {
     status: (statusFilter !== "all" && statusFilter !== "opted-out" ? statusFilter : undefined) as Lead["status"] | undefined,
     optedOut: statusFilter === "opted-out" ? true : undefined,
   });
+
+  const { data: sequences = [] } = trpc.drip.listSequences.useQuery();
+
+  // Deselect all when filter/search changes
+  const prevFilterRef = useRef({ search, statusFilter });
+  useEffect(() => {
+    if (prevFilterRef.current.search !== search || prevFilterRef.current.statusFilter !== statusFilter) {
+      setSelectedIds(new Set());
+      prevFilterRef.current = { search, statusFilter };
+    }
+  }, [search, statusFilter]);
 
   const { data: stats } = trpc.leads.stats.useQuery();
   const { data: twilioConfigured } = trpc.sms.isConfigured.useQuery();
@@ -1113,6 +1200,27 @@ export default function LeadsPage() {
               Send to All Pending ({stats?.pending})
             </Button>
           )}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-xs text-muted-foreground">{selectedIds.size} selected</span>
+              <Button
+                size="sm"
+                onClick={() => setBulkDripOpen(true)}
+                className="bg-violet-600 hover:bg-violet-500 text-white"
+              >
+                <Zap className="h-3.5 w-3.5 mr-1.5" />
+                Apply Drip Sequence
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedIds(new Set())}
+                className="border-border text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5 mr-1" /> Clear
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Table */}
@@ -1176,6 +1284,16 @@ export default function LeadsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
+                      <th className="pl-4 pr-2 py-3 w-8">
+                        <Checkbox
+                          checked={leads.length > 0 && leads.every(l => selectedIds.has(l.id))}
+                          onCheckedChange={(checked) => {
+                            if (checked) setSelectedIds(new Set(leads.map(l => l.id)));
+                            else setSelectedIds(new Set());
+                          }}
+                          aria-label="Select all"
+                        />
+                      </th>
                       {["Name", "Phone", "Company", "Email", "Milestone", "Added", ""].map((h) => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">
                           {h}
@@ -1189,9 +1307,22 @@ export default function LeadsPage() {
                         key={lead.id}
                         className={`border-b border-border/50 hover:bg-accent/30 transition-colors cursor-pointer ${
                           selectedLead?.id === lead.id ? "bg-accent/40" : ""
-                        }`}
+                        } ${selectedIds.has(lead.id) ? "bg-violet-500/5" : ""}`}
                         onClick={() => setSelectedLead(selectedLead?.id === lead.id ? null : lead)}
                       >
+                        <td className="pl-4 pr-2 py-3 w-8" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.has(lead.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedIds(prev => {
+                                const next = new Set(prev);
+                                if (checked) next.add(lead.id); else next.delete(lead.id);
+                                return next;
+                              });
+                            }}
+                            aria-label={`Select ${lead.name}`}
+                          />
+                        </td>
                         <td className="px-4 py-3 font-medium text-foreground">{lead.name}</td>
                         <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{lead.phone}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lead.company ?? ""}</td>
@@ -1259,6 +1390,59 @@ export default function LeadsPage() {
       {/* Modals */}
       <AddLeadModal open={addOpen} onClose={() => setAddOpen(false)} onSuccess={refresh} />
       <CsvImportModal open={csvOpen} onClose={() => setCsvOpen(false)} onSuccess={refresh} />
+
+      {/* Bulk Drip Dialog */}
+      <Dialog open={bulkDripOpen} onOpenChange={(o) => { setBulkDripOpen(o); if (!o) setBulkDripSeq(null); }}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <Zap className="h-4 w-4 text-violet-400" />
+              Apply Drip Sequence to {selectedIds.size} Lead{selectedIds.size !== 1 ? "s" : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {!bulkDripSeq ? (
+            <div className="space-y-2 py-2 max-h-80 overflow-y-auto">
+              {sequences.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No drip sequences yet. Create one in Drip Sequences first.</p>
+              ) : sequences.map((seq) => (
+                <button
+                  key={seq.id}
+                  onClick={() => setBulkDripSeq({ id: seq.id, name: seq.name })}
+                  className="w-full text-left rounded-lg border border-border bg-card hover:bg-accent transition-colors px-4 py-3 group"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{seq.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {seq.steps.length} step{seq.steps.length !== 1 ? "s" : ""}
+                        {seq.triggerCategory ? ` · ${seq.triggerCategory}` : ""}
+                      </p>
+                    </div>
+                    <Zap className="h-4 w-4 text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <BulkDripConfirm
+              seq={bulkDripSeq}
+              count={selectedIds.size}
+              leadIds={Array.from(selectedIds)}
+              onCancel={() => setBulkDripSeq(null)}
+              onSuccess={() => {
+                setBulkDripOpen(false);
+                setBulkDripSeq(null);
+                setSelectedIds(new Set());
+              }}
+            />
+          )}
+          {!bulkDripSeq && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBulkDripOpen(false)} className="border-border">Cancel</Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Bulk send dialog */}
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>

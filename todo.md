@@ -646,3 +646,13 @@
 - [x] Mobile: sticky message input bar at bottom of screen on mobile conversation view
 - [x] Mobile: back button / swipe-back to return to lead list from conversation on mobile
 - [x] Mobile: lead list cards are tap-friendly with adequate touch targets on mobile
+
+## Drip Sequence: Confirmation Dialog & Bulk Assignment
+- [x] Single-lead drip apply: add "Are you sure?" AlertDialog before enrolling (shows sequence name + lead name)
+- [x] Leads list: add checkbox column for multi-select (individual rows + select-all header checkbox)
+- [x] Leads list toolbar: show "X selected" count badge + "Apply Drip" bulk action button when any leads are checked
+- [x] Bulk Apply Drip dialog: sequence picker + confirmation showing how many leads will be enrolled
+- [x] tRPC: drip.bulkEnrollLeads mutation - enroll multiple leadIds in a sequence, skip already-enrolled, return enrolled/skipped counts
+- [x] After bulk enroll: show toast with result (e.g. "12 leads enrolled, 3 already in a drip")
+- [x] Select-all checkbox selects all leads matching current filter (not just visible page)
+- [x] Deselect all when filter/search changes

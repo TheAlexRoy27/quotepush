@@ -1279,6 +1279,28 @@ const dripRouter = router({
     .input(z.object({ leadId: z.number() }))
     .mutation(({ input }) => stopEnrollment(input.leadId, "manual")),
 
+  bulkEnrollLeads: protectedProcedure
+    .input(
+      z.object({
+        leadIds: z.array(z.number()).min(1).max(500),
+        sequenceId: z.number(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      let enrolled = 0;
+      let skipped = 0;
+      for (const leadId of input.leadIds) {
+        try {
+          await enrollLeadInSequence(leadId, orgId, input.sequenceId, 0);
+          enrolled++;
+        } catch {
+          skipped++;
+        }
+      }
+      return { enrolled, skipped, total: input.leadIds.length };
+    }),
+
   leadEnrollments: protectedProcedure
     .input(z.object({ leadId: z.number() }))
     .query(({ input }) => listEnrollmentsForLead(input.leadId)),
