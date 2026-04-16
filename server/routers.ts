@@ -757,22 +757,22 @@ const leadsRouter = router({
             // Kevin's multi-message opening sequence
             const kevinVariants = [
               [
-                `Hey ${firstName} — just reviewing your info now and I think we can—`,
+                `Hey ${firstName} - just reviewing your info now and I think we can-`,
                 `sorry, typo`,
                 `Hey, just reviewed your info and I think we can help pretty quickly. I'm clearly an elite texter. Are you free Monday for a quick 10-minute call? I can help get your insurance quote squared away.`,
               ],
               [
-                `Hey ${firstName} — looks like we can probbaly get you a—`,
+                `Hey ${firstName} - looks like we can probbaly get you a-`,
                 `probably… wow`,
-                `Alright, off to a strong start. Anyway — I took a look and we should be able to get you a solid quote pretty fast. Are you free Monday for a quick 10-minute call?`,
+                `Alright, off to a strong start. Anyway, I took a look and we should be able to get you a solid quote pretty fast. Are you free Monday for a quick 10-minute call?`,
               ],
               [
-                `Hey ${firstName} — just looked over your info and I thi—`,
+                `Hey ${firstName} - just looked over your info and I thi-`,
                 `I think… typing is hard apparently`,
                 `Anyway, I took a look and we can likely get you a better rate pretty quickly. Got 10 minutes Monday to knock this out?`,
               ],
               [
-                `Hey ${firstName} — just looked over your info and we can—`,
+                `Hey ${firstName} - just looked over your info and we can-`,
                 `can help… clearly I type faster than I think`,
                 `Quick version: we can likely get you a better rate. Better to do a quick 10-minute call Monday or later in the week?`,
               ],

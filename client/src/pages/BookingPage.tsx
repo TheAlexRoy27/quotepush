@@ -119,7 +119,7 @@ export default function BookingPage() {
           <p className="text-gray-600 mt-2 text-sm leading-relaxed">
             {data.agentNote
               ? data.agentNote
-              : `${data.agentName} just needs a quick call to gather a bit more info and get you the most ideal quote. No pressure, no pitch — just 10 minutes and we're done.`}
+              : `${data.agentName} just needs a quick call to gather a bit more info and get you the most ideal quote. No pressure, no pitch - just 10 minutes and we're done.`}
           </p>
         </div>
 
