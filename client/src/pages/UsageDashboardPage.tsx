@@ -287,9 +287,6 @@ export default function UsageDashboardPage() {
         </div>
       )}
 
-      {/* Plan Banner */}
-      <PlanBanner plan={usageData.plan} status={usageData.subscriptionStatus} />
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard icon={<Users className="h-5 w-5 text-indigo-400" />} label="Total Leads" value={usageData.totalLeads.toLocaleString()} color="bg-indigo-500/15" empty={usageData.totalLeads === 0} />

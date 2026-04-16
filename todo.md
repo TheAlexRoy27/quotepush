@@ -615,3 +615,6 @@
 - [x] Conversation thread: show full date + time on every message bubble (e.g. "Apr 16, 2026 3:04 PM")
 - [x] Conversation thread: group messages by date with a date divider (e.g. "Today", "Yesterday", "Apr 14")
 - [x] Vitest: drip enrollment validation (lead already enrolled, sequence not found)
+
+## Dashboard Cleanup
+- [x] Remove Active Plan banner from My Dashboard (visible in Settings > Billing instead)
