@@ -5,10 +5,16 @@ import { CheckCircle2, XCircle, Info, ExternalLink, Phone, Key, Link2, Eye, EyeO
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
+import BillingPage from "./BillingPage";
+import WebhookPage from "./WebhookPage";
+import KeywordPromotionPage from "./KeywordPromotionPage";
 
-export default function SettingsPage() {
+// ─── Twilio Tab ───────────────────────────────────────────────────────────────
+
+function TwilioTab() {
   const { user } = useAuth();
   const { data: isConfigured, refetch: refetchConfigured } = trpc.sms.isConfigured.useQuery();
   const { data: twilioConfig, isLoading: configLoading } = trpc.org.getTwilioConfig.useQuery();
@@ -25,12 +31,10 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
 
-  // Pre-fill form when config loads
   useEffect(() => {
     if (twilioConfig) {
       setAccountSid(twilioConfig.accountSid ?? "");
       setPhoneNumber(twilioConfig.phoneNumber ?? "");
-      // Auth token is never returned from backend leave blank unless user re-enters
     }
     if (user?.phone) {
       setTestPhone(user.phone);
@@ -86,15 +90,9 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground mt-1">Configure your Twilio integration and SMS settings.</p>
-      </div>
-
+    <div className="space-y-6">
       {/* Twilio Credentials Form */}
       <div className="relative bg-card border border-border rounded-xl p-5 space-y-5">
-        {/* Upsell overlay for unpaid users */}
         {!isPaid && (
           <div
             className="absolute inset-0 z-10 rounded-xl bg-background/60 backdrop-blur-[2px] flex items-center justify-center cursor-pointer"
@@ -114,7 +112,7 @@ export default function SettingsPage() {
                     We have a plan built for exactly your scale. Pick one and start texting your leads today.
                   </p>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setLocation("/billing"); }}
+                    onClick={(e) => { e.stopPropagation(); setLocation("/settings?tab=billing"); }}
                     className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
                   >
                     Check out our plans →
@@ -152,7 +150,6 @@ export default function SettingsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Account SID */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium flex items-center gap-1.5">
                 <Key className="h-3.5 w-3.5 text-muted-foreground" /> Account SID
@@ -166,7 +163,6 @@ export default function SettingsPage() {
               <p className="text-xs text-muted-foreground">Found on your Twilio Console dashboard</p>
             </div>
 
-            {/* Auth Token */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium flex items-center gap-1.5">
                 <Key className="h-3.5 w-3.5 text-muted-foreground" /> Auth Token
@@ -192,7 +188,6 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            {/* Phone Number */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground" /> Twilio Phone Number
@@ -208,13 +203,12 @@ export default function SettingsPage() {
 
             <Button onClick={handleSave} disabled={isSaving} className="w-full gap-2">
               <Save className="h-4 w-4" />
-              {isSaving ? "Saving…" : "Save Credentials"}
+              {isSaving ? "Saving..." : "Save Credentials"}
             </Button>
           </div>
         )}
       </div>
 
-      {/* Test SMS */}
       {isConfigured && (
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div>
@@ -230,19 +224,17 @@ export default function SettingsPage() {
             />
             <Button onClick={handleTest} disabled={isTesting} variant="outline" className="gap-2 shrink-0">
               <Zap className="h-4 w-4" />
-              {isTesting ? "Sending…" : "Send Test"}
+              {isTesting ? "Sending..." : "Send Test"}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Webhook URL */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Inbound SMS Webhook</h2>
         <p className="text-sm text-muted-foreground">
           Configure your Twilio phone number to forward inbound messages to this endpoint so lead replies are captured automatically.
         </p>
-
         <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
           <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
           <code className="text-xs font-mono text-primary break-all flex-1">{webhookUrl}</code>
@@ -250,7 +242,6 @@ export default function SettingsPage() {
             <Copy className="h-4 w-4" />
           </button>
         </div>
-
         <div className="space-y-2 text-sm text-muted-foreground">
           <p className="font-medium text-foreground text-xs">Setup steps:</p>
           <ol className="space-y-1.5 text-xs list-decimal list-inside">
@@ -261,7 +252,6 @@ export default function SettingsPage() {
             <li>Save the configuration</li>
           </ol>
         </div>
-
         <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
           <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
           <p className="text-xs text-muted-foreground">
@@ -270,7 +260,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* About */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-3">
         <div className="flex items-center gap-2 mb-1">
           <img
@@ -295,6 +284,47 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Main Settings Page ───────────────────────────────────────────────────────
+
+export default function SettingsPage() {
+  const [searchParams] = useState(() => new URLSearchParams(window.location.search));
+  const initialTab = searchParams.get("tab") ?? "twilio";
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground tracking-tight">Settings</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage your integrations, billing, and automation rules.</p>
+      </div>
+
+      <Tabs defaultValue={initialTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="twilio">Twilio / SMS</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="webhook">CRM Webhook</TabsTrigger>
+          <TabsTrigger value="autopromote">Auto-Promote</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="twilio">
+          <TwilioTab />
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <BillingPage />
+        </TabsContent>
+
+        <TabsContent value="webhook">
+          <WebhookPage />
+        </TabsContent>
+
+        <TabsContent value="autopromote">
+          <KeywordPromotionPage />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

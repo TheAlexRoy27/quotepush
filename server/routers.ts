@@ -105,7 +105,7 @@ import {
   deleteDripStep,
   seedDefaultDripSequences,
 } from "./dripDb";
-import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials, users, leadDripEnrollments } from "../drizzle/schema";
+import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials, users, leadDripEnrollments, appointments } from "../drizzle/schema";
 import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
 import bcrypt from "bcryptjs";
@@ -1579,6 +1579,19 @@ const usageDashboardRouter = router({
       .where(and(eq(messages.orgId, orgId), gte(messages.sentAt, thirtyDaysAgo)))
       .groupBy(sql`DATE_FORMAT(messages.sentAt, '%Y-%m-%d')`, messages.direction);
 
+    // Booking outcome stats from appointments table
+    const apptRows = await db
+      .select({ status: appointments.status, count: sql<number>`count(*)` })
+      .from(appointments)
+      .where(eq(appointments.orgId, orgId))
+      .groupBy(appointments.status);
+    const apptByStatus = Object.fromEntries(apptRows.map(r => [r.status, Number(r.count)]));
+    const bookingCompleted = apptByStatus['completed'] ?? 0;
+    const bookingNoAnswer = apptByStatus['no_answer'] ?? 0;
+    const bookingCancelled = apptByStatus['cancelled'] ?? 0;
+    const bookingBooked = apptByStatus['booked'] ?? 0;
+    const bookingPending = apptByStatus['pending'] ?? 0;
+
     const org = await getOrganizationById(orgId);
     const replyRate = totalSent > 0 ? Math.round((totalReplies / totalSent) * 100) : 0;
 
@@ -1592,6 +1605,11 @@ const usageDashboardRouter = router({
       messagesPerDay: msgRows.map((r) => ({ day: r.day, direction: r.direction, count: Number(r.count) })),
       plan: org?.plan ?? null,
       subscriptionStatus: org?.subscriptionStatus ?? null,
+      bookingCompleted,
+      bookingNoAnswer,
+      bookingCancelled,
+      bookingBooked,
+      bookingPending,
     };
   }),
 });
@@ -1754,12 +1772,24 @@ const bookingRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
-      const appt = await getAppointmentByToken('');
-      // Get by id via org list
       const all = await getAppointmentsByOrg(orgId);
       const target = all.find(a => a.id === input.id);
       if (!target) throw new TRPCError({ code: 'NOT_FOUND' });
       await updateAppointment(input.id, { status: 'cancelled' });
+      return { success: true };
+    }),
+
+  updateStatus: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(['pending', 'booked', 'cancelled', 'completed', 'no_answer']),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const all = await getAppointmentsByOrg(orgId);
+      const target = all.find(a => a.id === input.id);
+      if (!target) throw new TRPCError({ code: 'NOT_FOUND' });
+      await updateAppointment(input.id, { status: input.status });
       return { success: true };
     }),
 });

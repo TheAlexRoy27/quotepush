@@ -219,6 +219,8 @@ export default function UsageDashboardPage() {
     totalLeads: 0, booked: 0, totalSent: 0, totalReplies: 0,
     replyRate: 0, activeEnrollments: 0, messagesPerDay: [],
     plan: null, subscriptionStatus: null,
+    bookingCompleted: 0, bookingNoAnswer: 0, bookingCancelled: 0,
+    bookingBooked: 0, bookingPending: 0,
   };
 
   const dayMap = new Map<string, { day: string; outbound: number; inbound: number }>();
@@ -297,6 +299,38 @@ export default function UsageDashboardPage() {
         <StatCard icon={<Zap className="h-5 w-5 text-violet-400" />} label="Active Drips" value={usageData.activeEnrollments.toLocaleString()} sub="Enrollments running" color="bg-violet-500/15" empty={usageData.activeEnrollments === 0} />
         <StatCard icon={<CreditCard className="h-5 w-5 text-pink-400" />} label="Est. Pipeline Value" value={`$${estimatedValue.toLocaleString()}`} sub="At $500 avg per booked lead" color="bg-pink-500/15" empty={estimatedValue === 0} />
       </div>
+
+      {/* Booking Outcomes */}
+      {(usageData.bookingBooked + usageData.bookingCompleted + usageData.bookingNoAnswer + usageData.bookingCancelled + usageData.bookingPending) > 0 && (
+        <div className="rounded-xl border border-border bg-card/50 p-5 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Booking Outcomes</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Status breakdown across all booking links sent.</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="text-center rounded-lg bg-green-500/10 border border-green-500/20 p-3">
+              <p className="text-xl font-bold text-green-500">{usageData.bookingBooked}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Booked</p>
+            </div>
+            <div className="text-center rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
+              <p className="text-xl font-bold text-blue-500">{usageData.bookingCompleted}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Completed</p>
+            </div>
+            <div className="text-center rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
+              <p className="text-xl font-bold text-amber-500">{usageData.bookingNoAnswer}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">No Answer</p>
+            </div>
+            <div className="text-center rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+              <p className="text-xl font-bold text-destructive">{usageData.bookingCancelled}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Cancelled</p>
+            </div>
+            <div className="text-center rounded-lg bg-muted/30 border border-border p-3">
+              <p className="text-xl font-bold text-muted-foreground">{usageData.bookingPending}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Pending</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Message Activity Chart */}
       <ChartCard

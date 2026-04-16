@@ -425,7 +425,7 @@ export type InsertReferral = typeof referrals.$inferInsert;
 // Booking records created when an agent sends a booking link to a lead.
 // The lead visits /book/:token and picks an available time slot.
 
-export const APPOINTMENT_STATUSES = ["pending", "booked", "cancelled"] as const;
+export const APPOINTMENT_STATUSES = ["pending", "booked", "cancelled", "completed", "no_answer"] as const;
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
 export const appointments = mysqlTable("appointments", {

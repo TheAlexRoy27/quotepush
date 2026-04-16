@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, CreditCard, FileText, Gift, LogOut, MessageSquare, Moon, PanelLeft, Settings, Shield, Sun, TrendingUp, Users, Webhook, Zap } from "lucide-react";
+import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, Gift, LogOut, MessageSquare, Moon, PanelLeft, Settings, Shield, Sun, TrendingUp, Users, Zap } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -33,14 +33,10 @@ const menuItems = [
   { icon: Bot, label: "AI Bot", path: "/bot" },
   { icon: Users, label: "Leads", path: "/leads" },
   { icon: CalendarDays, label: "Bookings", path: "/bookings" },
-  { icon: FileText, label: "SMS Template", path: "/template" },
   { icon: BookOpen, label: "Template Library", path: "/library" },
   { icon: Zap, label: "Drip Sequences", path: "/drip" },
-  { icon: Webhook, label: "CRM Webhook", path: "/webhook" },
   { icon: Building2, label: "Organization", path: "/organization" },
-  { icon: CreditCard, label: "Billing", path: "/billing" },
   { icon: Settings, label: "Settings", path: "/settings" },
-  { icon: Zap, label: "Auto-Promote", path: "/keyword-promotion" },
   { icon: Gift, label: "Referrals", path: "/referrals" },
 ];
 

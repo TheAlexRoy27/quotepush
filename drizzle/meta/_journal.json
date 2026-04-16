@@ -155,6 +155,13 @@
       "when": 1776342183493,
       "tag": "0021_next_phalanx",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1776366265177,
+      "tag": "0022_light_stepford_cuckoos",
+      "breakpoints": true
     }
   ]
 }

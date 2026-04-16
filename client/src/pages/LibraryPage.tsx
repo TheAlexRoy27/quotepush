@@ -1,6 +1,8 @@
 import { toast } from "sonner";
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TemplatePage from "./TemplatePage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -395,6 +397,14 @@ export default function LibraryPage() {
   }
 
   return (
+    <Tabs defaultValue="library" className="flex flex-col h-full min-h-0">
+      <div className="shrink-0 px-4 pt-4 pb-0 border-b border-border">
+        <TabsList className="mb-0">
+          <TabsTrigger value="library">Template Library</TabsTrigger>
+          <TabsTrigger value="sms">SMS Template</TabsTrigger>
+        </TabsList>
+      </div>
+      <TabsContent value="library" className="flex-1 min-h-0 mt-0 overflow-hidden">
     <div className="flex h-full min-h-0">
       {/* Folder Sidebar */}
       <aside className="w-56 shrink-0 border-r border-border flex flex-col bg-card/50">
@@ -626,5 +636,10 @@ export default function LibraryPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+      </TabsContent>
+      <TabsContent value="sms" className="flex-1 overflow-y-auto p-6">
+        <TemplatePage />
+      </TabsContent>
+    </Tabs>
   );
 }

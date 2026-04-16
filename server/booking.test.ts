@@ -121,6 +121,16 @@ describe("Appointment status enum", () => {
     expect(APPOINTMENT_STATUSES).toContain("pending");
     expect(APPOINTMENT_STATUSES).toContain("booked");
     expect(APPOINTMENT_STATUSES).toContain("cancelled");
-    expect(APPOINTMENT_STATUSES).toHaveLength(3);
+    expect(APPOINTMENT_STATUSES).toContain("completed");
+    expect(APPOINTMENT_STATUSES).toContain("no_answer");
+    expect(APPOINTMENT_STATUSES).toHaveLength(5);
+  });
+
+  it("blocks booking when status is completed", () => {
+    expect(canBook("completed")).toBe(false);
+  });
+
+  it("blocks booking when status is no_answer", () => {
+    expect(canBook("no_answer")).toBe(false);
   });
 });

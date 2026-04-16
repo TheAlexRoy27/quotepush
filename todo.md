@@ -589,3 +589,19 @@
 - [x] Organization page: add "All Accounts" section below Team Members (owner-only, hidden for non-owners)
 - [x] Accounts table columns: Name, Email, Role, Organization, Last Login, Joined, (no delete action)
 - [x] Team Members: replace window.confirm trash-can with a proper "Are you sure?" AlertDialog
+
+## Nav Consolidation & Booking Status
+
+### Nav cleanup
+- [x] Remove Auto-Promote, Billing, CRM Webhook from sidebar nav
+- [x] Add Auto-Promote, Billing, CRM Webhook as tabs inside SettingsPage
+- [x] Merge SMS Template into Template Library as a tab (SMS Templates tab)
+- [x] Remove SMS Template from sidebar nav
+- [x] Update all internal links/redirects that point to old routes
+
+### Booking status actions
+- [x] Add status options to appointments: completed, cancelled, no_answer (schema already has status field)
+- [x] tRPC: booking.updateStatus mutation - protected, update appointment status
+- [x] Bookings page: status action buttons per row (Mark Completed, Mark Cancelled, No Answer)
+- [x] Bookings page: status badge updates reflect new statuses with distinct colors
+- [x] Dashboard: show booking outcome breakdown (Completed, Cancelled, No Answer, Pending, Booked counts)

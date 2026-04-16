@@ -1,10 +1,31 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Clock, User, Link2, CheckCircle2, XCircle, Loader2, Copy } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  CalendarDays, Clock, User, CheckCircle2, XCircle, Loader2, Copy,
+  ChevronDown, PhoneOff, CheckCheck, Ban,
+} from "lucide-react";
 import { toast } from "sonner";
+
+type AppointmentStatus = "pending" | "booked" | "cancelled" | "completed" | "no_answer";
 
 function formatSlot(slot: string) {
   return new Date(slot).toLocaleString("en-US", {
@@ -18,25 +39,59 @@ function formatSlot(slot: string) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  if (status === "booked") return <Badge className="bg-green-100 text-green-700 border-green-200">Booked</Badge>;
-  if (status === "cancelled") return <Badge variant="destructive">Cancelled</Badge>;
-  return <Badge variant="secondary">Pending</Badge>;
+  switch (status) {
+    case "booked":
+      return <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">Booked</Badge>;
+    case "completed":
+      return <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">Completed</Badge>;
+    case "cancelled":
+      return <Badge variant="destructive">Cancelled</Badge>;
+    case "no_answer":
+      return <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">No Answer</Badge>;
+    default:
+      return <Badge variant="secondary">Pending</Badge>;
+  }
 }
 
+const STATUS_ACTIONS: { label: string; value: AppointmentStatus; icon: React.ReactNode; className?: string }[] = [
+  { label: "Mark Completed", value: "completed", icon: <CheckCheck className="h-3.5 w-3.5" />, className: "text-blue-600" },
+  { label: "No Answer", value: "no_answer", icon: <PhoneOff className="h-3.5 w-3.5" />, className: "text-amber-600" },
+  { label: "Mark Cancelled", value: "cancelled", icon: <Ban className="h-3.5 w-3.5" />, className: "text-destructive" },
+];
+
 export default function BookingsPage() {
-  const { data: bookings, isLoading, refetch } = trpc.booking.list.useQuery();
-  const cancelMutation = trpc.booking.cancel.useMutation({
+  const utils = trpc.useUtils();
+  const { data: bookings, isLoading } = trpc.booking.list.useQuery();
+  const updateStatus = trpc.booking.updateStatus.useMutation({
     onSuccess: () => {
-      toast.success("Booking cancelled.");
-      refetch();
+      utils.booking.list.invalidate();
     },
     onError: (err) => toast.error(err.message),
   });
+
+  const [confirmAction, setConfirmAction] = useState<{ id: number; status: AppointmentStatus; label: string } | null>(null);
 
   const copyLink = (token: string) => {
     const url = `${window.location.origin}/book/${token}`;
     navigator.clipboard.writeText(url);
     toast.success("Booking link copied to clipboard!");
+  };
+
+  const handleStatusChange = (id: number, status: AppointmentStatus, label: string) => {
+    setConfirmAction({ id, status, label });
+  };
+
+  const confirmStatusChange = () => {
+    if (!confirmAction) return;
+    updateStatus.mutate(
+      { id: confirmAction.id, status: confirmAction.status },
+      {
+        onSuccess: () => {
+          toast.success(`Booking marked as ${confirmAction.label.toLowerCase().replace("mark ", "")}.`);
+          setConfirmAction(null);
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -50,6 +105,12 @@ export default function BookingsPage() {
   const active = bookings?.filter(b => b.status !== "cancelled") ?? [];
   const cancelled = bookings?.filter(b => b.status === "cancelled") ?? [];
 
+  // Stats
+  const completed = bookings?.filter(b => b.status === "completed").length ?? 0;
+  const noAnswer = bookings?.filter(b => b.status === "no_answer").length ?? 0;
+  const booked = bookings?.filter(b => b.status === "booked").length ?? 0;
+  const pending = bookings?.filter(b => b.status === "pending").length ?? 0;
+
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -59,6 +120,28 @@ export default function BookingsPage() {
           Track all booking links you've sent to leads. When a lead picks a time, their status updates to Scheduled automatically.
         </p>
       </div>
+
+      {/* Stats row */}
+      {(bookings?.length ?? 0) > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-card border border-border rounded-xl p-3 text-center">
+            <p className="text-xl font-bold text-green-500">{booked}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Booked</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-3 text-center">
+            <p className="text-xl font-bold text-blue-500">{completed}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Completed</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-3 text-center">
+            <p className="text-xl font-bold text-amber-500">{noAnswer}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">No Answer</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-3 text-center">
+            <p className="text-xl font-bold text-muted-foreground">{pending}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Pending</p>
+          </div>
+        </div>
+      )}
 
       {active.length === 0 && (
         <Card className="text-center py-16">
@@ -79,7 +162,7 @@ export default function BookingsPage() {
               <CardContent className="pt-4 pb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium text-sm text-foreground">{b.agentName}</span>
                       <StatusBadge status={b.status} />
@@ -109,17 +192,27 @@ export default function BookingsPage() {
                       <Copy className="h-3.5 w-3.5" />
                       Copy Link
                     </Button>
-                    {b.status !== "booked" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-destructive hover:text-destructive"
-                        disabled={cancelMutation.isPending}
-                        onClick={() => cancelMutation.mutate({ id: b.id })}
-                      >
-                        <XCircle className="h-3.5 w-3.5 mr-1" />
-                        Cancel
-                      </Button>
+                    {b.status !== "cancelled" && b.status !== "completed" && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1.5 text-xs" disabled={updateStatus.isPending}>
+                            Update Status
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {STATUS_ACTIONS.filter(a => a.value !== b.status).map(action => (
+                            <DropdownMenuItem
+                              key={action.value}
+                              className={`gap-2 cursor-pointer ${action.className ?? ""}`}
+                              onClick={() => handleStatusChange(b.id, action.value, action.label)}
+                            >
+                              {action.icon}
+                              {action.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
                 </div>
@@ -148,6 +241,28 @@ export default function BookingsPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm status change dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => { if (!open) setConfirmAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmAction?.label}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will update the booking status. You can change it again at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmStatusChange}
+              disabled={updateStatus.isPending}
+              className={confirmAction?.status === "cancelled" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {updateStatus.isPending ? "Updating..." : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
