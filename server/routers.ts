@@ -675,7 +675,7 @@ const orgRouter = router({
 
 const leadsRouter = router({
   list: protectedProcedure
-    .input(z.object({ search: z.string().optional(), status: LeadStatusEnum.optional() }).optional())
+    .input(z.object({ search: z.string().optional(), status: LeadStatusEnum.optional(), optedOut: z.boolean().optional() }).optional())
     .query(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
       return listLeads(orgId, input);
@@ -886,6 +886,7 @@ const smsRouter = router({
       const orgId = await requireOrgId(ctx.user.id);
       const lead = await getLeadById(input.leadId);
       if (!lead) throw new TRPCError({ code: "NOT_FOUND", message: "Lead not found" });
+      if ((lead as any).optedOut) throw new TRPCError({ code: "FORBIDDEN", message: "This lead has opted out and cannot receive SMS messages." });
 
       const template = await getDefaultTemplate(orgId);
       if (!template) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No SMS template found" });
@@ -924,6 +925,11 @@ const smsRouter = router({
       const results = [];
 
       for (const lead of pendingLeads) {
+        // Skip opted-out leads
+        if ((lead as any).optedOut) {
+          results.push({ leadId: lead.id, success: false, error: "Lead has opted out" });
+          continue;
+        }
         const body = renderTemplate(template.body, { name: lead.name, company: lead.company, link: input?.schedulingLink });
         let twilioSid: string | undefined;
         let twilioStatus: string | undefined;

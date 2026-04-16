@@ -11,6 +11,7 @@ import {
   getDripSequenceById,
   getDripStepByNumber,
   listDripSteps,
+  stopEnrollment,
 } from "./dripDb";
 import { getOrgTwilioConfig } from "./orgDb";
 import { isTwilioConfigured, renderTemplate, sendSms, sendSmsWithConfig } from "./twilio";
@@ -74,6 +75,13 @@ async function processDripEnrollment(
   const lead = await getLeadById(leadId);
   if (!lead) {
     console.warn(`[DripScheduler] Lead ${leadId} not found, skipping`);
+    return;
+  }
+
+  // Skip opted-out leads
+  if ((lead as any).optedOut) {
+    console.log(`[DripScheduler] Lead ${leadId} has opted out, stopping enrollment`);
+    await stopEnrollment(leadId, "unsubscribed");
     return;
   }
 

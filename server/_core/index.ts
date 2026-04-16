@@ -92,6 +92,41 @@ async function startServer() {
         return;
       }
 
+      // ─── STOP / Opt-Out Detection (TCPA) ─────────────────────────────────
+      const STOP_KEYWORDS = [
+        "stop", "stopall", "unsubscribe", "cancel", "end", "quit",
+        "no", "remove me", "don't text me", "dont text me",
+        "take me off", "opt out", "opt-out", "optout",
+      ];
+      const bodyNorm = body.trim().toLowerCase();
+      const isOptOut = STOP_KEYWORDS.some(
+        (kw) => bodyNorm === kw || bodyNorm.startsWith(kw + " ") || bodyNorm.endsWith(" " + kw)
+      );
+
+      if (isOptOut) {
+        // Mark lead as opted out and stop all sequences
+        await updateLead(lead.id, { optedOut: true, optedOutAt: new Date() });
+        await stopEnrollment(lead.id, "unsubscribed");
+        // Log the inbound opt-out message
+        await createMessage({
+          orgId: lead.orgId,
+          leadId: lead.id,
+          direction: "inbound",
+          body,
+          twilioSid: req.body?.MessageSid ?? null,
+          twilioStatus: "received",
+        });
+        // Notify the agent
+        try {
+          await notifyOwner({
+            title: `Opt-out received: ${lead.name}`,
+            content: `${lead.name} (${lead.phone}) replied "${body}" and has been opted out. No further SMS will be sent to this lead.`,
+          });
+        } catch { /* non-fatal */ }
+        console.log(`[TCPA] Lead ${lead.id} opted out via "${body}"`);
+        return;
+      }
+
       const savedMsg = await createMessage({
         orgId: lead.orgId,
         leadId: lead.id,

@@ -88,6 +88,7 @@ export async function getUserByOpenId(openId: string) {
 export async function listLeads(orgId: number, opts?: {
   search?: string;
   status?: Lead["status"];
+  optedOut?: boolean;
 }) {
   const db = await getDb();
   if (!db) return [];
@@ -96,6 +97,10 @@ export async function listLeads(orgId: number, opts?: {
 
   if (opts?.status) {
     conditions.push(eq(leads.status, opts.status));
+  }
+
+  if (opts?.optedOut !== undefined) {
+    conditions.push(eq(leads.optedOut, opts.optedOut));
   }
 
   if (opts?.search) {

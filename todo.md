@@ -561,3 +561,25 @@
 - [x] Add drip scheduler DB retry logic (retry failed queries up to 3x with exponential backoff)
 - [x] Remove "Advanced analytics (coming soon)" from Elite plan feature list on BillingPage
 - [x] Remove "White-label options (coming soon)" from Elite plan feature list on BillingPage
+
+## STOP / Opt-Out Keyword Handling (TCPA)
+- [x] Add `optedOut` boolean column (default false) to leads table (schema + migration)
+- [x] Add `optedOutAt` timestamp column to leads table
+- [x] Detect STOP/opt-out keywords in inbound SMS webhook (STOP, STOPALL, UNSUBSCRIBE, CANCEL, END, QUIT, NO, remove me, don't text me, take me off)
+- [x] When opt-out keyword detected: set lead optedOut=true, optedOutAt=now, stop any active drip enrollment, cancel pending bot replies
+- [x] Block outbound SMS send helper from sending to opted-out leads (throw error with clear message)
+- [x] Show "Opted Out" badge on lead card/row in LeadsPage
+- [x] Show opt-out warning banner in conversation panel when lead is opted out
+- [x] Add optedOut filter option to Leads page filter bar ("Show Opted Out")
+- [x] Vitest: opt-out keyword detection and send blocking logic
+
+## CSV Import Field Mapping UI
+- [x] Replace auto-detect column mapping with a manual drag-and-drop field mapper step
+- [x] Show detected CSV headers as draggable chips on the left
+- [x] Show target fields (Name, Phone, Company, Email, Notes) as drop zones on the right
+- [x] Auto-map obvious matches (e.g. "phone" -> Phone, "email" -> Email) on load
+- [x] Allow user to manually remap any field by dragging a chip to a different target
+- [x] Allow "Ignore" option for columns that should not be imported
+- [x] Show a live preview row using the first data row with the current mapping applied
+- [x] Validate that Phone is mapped before allowing import to proceed
+- [x] Vitest: auto-mapping heuristic logic

@@ -131,6 +131,8 @@ export const leads = mysqlTable("leads", {
   notes: text("notes"),
   consentUrl: varchar("consentUrl", { length: 2048 }),
   consentConfirmed: boolean("consentConfirmed").notNull().default(false),
+  optedOut: boolean("optedOut").notNull().default(false),
+  optedOutAt: timestamp("optedOutAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

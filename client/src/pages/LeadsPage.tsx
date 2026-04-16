@@ -334,54 +334,109 @@ function CsvImportModal({ open, onClose, onSuccess }: {
             </div>
           )}
 
-          {/* ── Step 2: Column Mapping ── */}
+          {/* ── Step 2: Column Mapping (drag-and-drop) ── */}
           {step === "map" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                We detected <strong className="text-foreground">{rawRows.length} rows</strong> and <strong className="text-foreground">{headers.length} columns</strong>. Map each field below.
+                Detected <strong className="text-foreground">{rawRows.length} rows</strong> and <strong className="text-foreground">{headers.length} columns</strong>.
+                Drag a column chip onto a target field, or click a chip to cycle through assignments.
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                {(Object.keys(FIELD_LABELS) as (keyof ColumnMap)[]).map(field => (
-                  <div key={field} className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">
-                      {FIELD_LABELS[field]}
-                      {FIELD_REQUIRED[field] && <span className="text-destructive ml-1">*</span>}
-                    </Label>
-                    <Select
-                      value={columnMap[field] || "__none__"}
-                      onValueChange={(v) => setColumnMap(prev => ({ ...prev, [field]: v === "__none__" ? "" : v }))}
+
+              {/* Unassigned chips pool */}
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">CSV Columns</p>
+                <div className="flex flex-wrap gap-2 min-h-[40px] bg-muted/20 border border-border rounded-lg p-2">
+                  {headers.filter(h => !Object.values(columnMap).includes(h)).map(h => (
+                    <div
+                      key={h}
+                      draggable
+                      onDragStart={(e) => e.dataTransfer.setData("text/plain", h)}
+                      className="px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 cursor-grab active:cursor-grabbing select-none hover:bg-indigo-500/25 transition-colors"
+                      title={`Sample: ${rawRows[0]?.[h] ?? "(empty)"}`}
                     >
-                      <SelectTrigger className="bg-background border-border text-sm h-9">
-                        <SelectValue placeholder=" skip " />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__"> skip </SelectItem>
-                        {headers.map(h => (
-                          <SelectItem key={h} value={h}>{h}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </div>
-              {/* Preview of first 3 raw rows */}
-              <div className="rounded-lg border border-border overflow-hidden">
-                <div className="bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground font-medium">Raw data preview (first 3 rows)</div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead className="bg-muted/20">
-                      <tr>{headers.map(h => <th key={h} className="px-3 py-1.5 text-left text-muted-foreground whitespace-nowrap">{h}</th>)}</tr>
-                    </thead>
-                    <tbody>
-                      {rawRows.slice(0, 3).map((row, i) => (
-                        <tr key={i} className="border-t border-border">
-                          {headers.map(h => <td key={h} className="px-3 py-1.5 text-foreground whitespace-nowrap max-w-[120px] truncate">{row[h] ?? ""}</td>)}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      {h}
+                      {rawRows[0]?.[h] && (
+                        <span className="ml-1.5 text-indigo-300/60 font-normal">{String(rawRows[0][h]).slice(0, 12)}{String(rawRows[0][h]).length > 12 ? "..." : ""}</span>
+                      )}
+                    </div>
+                  ))}
+                  {headers.filter(h => !Object.values(columnMap).includes(h)).length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">All columns assigned</p>
+                  )}
                 </div>
               </div>
+
+              {/* Drop zones */}
+              <div className="grid grid-cols-2 gap-3">
+                {(Object.keys(FIELD_LABELS) as (keyof ColumnMap)[]).map(field => {
+                  const assigned = columnMap[field];
+                  return (
+                    <div key={field} className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        {FIELD_LABELS[field]}
+                        {FIELD_REQUIRED[field] && <span className="text-rose-400 ml-1">*</span>}
+                      </Label>
+                      <div
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const dragged = e.dataTransfer.getData("text/plain");
+                          if (!dragged) return;
+                          // Remove from any existing field
+                          const prev = { ...columnMap };
+                          (Object.keys(prev) as (keyof ColumnMap)[]).forEach(k => {
+                            if (prev[k] === dragged) prev[k] = "";
+                          });
+                          setColumnMap({ ...prev, [field]: dragged });
+                        }}
+                        className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 min-h-[40px] transition-colors ${
+                          assigned
+                            ? "bg-emerald-500/10 border-emerald-500/30"
+                            : "bg-muted/20 border-dashed border-border hover:border-indigo-500/50"
+                        }`}
+                      >
+                        {assigned ? (
+                          <>
+                            <span className="text-xs font-medium text-emerald-400 truncate">{assigned}</span>
+                            <button
+                              onClick={() => setColumnMap(prev => ({ ...prev, [field]: "" }))}
+                              className="shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Drop column here</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Live preview row */}
+              {(columnMap.name || columnMap.phone) && (
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground font-medium">Live preview (first row)</div>
+                  <div className="grid grid-cols-4 gap-0 divide-x divide-border">
+                    {(Object.keys(FIELD_LABELS) as (keyof ColumnMap)[]).map(field => (
+                      <div key={field} className="px-3 py-2">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{FIELD_LABELS[field]}</p>
+                        <p className={`text-xs truncate ${
+                          columnMap[field] && rawRows[0]?.[columnMap[field]]
+                            ? "text-foreground font-medium"
+                            : "text-muted-foreground/50 italic"
+                        }`}>
+                          {columnMap[field] && rawRows[0]?.[columnMap[field]]
+                            ? rawRows[0][columnMap[field]]
+                            : "(not mapped)"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {error}
@@ -569,6 +624,19 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
           </button>
         </div>
       </div>
+
+      {/* Opted Out Warning Banner */}
+      {(data?.lead as any)?.optedOut && (
+        <div className="px-4 py-2.5 bg-rose-500/10 border-b border-rose-500/20 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />
+          <p className="text-xs text-rose-500 font-medium">
+            This lead has opted out. No further SMS messages will be sent to them.
+            {(data?.lead as any)?.optedOutAt && (
+              <span className="font-normal text-rose-400"> (opted out {new Date((data?.lead as any).optedOutAt).toLocaleDateString()})</span>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* Consent URL */}
       {data?.lead?.consentUrl && (
@@ -760,7 +828,8 @@ export default function LeadsPage() {
 
   const { data: leads = [], isLoading } = trpc.leads.list.useQuery({
     search: search || undefined,
-    status: (statusFilter !== "all" ? statusFilter : undefined) as Lead["status"] | undefined,
+    status: (statusFilter !== "all" && statusFilter !== "opted-out" ? statusFilter : undefined) as Lead["status"] | undefined,
+    optedOut: statusFilter === "opted-out" ? true : undefined,
   });
 
   const { data: stats } = trpc.leads.stats.useQuery();
@@ -884,6 +953,7 @@ export default function LeadsPage() {
               {["Pending", "Sent", "Replied", "Scheduled", "X-Dated"].map(s => (
                 <SelectItem key={s} value={s} className="text-foreground">{s}</SelectItem>
               ))}
+              <SelectItem value="opted-out" className="text-rose-500">Opted Out</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -939,6 +1009,9 @@ export default function LeadsPage() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <StatusBadge status={lead.status} />
+                        {(lead as any).optedOut && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20">Opted Out</span>
+                        )}
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => setSelectedLead(selectedLead?.id === lead.id ? null : lead)}
@@ -985,7 +1058,14 @@ export default function LeadsPage() {
                         <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{lead.phone}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lead.company ?? ""}</td>
                         <td className="px-4 py-3 text-muted-foreground">{lead.email ?? ""}</td>
-                        <td className="px-4 py-3"><StatusBadge status={lead.status} /></td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <StatusBadge status={lead.status} />
+                            {(lead as any).optedOut && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20">Opted Out</span>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
                           {new Date(lead.createdAt).toLocaleDateString()}
                         </td>
