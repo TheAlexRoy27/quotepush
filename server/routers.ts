@@ -758,24 +758,24 @@ const leadsRouter = router({
             // Kevin's multi-message opening sequence
             const kevinVariants = [
               [
-                `Hey ${firstName} - just reviewing your info now and I think we can-`,
-                `sorry, typo`,
-                `Hey, just reviewed your info and I think we can help pretty quickly. I'm clearly an elite texter. Are you free Monday for a quick 10-minute call? I can help get your insurance quote squared away.`,
+                `Hey ${firstName}! This is ${botName}, I just saw that yo`,
+                `Wow, clearly can't type today.`,
+                `This is ${botName}, I see you filled out our form online for a quote. Is there a good time on Monday you'd be free to connect for 10 minutes at most and we can help you out?`,
               ],
               [
-                `Hey ${firstName} - looks like we can probbaly get you a-`,
-                `probably… wow`,
-                `Alright, off to a strong start. Anyway, I took a look and we should be able to get you a solid quote pretty fast. Are you free Monday for a quick 10-minute call?`,
+                `Hey ${firstName}! This is ${botName}, I just saw that yo`,
+                `Wow, clearly can't type today.`,
+                `This is ${botName}, I see you filled out our form online for a quote. Is there a good time on Monday you'd be free to connect for 10 minutes at most and we can help you out?`,
               ],
               [
-                `Hey ${firstName} - just looked over your info and I thi-`,
-                `I think… typing is hard apparently`,
-                `Anyway, I took a look and we can likely get you a better rate pretty quickly. Got 10 minutes Monday to knock this out?`,
+                `Hey ${firstName}! This is ${botName}, I just saw that yo`,
+                `Wow, clearly can't type today.`,
+                `This is ${botName}, I see you filled out our form online for a quote. Is there a good time on Monday you'd be free to connect for 10 minutes at most and we can help you out?`,
               ],
               [
-                `Hey ${firstName} - just looked over your info and we can-`,
-                `can help… clearly I type faster than I think`,
-                `Quick version: we can likely get you a better rate. Better to do a quick 10-minute call Monday or later in the week?`,
+                `Hey ${firstName}! This is ${botName}, I just saw that yo`,
+                `Wow, clearly can't type today.`,
+                `This is ${botName}, I see you filled out our form online for a quote. Is there a good time on Monday you'd be free to connect for 10 minutes at most and we can help you out?`,
               ],
             ];
             const msgs = kevinVariants[Math.floor(Math.random() * kevinVariants.length)];

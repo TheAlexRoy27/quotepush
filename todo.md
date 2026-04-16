@@ -629,3 +629,7 @@
 
 ## Logo Theme Fix v2
 - [x] Replace brightness(0) all-black filter with a CSS mix-blend-mode approach that darkens white/light pixels in light mode while preserving colored elements (e.g. the Roamly colored period)
+
+## Kevin Opening Sequence Copy Update
+- [x] Update Kevin's 3-message opening sequence to new copy: "Hey {firstName}! This is {botName}, I just saw that yo" / "Wow, clearly can't type today." / "This is {botName}, I see you filled out our form online for a quote..."
+- [x] Update BotConfigPage preview to show new copy with {botName} substitution

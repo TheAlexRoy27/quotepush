@@ -257,18 +257,17 @@ export default function BotConfigPage() {
               <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Kevin's Opening Sequence (auto-sent, randomly picks one variant)</p>
               <div className="space-y-2">
                 {[
-                  ["Hey {firstName} - just reviewing your info now and I think we can-", "sorry, typo", "Hey, just reviewed your info and I think we can help pretty quickly. I'm clearly an elite texter. Are you free Monday for a quick 10-minute call?"],
-                  ["Hey {firstName} - looks like we can probbaly get you a-", "probably... wow", "Alright, off to a strong start. Anyway, I took a look and we should be able to get you a solid quote pretty fast. Are you free Monday for a quick 10-minute call?"],
-                  ["Hey {firstName} - just looked over your info and I thi-", "I think... typing is hard apparently", "Anyway, I took a look and we can likely get you a better rate pretty quickly. Got 10 minutes Monday to knock this out?"],
-                  ["Hey {firstName} - just looked over your info and we can-", "can help... clearly I type faster than I think", "Quick version: we can likely get you a better rate. Better to do a quick 10-minute call Monday or later in the week?"],
-                ][0].map((msg, i) => (
+                  "Hey {firstName}! This is {botName}, I just saw that yo",
+                  "Wow, clearly can't type today.",
+                  "This is {botName}, I see you filled out our form online for a quote. Is there a good time on Monday you'd be free to connect for 10 minutes at most and we can help you out?",
+                ].map((msg, i) => (
                   <div key={i} className="flex gap-2 items-start">
                     <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shrink-0 mt-0.5 text-white text-xs font-bold">{i + 1}</div>
-                    <p className="text-sm text-foreground leading-relaxed">{msg.replace("{firstName}", testLeadName || "Sarah")}</p>
+                    <p className="text-sm text-foreground leading-relaxed">{msg.replace("{firstName}", testLeadName || "Sarah").replace("{botName}", botName || "Alex")}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground">Delays: ~2s between text 1 and 2, ~4s between text 2 and 3. Feels like a real person fumbling their phone.</p>
+              <p className="text-xs text-muted-foreground">Delays: ~2s between text 1 and 2, ~4s between text 2 and 3. Feels like a real person fumbling their phone. &#123;botName&#125; and &#123;firstName&#125; are replaced with the actual bot name and lead's first name.</p>
             </div>
           ) : (
             <>
