@@ -192,6 +192,7 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
 
   const EMOJI_KEY = "greeting-emoji";
   const [greetingEmoji, setGreetingEmoji] = useState<"wave" | "callme">(() => {
@@ -403,6 +404,7 @@ function DashboardLayoutContent({
                 src={customLogoUrl}
                 alt="Organization logo"
                 className="h-12 max-w-[220px] object-contain"
+                style={theme === "light" ? { filter: "brightness(0) saturate(100%)" } : undefined}
               />
             </div>
           )}

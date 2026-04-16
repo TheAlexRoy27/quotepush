@@ -623,3 +623,6 @@
 - [x] Embed full bookings table (with status actions) into UsageDashboardPage below the Booking Outcomes section
 - [x] Remove Bookings from sidebar nav in DashboardLayout
 - [x] Remove /bookings route from App.tsx (or keep as redirect to dashboard)
+
+## Logo Theme Fix
+- [x] Apply brightness(0) filter to org logo in light mode so logo lettering renders black instead of washing out
