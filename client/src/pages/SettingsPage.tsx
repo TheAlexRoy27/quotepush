@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Info, ExternalLink, Phone, Key, Link2, Eye, EyeOff, Save, Zap, Copy } from "lucide-react";
+import { CheckCircle2, XCircle, Info, ExternalLink, Phone, Key, Link2, Eye, EyeOff, Save, Zap, Copy, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +13,21 @@ import { useLocation } from "wouter";
 import BillingPage from "./BillingPage";
 import WebhookPage from "./WebhookPage";
 import KeywordPromotionPage from "./KeywordPromotionPage";
+
+function FieldHelp({ text }: { text: string }) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help inline-block ml-1 align-middle" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          {text}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 // ─── Twilio Tab ───────────────────────────────────────────────────────────────
 
@@ -153,6 +170,7 @@ function TwilioTab() {
             <div className="space-y-1.5">
               <Label className="text-xs font-medium flex items-center gap-1.5">
                 <Key className="h-3.5 w-3.5 text-muted-foreground" /> Account SID
+                <FieldHelp text="Your unique Twilio account identifier. Starts with 'AC'. Find it at the top of your Twilio Console dashboard at console.twilio.com." />
               </Label>
               <Input
                 value={accountSid}
@@ -166,6 +184,7 @@ function TwilioTab() {
             <div className="space-y-1.5">
               <Label className="text-xs font-medium flex items-center gap-1.5">
                 <Key className="h-3.5 w-3.5 text-muted-foreground" /> Auth Token
+                <FieldHelp text="Your secret Twilio password. Found next to your Account SID on the Twilio Console. Never share this with anyone - treat it like a bank password." />
               </Label>
               <div className="relative">
                 <Input
@@ -191,6 +210,7 @@ function TwilioTab() {
             <div className="space-y-1.5">
               <Label className="text-xs font-medium flex items-center gap-1.5">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground" /> Twilio Phone Number
+                <FieldHelp text="The phone number you bought in Twilio that will send and receive texts. Must be in E.164 format: +1 followed by 10 digits, e.g. +15551234567." />
               </Label>
               <Input
                 value={phoneNumber}

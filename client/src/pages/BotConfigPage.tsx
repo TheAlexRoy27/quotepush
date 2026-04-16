@@ -9,7 +9,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Zap, MessageSquare, Info, Save, Sparkles, Send, RotateCcw, FlaskConical } from "lucide-react";
+import { Bot, Zap, MessageSquare, Info, Save, Sparkles, Send, RotateCcw, FlaskConical, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+function FieldHelp({ text }: { text: string }) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help inline-block ml-1 align-middle" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          {text}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 const TONE_OPTIONS = [
   { value: "friendly", label: "Friendly", description: "Warm, approachable, conversational" },
@@ -195,7 +211,7 @@ export default function BotConfigPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Bot Name</Label>
+              <Label>Bot Name <FieldHelp text="The name your bot uses when texting leads. It appears in messages wherever you write {botName}. Pick something that sounds like a real person." /></Label>
               <Input
                 value={botName}
                 onChange={(e) => setBotName(e.target.value)}
@@ -205,7 +221,7 @@ export default function BotConfigPage() {
               <p className="text-xs text-muted-foreground">This name appears in messages. Use {"{botName}"} in templates to insert it.</p>
             </div>
             <div className="space-y-1.5">
-              <Label>Tone</Label>
+              <Label>Tone <FieldHelp text="Controls how the bot writes. Friendly is warm and casual, Professional is formal, Kevin is a fun persona that sends a typo then corrects himself to seem human." /></Label>
               <Select value={tone} onValueChange={(v) => setTone(v as typeof tone)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -225,7 +241,7 @@ export default function BotConfigPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Persona / Identity</Label>
+            <Label>Persona / Identity <FieldHelp text="A short description of who the bot is. Think of it as the bot's backstory. The more specific you are, the more consistent its replies will be." /></Label>
             <Textarea
               value={identity}
               onChange={(e) => setIdentity(e.target.value)}
@@ -272,7 +288,7 @@ export default function BotConfigPage() {
           ) : (
             <>
               <div className="space-y-1.5">
-                <Label>Message Template</Label>
+                <Label>Message Template <FieldHelp text="The very first text the bot sends when a new lead is added. Use {firstName} to insert the lead's first name and {botName} for the bot's name." /></Label>
                 <Textarea
                   value={openingMessage}
                   onChange={(e) => setOpeningMessage(e.target.value)}
@@ -326,7 +342,7 @@ export default function BotConfigPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Custom Instructions</Label>
+            <Label>Custom Instructions <FieldHelp text="Rules the bot must follow. For example: never quote prices, always push for a call, don't mention competitors. One rule per line works best." /></Label>
             <Textarea
               value={customInstructions}
               onChange={(e) => setCustomInstructions(e.target.value)}
@@ -339,7 +355,7 @@ export default function BotConfigPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Max Replies Per Lead</Label>
+            <Label>Max Replies Per Lead <FieldHelp text="After this many bot replies, the bot stops responding and the conversation is handed off to you. Prevents the bot from going in circles with a lead." /></Label>
             <div className="flex items-center gap-3">
               <Input
                 type="number"
@@ -354,7 +370,7 @@ export default function BotConfigPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>First Text Delay</Label>
+            <Label>First Text Delay <FieldHelp text="How long to wait before sending the opening message after a lead is added. A short delay makes the message feel less like an instant robot blast." /></Label>
             <p className="text-xs text-muted-foreground">How long to wait before sending the opening message when a new lead is added. A small delay makes it feel less automated.</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
               {([
@@ -380,7 +396,7 @@ export default function BotConfigPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Reply Delay</Label>
+            <Label>Reply Delay <FieldHelp text="How long the bot waits before replying when a lead texts back. A 1-3 minute random delay makes it feel like a real person reading and typing a response." /></Label>
             <p className="text-xs text-muted-foreground">Add a pause before the bot replies so it feels like a real person typing, not a machine.</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
               {([

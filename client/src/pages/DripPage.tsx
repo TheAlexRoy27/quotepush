@@ -299,7 +299,9 @@ function StepEditor({
       )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-xs font-medium">Step Label</Label>
+          <Label className="text-xs font-medium">Step Label
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><HelpCircle className="h-3 w-3 text-muted-foreground cursor-help inline-block ml-1 align-middle" /></TooltipTrigger><TooltipContent side="top" className="max-w-xs text-xs">A short name for this step so you can identify it later. Only you see this - the lead never sees it.</TooltipContent></Tooltip></TooltipProvider>
+          </Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -313,6 +315,7 @@ function StepEditor({
             {stepNumber === 1 && !branchType && (
               <span className="text-muted-foreground font-normal">(0 = immediately)</span>
             )}
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent side="top" className="max-w-xs text-xs">How long to wait after the previous step before sending this message. Set to 0 to send immediately. Use minutes for quick follow-ups, days for longer nurture sequences.</TooltipContent></Tooltip></TooltipProvider>
           </Label>
           <div className="flex gap-2">
             <Input
@@ -337,7 +340,9 @@ function StepEditor({
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-medium">Message</Label>
+          <Label className="text-xs font-medium">Message
+            <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><HelpCircle className="h-3 w-3 text-muted-foreground cursor-help inline-block ml-1 align-middle" /></TooltipTrigger><TooltipContent side="top" className="max-w-xs text-xs">The SMS text sent to the lead. Use &#123;&#123;firstName&#125;&#125; for their first name, &#123;&#123;company&#125;&#125; for their company, and &#123;&#123;link&#125;&#125; for a scheduling link.</TooltipContent></Tooltip></TooltipProvider>
+          </Label>
           <div className="flex items-center gap-2">
             <Button
               type="button"

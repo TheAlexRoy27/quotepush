@@ -636,3 +636,13 @@
 
 ## Roamly Logo Light Mode Fix
 - [x] Fix org logo in light mode: letters should be black, colored period should stay its original green color
+
+## Contextual Help Tooltips & Mobile UX
+- [x] AI Bot page: add ? tooltips for Persona, Bot Name, Identity Prompt, Opening Sequence, Reply Delay, Auto-Reply toggle
+- [x] Drip Sequences page: add ? tooltips for Trigger Category, Delay units, Step body variables ({firstName} etc)
+- [x] Settings > Twilio tab: add ? tooltips for Account SID, Auth Token, Phone Number, Webhook URL
+- [x] Leads page: add ? tooltips for lead status labels (Pending, Sent, Replied, Scheduled, X-Dated, Opted Out)
+- [x] Mobile: LeadsPage conversation panel goes full-screen on mobile when a lead is selected
+- [x] Mobile: sticky message input bar at bottom of screen on mobile conversation view
+- [x] Mobile: back button / swipe-back to return to lead list from conversation on mobile
+- [x] Mobile: lead list cards are tap-friendly with adequate touch targets on mobile

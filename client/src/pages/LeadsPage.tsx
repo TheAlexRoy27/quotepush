@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Plus, Upload, Search, Send, Trash2, MessageSquare, RefreshCw,
-  Users, Clock, CheckCircle2, Calendar, ChevronRight, X, Loader2, SendHorizonal,
+  Users, Clock, CheckCircle2, Calendar, ChevronRight, ChevronLeft, X, Loader2, SendHorizonal,
   Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp, ExternalLink,
   Zap, StopCircle
 } from "lucide-react";
@@ -637,15 +637,17 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
   return (
     <div className="flex flex-col h-full bg-card border-l border-border">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border gap-2">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-3 sm:py-3 border-b border-border gap-2 min-h-[56px]">
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{lead.name}</h3>
           <p className="text-xs text-muted-foreground mt-0.5 truncate">{lead.phone}{lead.company ? ` · ${lead.company}` : ""}</p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <StatusBadge status={lead.status} />
-          <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors text-muted-foreground">
-            <X className="h-4 w-4" />
+          {/* Back arrow on mobile, X on desktop */}
+          <button onClick={onClose} className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-accent transition-colors text-muted-foreground" aria-label="Close">
+            <span className="sm:hidden"><ChevronLeft className="h-5 w-5" /></span>
+            <span className="hidden sm:block"><X className="h-4 w-4" /></span>
           </button>
         </div>
       </div>
@@ -773,8 +775,8 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
         })()}
       </div>
 
-      {/* Send area */}
-      <div className="p-4 border-t border-border space-y-2">
+      {/* Send area - sticky on mobile */}
+      <div className="p-3 sm:p-4 border-t border-border space-y-2 bg-card">
         <Input
           placeholder="Calendly link (optional)..."
           value={schedulingLink}
@@ -1238,7 +1240,7 @@ export default function LeadsPage() {
 
       {/* Conversation panel */}
       {selectedLead && (
-        <div className="w-full sm:w-96 shrink-0 sm:ml-4 rounded-xl overflow-hidden border border-border absolute sm:relative inset-0 sm:inset-auto z-10 sm:z-auto bg-background sm:bg-transparent">
+        <div className="w-full sm:w-96 shrink-0 sm:ml-4 rounded-xl overflow-hidden border border-border fixed sm:relative inset-0 sm:inset-auto z-20 sm:z-auto bg-background sm:bg-transparent">
           <ConversationPanel
             lead={selectedLead}
             onClose={() => setSelectedLead(null)}
