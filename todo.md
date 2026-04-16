@@ -583,3 +583,9 @@
 - [x] Show a live preview row using the first data row with the current mapping applied
 - [x] Validate that Phone is mapped before allowing import to proceed
 - [x] Vitest: auto-mapping heuristic logic
+
+## Organization Page: Accounts Table & Delete Confirmation
+- [x] tRPC: admin.listAllUsers - owner-only procedure returning all users with id, name, email, role, lastSignedIn, createdAt, orgId
+- [x] Organization page: add "All Accounts" section below Team Members (owner-only, hidden for non-owners)
+- [x] Accounts table columns: Name, Email, Role, Organization, Last Login, Joined, (no delete action)
+- [x] Team Members: replace window.confirm trash-can with a proper "Are you sure?" AlertDialog

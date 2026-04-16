@@ -6,6 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -45,6 +55,8 @@ export default function OrgPage() {
   const { data: orgData } = trpc.org.me.useQuery();
   const { data: members = [], isLoading: membersLoading } = trpc.org.members.useQuery();
   const { data: billingStatus } = trpc.billing.getStatus.useQuery();
+  const isOwner = orgData?.role === "owner";
+  const { data: allUsers = [], isLoading: allUsersLoading } = trpc.admin.listAllUsers.useQuery(undefined, { enabled: isOwner });
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -64,6 +76,10 @@ export default function OrgPage() {
   const [newName, setNewName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "member">("member");
+
+  // Delete confirmation state
+  const [confirmRemoveId, setConfirmRemoveId] = useState<number | null>(null);
+  const [confirmRemoveName, setConfirmRemoveName] = useState("");
 
   const handleAddByPhone = async () => {
     if (!newPhone.trim() || !newName.trim() || !newPassword.trim()) return;
@@ -283,7 +299,10 @@ export default function OrgPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-rose-400 shrink-0"
-                        onClick={() => handleRemove(member.id)}
+                        onClick={() => {
+                          setConfirmRemoveId(member.id);
+                          setConfirmRemoveName(member.user.name ?? member.user.email ?? member.user.phone ?? "this member");
+                        }}
                         disabled={removeMutation.isPending}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -329,6 +348,112 @@ export default function OrgPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── All Accounts (owner-only) ── */}
+      {isOwner && (
+        <Card className="border-border/60 bg-card/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">All Accounts</CardTitle>
+              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {allUsers.length} total
+              </span>
+            </div>
+            <CardDescription className="text-xs mt-1">
+              Every registered user across all organizations. Visible to owner only.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {allUsersLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : allUsers.length === 0 ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">No accounts found.</div>
+            ) : (
+              <div className="space-y-3">
+                {allUsers.map((account) => (
+                  <div
+                    key={account.id}
+                    className="p-4 rounded-lg bg-muted/30 border border-border/40 space-y-3"
+                  >
+                    {/* Top row: avatar + name + role badge */}
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary shrink-0">
+                        {(account.name ?? account.email ?? "?")[0].toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {account.name ?? account.email ?? account.phone ?? "Unknown"}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                          {account.role === "admin"
+                            ? <><Shield className="h-3 w-3 text-violet-400" /><span className="text-violet-400">Admin</span></>
+                            : <><User className="h-3 w-3" /><span>User</span></>}
+                          {account.loginMethod && (
+                            <span className="ml-2 text-muted-foreground/60">via {account.loginMethod}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Detail row: contact + joined + last login */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-border/30">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {account.email ? (
+                          <><Mail className="h-3 w-3 shrink-0" /><span className="truncate">{account.email}</span></>
+                        ) : account.phone ? (
+                          <><Phone className="h-3 w-3 shrink-0" /><span className="truncate">{account.phone}</span></>
+                        ) : (
+                          <span className="italic">No contact info</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3 shrink-0" />
+                        <span>Joined {account.createdAt ? new Date(account.createdAt).toLocaleDateString() : ""}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        {account.lastSignedIn ? (
+                          <span className="text-emerald-400">
+                            Last login {new Date(account.lastSignedIn).toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground italic">Never logged in</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={confirmRemoveId !== null} onOpenChange={(open) => { if (!open) setConfirmRemoveId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove team member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <strong>{confirmRemoveName}</strong> from your organization? They will lose access immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmRemoveId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-rose-600 hover:bg-rose-500 text-white"
+              onClick={() => {
+                if (confirmRemoveId !== null) handleRemove(confirmRemoveId);
+                setConfirmRemoveId(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Add by Phone Dialog */}
       <Dialog open={addPhoneOpen} onOpenChange={setAddPhoneOpen}>

@@ -32,6 +32,7 @@ import {
   getAppointmentByToken,
   getAppointmentsByOrg,
   updateAppointment,
+  listAllUsers,
 } from "./db";
 import {
   acceptInvite,
@@ -1332,6 +1333,10 @@ const dripRouter = router({
 const adminRouter = router({
   listAccounts: adminProcedure.query(async () => {
     return listAllOrganizations();
+  }),
+
+  listAllUsers: adminProcedure.query(async () => {
+    return listAllUsers();
   }),
   setOrgLogo: adminProcedure
     .input(z.object({ orgId: z.number(), logoUrl: z.string().nullable() }))

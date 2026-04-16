@@ -465,3 +465,23 @@ export async function updateAppointment(id: number, data: Partial<InsertAppointm
   const rows = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
   return rows[0] ?? null;
 }
+
+// ─── Admin: All Users ─────────────────────────────────────────────────────────
+
+export async function listAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      phone: users.phone,
+      role: users.role,
+      loginMethod: users.loginMethod,
+      lastSignedIn: users.lastSignedIn,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .orderBy(desc(users.lastSignedIn));
+}
