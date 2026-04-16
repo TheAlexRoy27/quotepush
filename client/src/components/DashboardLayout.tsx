@@ -399,12 +399,14 @@ function DashboardLayoutContent({
           </div>
           {/* Custom org logo centered in top bar */}
           {customLogoUrl && (
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
+            <div
+              className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none"
+              style={theme === "light" ? { mixBlendMode: "multiply" } : undefined}
+            >
               <img
                 src={customLogoUrl}
                 alt="Organization logo"
                 className="h-12 max-w-[220px] object-contain"
-                style={theme === "light" ? { filter: "brightness(0) saturate(100%)" } : undefined}
               />
             </div>
           )}

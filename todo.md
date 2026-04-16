@@ -626,3 +626,6 @@
 
 ## Logo Theme Fix
 - [x] Apply brightness(0) filter to org logo in light mode so logo lettering renders black instead of washing out
+
+## Logo Theme Fix v2
+- [x] Replace brightness(0) all-black filter with a CSS mix-blend-mode approach that darkens white/light pixels in light mode while preserving colored elements (e.g. the Roamly colored period)
