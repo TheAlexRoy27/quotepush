@@ -188,11 +188,18 @@ function DashboardLayoutContent({
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpenMobile, isMobile: sidebarIsMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
+
+  // Auto-close mobile sidebar on navigation
+  useEffect(() => {
+    if (sidebarIsMobile) {
+      setOpenMobile(false);
+    }
+  }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
   const isMobile = useIsMobile();
   const { theme } = useTheme();
 

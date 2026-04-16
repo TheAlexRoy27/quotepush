@@ -322,12 +322,14 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue={initialTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="twilio">Twilio / SMS</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
-          <TabsTrigger value="webhook">CRM Webhook</TabsTrigger>
-          <TabsTrigger value="autopromote">Auto-Promote</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-1 px-1 mb-6">
+          <TabsList className="w-max min-w-full">
+            <TabsTrigger value="twilio" className="text-xs sm:text-sm whitespace-nowrap">Twilio / SMS</TabsTrigger>
+            <TabsTrigger value="billing" className="text-xs sm:text-sm whitespace-nowrap">Billing</TabsTrigger>
+            <TabsTrigger value="webhook" className="text-xs sm:text-sm whitespace-nowrap">CRM Webhook</TabsTrigger>
+            <TabsTrigger value="autopromote" className="text-xs sm:text-sm whitespace-nowrap">Auto-Promote</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="twilio">
           <TwilioTab />

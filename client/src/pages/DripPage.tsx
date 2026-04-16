@@ -682,7 +682,7 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground hidden sm:inline">{seq.isActive ? "Active" : "Paused"}</span>
             <Switch

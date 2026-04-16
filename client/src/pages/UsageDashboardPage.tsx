@@ -484,7 +484,7 @@ export default function UsageDashboardPage() {
             <p className="text-sm font-semibold text-foreground">Booking Outcomes</p>
             <p className="text-xs text-muted-foreground mt-0.5">Status breakdown across all booking links sent.</p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <div className="text-center rounded-lg bg-green-500/10 border border-green-500/20 p-3">
               <p className="text-xl font-bold text-green-500">{usageData.bookingBooked}</p>
               <p className="text-xs text-muted-foreground mt-0.5">Booked</p>

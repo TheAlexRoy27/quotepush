@@ -1201,7 +1201,7 @@ export default function LeadsPage() {
             </Button>
           )}
           {selectedIds.size > 0 && (
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex flex-wrap items-center gap-2 ml-auto">
               <span className="text-xs text-muted-foreground">{selectedIds.size} selected</span>
               <Button
                 size="sm"

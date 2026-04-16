@@ -405,9 +405,9 @@ export default function LibraryPage() {
         </TabsList>
       </div>
       <TabsContent value="library" className="flex-1 min-h-0 mt-0 overflow-hidden">
-    <div className="flex h-full min-h-0">
+    <div className="flex flex-col md:flex-row h-full min-h-0">
       {/* Folder Sidebar */}
-      <aside className="w-56 shrink-0 border-r border-border flex flex-col bg-card/50">
+      <aside className="w-full md:w-56 shrink-0 border-b md:border-b-0 md:border-r border-border flex flex-col bg-card/50 max-h-40 md:max-h-none overflow-y-auto md:overflow-visible">
         <div className="p-3 border-b border-border">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Folders</span>

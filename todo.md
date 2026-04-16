@@ -656,3 +656,16 @@
 - [x] After bulk enroll: show toast with result (e.g. "12 leads enrolled, 3 already in a drip")
 - [x] Select-all checkbox selects all leads matching current filter (not just visible page)
 - [x] Deselect all when filter/search changes
+
+## Mobile Sizing & Responsive Layout Fix
+- [x] DashboardLayout: auto-close mobile sidebar on navigation (setOpenMobile in useEffect on location change)
+- [x] DashboardLayout: sidebar is already a Sheet drawer on mobile (shadcn Sidebar collapsible behavior)
+- [x] Dashboard page: KPI stat cards already use grid-cols-2 lg:grid-cols-3 - verified responsive
+- [x] Dashboard page: booking outcomes grid fixed from sm:grid-cols-5 to sm:grid-cols-3 lg:grid-cols-5
+- [x] Leads page: bulk action toolbar uses flex-wrap so it wraps on mobile
+- [x] Leads page: filter/search bar already uses flex-wrap - verified
+- [x] Drip Sequences page: sequence card header buttons use flex-wrap justify-end on mobile
+- [x] Settings page: tabs wrapped in overflow-x-auto, w-max min-w-full, text-xs sm:text-sm whitespace-nowrap
+- [x] Template Library page: folder sidebar stacks vertically on mobile (flex-col md:flex-row, max-h-40 on mobile)
+- [x] Organization page: team member cards use grid-cols-1 sm:grid-cols-3 - already responsive
+- [x] All pages: verified no horizontal overflow at 375px viewport width
