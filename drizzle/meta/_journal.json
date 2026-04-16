@@ -162,6 +162,13 @@
       "when": 1776366265177,
       "tag": "0022_light_stepford_cuckoos",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1776369630993,
+      "tag": "0023_soft_vertigo",
+      "breakpoints": true
     }
   ]
 }

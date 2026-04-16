@@ -633,3 +633,6 @@
 ## Kevin Opening Sequence Copy Update
 - [x] Update Kevin's 3-message opening sequence to new copy: "Hey {firstName}! This is {botName}, I just saw that yo" / "Wow, clearly can't type today." / "This is {botName}, I see you filled out our form online for a quote..."
 - [x] Update BotConfigPage preview to show new copy with {botName} substitution
+
+## Roamly Logo Light Mode Fix
+- [x] Fix org logo in light mode: letters should be black, colored period should stay its original green color

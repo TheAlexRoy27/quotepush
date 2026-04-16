@@ -88,6 +88,7 @@ export const organizations = mysqlTable("organizations", {
   subscriptionStatus: mysqlEnum("subscriptionStatus", SUBSCRIPTION_STATUSES).default("incomplete"),
   trialEndsAt: timestamp("trialEndsAt"),
   customLogoUrl: varchar("customLogoUrl", { length: 512 }),
+  lightLogoUrl: varchar("lightLogoUrl", { length: 512 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

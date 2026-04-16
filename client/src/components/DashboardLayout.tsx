@@ -166,7 +166,7 @@ export default function DashboardLayout({
         } as CSSProperties
       }
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} customLogoUrl={orgQuery.data?.org?.customLogoUrl ?? null}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} customLogoUrl={orgQuery.data?.org?.customLogoUrl ?? null} lightLogoUrl={orgQuery.data?.org?.lightLogoUrl ?? null}>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -177,12 +177,14 @@ type DashboardLayoutContentProps = {
   children: React.ReactNode;
   setSidebarWidth: (width: number) => void;
   customLogoUrl: string | null;
+  lightLogoUrl: string | null;
 };
 
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
   customLogoUrl,
+  lightLogoUrl,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
@@ -399,12 +401,9 @@ function DashboardLayoutContent({
           </div>
           {/* Custom org logo centered in top bar */}
           {customLogoUrl && (
-            <div
-              className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none"
-              style={theme === "light" ? { mixBlendMode: "multiply" } : undefined}
-            >
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
               <img
-                src={customLogoUrl}
+                src={theme === "light" && lightLogoUrl ? lightLogoUrl : customLogoUrl}
                 alt="Organization logo"
                 className="h-12 max-w-[220px] object-contain"
               />
