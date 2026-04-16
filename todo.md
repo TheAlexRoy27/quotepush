@@ -528,3 +528,13 @@
 - [x] In inbound SMS handler: before sending bot reply, sleep based on replyDelay (0s, 60s, or 60-180s random)
 - [x] Inject humanizing instructions into bot LLM system prompt: casual tone, occasional filler words, short sentences, no em dashes, no bullet points, no formal sign-offs
 - [x] Add reply delay selector to BotConfigPage UI (Instant / 1 Minute / Random 1-3 min) with description
+
+## Karen Persona & First-Text Delay
+- [x] Add "karen" to the BOT_TONES enum in schema.ts
+- [x] Add firstMessageDelay field to bot_configs schema: enum 'instant' | '1min' | 'random' (default 'instant')
+- [x] Apply ALTER TABLE migration for firstMessageDelay column and update tone enum
+- [x] Update botRouter saveConfig zod schema to accept "karen" tone and firstMessageDelay
+- [x] Update new-lead bot trigger in routers.ts to sleep based on firstMessageDelay before sending opening message
+- [x] Add Karen tone description to toneGuide in both index.ts and routers.ts
+- [x] Add Karen persona card to BotConfigPage tone selector with fun description
+- [x] Add first-text delay selector to BotConfigPage UI (same 3-option card style as reply delay)

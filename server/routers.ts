@@ -721,6 +721,15 @@ const leadsRouter = router({
         if (!lead) throw new Error("Lead creation failed");
         const botConfig = await getBotConfig(orgId);
         if (botConfig?.enabled && botConfig.openingMessage) {
+          // Apply first-message delay
+          const firstMsgDelay = (botConfig as any).firstMessageDelay ?? "instant";
+          if (firstMsgDelay === "1min") {
+            await new Promise((r) => setTimeout(r, 60_000));
+          } else if (firstMsgDelay === "random") {
+            const ms = (60 + Math.floor(Math.random() * 120)) * 1000;
+            console.log(`[AIBot] First-message random delay: ${Math.round(ms / 1000)}s`);
+            await new Promise((r) => setTimeout(r, ms));
+          }
           const firstName = input.name.split(" ")[0] ?? input.name;
           const botName = botConfig.botName ?? "Alex";
           const openingText = botConfig.openingMessage
@@ -1542,13 +1551,14 @@ const botRouter = router({
     .input(z.object({
       enabled: z.boolean().optional(),
       botName: z.string().min(1).max(100).optional(),
-      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct"]).optional(),
+      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct", "karen"]).optional(),
       identity: z.string().max(2000).optional(),
       openingMessage: z.string().max(1000).optional(),
       businessContext: z.string().max(3000).optional(),
       customInstructions: z.string().max(2000).optional(),
       maxRepliesPerLead: z.number().int().min(1).max(50).optional(),
       replyDelay: z.enum(["instant", "1min", "random"]).optional(),
+      firstMessageDelay: z.enum(["instant", "1min", "random"]).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
@@ -1559,7 +1569,7 @@ const botRouter = router({
     .input(z.object({
       // Current bot config (may not be saved yet)
       botName: z.string().optional(),
-      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct"]).optional(),
+      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct", "karen"]).optional(),
       identity: z.string().optional(),
       businessContext: z.string().optional(),
       customInstructions: z.string().optional(),
@@ -1581,6 +1591,7 @@ const botRouter = router({
         casual: "Be relaxed and informal, like texting a friend.",
         empathetic: "Be understanding and patient. Acknowledge their situation before responding.",
         direct: "Be concise and to the point. No fluff.",
+        karen: "You are Karen. You are aggressively helpful, slightly pushy, and very persistent. You act like you are doing the lead a huge favor by texting them. You are not rude, but you are relentless and a little over-the-top enthusiastic. You use phrases like 'I just HAVE to tell you', 'honestly you would be crazy not to', 'I am not going to let you miss this'. You are the person who will not take no for an answer but somehow still feels friendly.",
       };
       const firstName = input.leadName ?? "there";
       const systemPrompt = [

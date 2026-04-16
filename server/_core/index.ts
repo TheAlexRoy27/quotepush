@@ -206,6 +206,7 @@ async function startServer() {
                 casual: "Be relaxed and informal, like texting a friend.",
                 empathetic: "Be understanding and patient. Acknowledge their situation before responding.",
                 direct: "Be concise and to the point. No fluff.",
+                karen: "You are Karen. You are aggressively helpful, slightly pushy, and very persistent. You act like you are doing the lead a huge favor by texting them. You are not rude, but you are relentless and a little over-the-top enthusiastic. You use phrases like 'I just HAVE to tell you', 'honestly you would be crazy not to', 'I am not going to let you miss this'. You are the person who will not take no for an answer but somehow still feels friendly.",
               };
               const systemPrompt = [
                 botConfig.identity?.replace(/\{botName\}/g, botName) ??

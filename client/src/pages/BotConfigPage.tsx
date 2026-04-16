@@ -17,6 +17,7 @@ const TONE_OPTIONS = [
   { value: "casual", label: "Casual", description: "Relaxed, like texting a friend" },
   { value: "empathetic", label: "Empathetic", description: "Understanding, patient, supportive" },
   { value: "direct", label: "Direct", description: "Concise, no-fluff, to the point" },
+  { value: "karen", label: "Karen", description: "Aggressively helpful, relentless, lovably pushy" },
 ] as const;
 
 const DEFAULT_OPENING = "Hey {firstName}! This is {botName} - I just wanted to reach out real quick. We only need about 10 minutes of your time to gather a little info and get you the most ideal quote possible. No pressure at all - just here to help! Feel free to ask me anything. 😊";
@@ -39,13 +40,14 @@ export default function BotConfigPage() {
 
   const [enabled, setEnabled] = useState(false);
   const [botName, setBotName] = useState("Alex");
-  const [tone, setTone] = useState<"friendly" | "professional" | "casual" | "empathetic" | "direct">("friendly");
+  const [tone, setTone] = useState<"friendly" | "professional" | "casual" | "empathetic" | "direct" | "karen">("friendly");
   const [identity, setIdentity] = useState(DEFAULT_IDENTITY);
   const [openingMessage, setOpeningMessage] = useState(DEFAULT_OPENING);
   const [businessContext, setBusinessContext] = useState("");
   const [customInstructions, setCustomInstructions] = useState("");
   const [maxReplies, setMaxReplies] = useState(10);
   const [replyDelay, setReplyDelay] = useState<"instant" | "1min" | "random">("instant");
+  const [firstMessageDelay, setFirstMessageDelay] = useState<"instant" | "1min" | "random">("instant");
 
   // Test bot state
   const [testLeadName, setTestLeadName] = useState("Sarah");
@@ -65,6 +67,7 @@ export default function BotConfigPage() {
       setCustomInstructions(config.customInstructions ?? "");
       setMaxReplies(config.maxRepliesPerLead ?? 10);
       setReplyDelay(((config as any).replyDelay as "instant" | "1min" | "random") ?? "instant");
+      setFirstMessageDelay(((config as any).firstMessageDelay as "instant" | "1min" | "random") ?? "instant");
     }
   }, [config]);
 
@@ -83,6 +86,7 @@ export default function BotConfigPage() {
       customInstructions: customInstructions.trim() || undefined,
       maxRepliesPerLead: maxReplies,
       replyDelay,
+      firstMessageDelay,
     });
   };
 
@@ -321,6 +325,32 @@ export default function BotConfigPage() {
                 className="w-24"
               />
               <p className="text-sm text-muted-foreground">After this many bot replies, the conversation is handed off to you.</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>First Text Delay</Label>
+            <p className="text-xs text-muted-foreground">How long to wait before sending the opening message when a new lead is added. A small delay makes it feel less automated.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+              {([
+                { value: "instant", label: "Instant", desc: "Sends right away" },
+                { value: "1min", label: "1 Minute", desc: "Waits ~60 seconds" },
+                { value: "random", label: "Random (1-3 min)", desc: "Waits 1 to 3 min randomly" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFirstMessageDelay(opt.value)}
+                  className={`flex flex-col items-start gap-0.5 rounded-xl border p-3 text-left transition-all ${
+                    firstMessageDelay === opt.value
+                      ? "border-violet-500 bg-violet-500/10 ring-1 ring-violet-500/40"
+                      : "border-border bg-muted/20 hover:border-violet-400/50"
+                  }`}
+                >
+                  <span className={`text-sm font-medium ${firstMessageDelay === opt.value ? "text-violet-400" : "text-foreground"}`}>{opt.label}</span>
+                  <span className="text-xs text-muted-foreground">{opt.desc}</span>
+                </button>
+              ))}
             </div>
           </div>
 

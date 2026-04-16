@@ -444,7 +444,7 @@ export type InsertAppointment = typeof appointments.$inferInsert;
 
 // ─── Bot Configs ──────────────────────────────────────────────────────────────
 // Per-org AI text bot configuration. One row per org.
-export const BOT_TONES = ["friendly", "professional", "casual", "empathetic", "direct"] as const;
+export const BOT_TONES = ["friendly", "professional", "casual", "empathetic", "direct", "karen"] as const;
 export type BotTone = (typeof BOT_TONES)[number];
 
 export const botConfigs = mysqlTable("bot_configs", {
@@ -459,6 +459,7 @@ export const botConfigs = mysqlTable("bot_configs", {
   customInstructions: text("customInstructions"),                  // extra rules / things to avoid
   maxRepliesPerLead: int("maxRepliesPerLead").notNull().default(10), // safety cap per lead
   replyDelay: mysqlEnum("replyDelay", ["instant", "1min", "random"]).notNull().default("instant"),
+  firstMessageDelay: mysqlEnum("firstMessageDelay", ["instant", "1min", "random"]).notNull().default("instant"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
