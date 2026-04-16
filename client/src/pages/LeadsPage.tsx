@@ -12,7 +12,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import {
   Plus, Upload, Search, Send, Trash2, MessageSquare, RefreshCw,
   Users, Clock, CheckCircle2, Calendar, ChevronRight, X, Loader2, SendHorizonal,
-  Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp, ExternalLink
+  Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp, ExternalLink,
+  Zap, StopCircle
 } from "lucide-react";
 import type { Lead, Message } from "../../../drizzle/schema";
 
@@ -564,7 +565,31 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
   const [bookingSlots, setBookingSlots] = useState("");
   const [bookingNote, setBookingNote] = useState("");
   const [bookingCreated, setBookingCreated] = useState<string | null>(null);
+  const [dripOpen, setDripOpen] = useState(false);
   const utils = trpc.useUtils();
+
+  // Drip sequences
+  const { data: sequences } = trpc.drip.listSequences.useQuery();
+  const { data: enrollments } = trpc.drip.leadEnrollments.useQuery({ leadId: lead.id });
+  const activeEnrollment = enrollments?.find(e => e.status === "active" || e.status === "paused");
+  const activeSequence = sequences?.find(s => s.id === activeEnrollment?.sequenceId);
+
+  const enrollDrip = trpc.drip.enrollLead.useMutation({
+    onSuccess: () => {
+      toast.success("Drip sequence applied!");
+      setDripOpen(false);
+      utils.drip.leadEnrollments.invalidate({ leadId: lead.id });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const stopDrip = trpc.drip.stopLead.useMutation({
+    onSuccess: () => {
+      toast.success("Removed from drip sequence.");
+      utils.drip.leadEnrollments.invalidate({ leadId: lead.id });
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const createBooking = trpc.booking.create.useMutation({
     onSuccess: (result) => {
       const url = `${window.location.origin}/book/${result.token}`;
@@ -684,38 +709,68 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
             <p className="text-sm text-muted-foreground">No messages yet</p>
             <p className="text-xs text-muted-foreground/60">Send the first outreach SMS below</p>
           </div>
-        ) : (
-          messages.map((msg) => (
-            <div key={msg.id} className={`flex flex-col gap-1 ${msg.direction === "outbound" ? "items-end" : "items-start"}`}>
-              <div className={`max-w-[85%] rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 text-sm leading-relaxed ${
-                msg.direction === "outbound"
-                  ? "bg-primary text-primary-foreground rounded-br-sm"
-                  : "bg-muted text-foreground rounded-bl-sm"
-              }`}>
-                <p className="whitespace-pre-wrap">{msg.body}</p>
-                <p className={`text-xs mt-1 ${msg.direction === "outbound" ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {new Date(msg.sentAt).toLocaleString()}
-                  {msg.twilioStatus && msg.twilioStatus !== "simulated" ? ` · ${msg.twilioStatus}` : ""}
-                  {msg.twilioStatus === "simulated" ? " · simulated" : ""}
-                </p>
+        ) : (() => {
+          // Group messages by calendar date for date dividers
+          const today = new Date();
+          const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+          const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+          const todayStr = fmt(today);
+          const yestStr = fmt(yesterday);
+          const getDateLabel = (ts: Date) => {
+            const s = fmt(new Date(ts));
+            if (s === todayStr) return "Today";
+            if (s === yestStr) return "Yesterday";
+            return s;
+          };
+          const fmtTime = (ts: Date) =>
+            new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+
+          let lastDateLabel = "";
+          return messages.map((msg) => {
+            const dateLabel = getDateLabel(msg.sentAt);
+            const showDivider = dateLabel !== lastDateLabel;
+            lastDateLabel = dateLabel;
+            return (
+              <div key={msg.id}>
+                {showDivider && (
+                  <div className="flex items-center gap-2 my-2">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] text-muted-foreground font-medium px-2">{dateLabel}</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                )}
+                <div className={`flex flex-col gap-1 ${msg.direction === "outbound" ? "items-end" : "items-start"}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 text-sm leading-relaxed ${
+                    msg.direction === "outbound"
+                      ? "bg-primary text-primary-foreground rounded-br-sm"
+                      : "bg-muted text-foreground rounded-bl-sm"
+                  }`}>
+                    <p className="whitespace-pre-wrap">{msg.body}</p>
+                    <p className={`text-xs mt-1 ${msg.direction === "outbound" ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                      {fmtTime(msg.sentAt)}
+                      {msg.twilioStatus && msg.twilioStatus !== "simulated" ? ` · ${msg.twilioStatus}` : ""}
+                      {msg.twilioStatus === "simulated" ? " · simulated" : ""}
+                    </p>
+                  </div>
+                  {/* Bot badge for bot-sent outbound messages */}
+                  {msg.direction === "outbound" && (msg as unknown as Message & { isBot?: boolean }).isBot && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-violet-500/40 bg-violet-500/10 text-violet-400 flex items-center gap-1">
+                      <span>🤖</span> Bot
+                    </span>
+                  )}
+                  {/* AI classification badge for inbound messages */}
+                  {msg.direction === "inbound" && (msg as Message & { classification?: string }).classification && (
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                      CATEGORY_COLORS[(msg as Message & { classification?: string }).classification!] ?? "text-muted-foreground bg-muted border-border"
+                    }`}>
+                      {(msg as Message & { classification?: string }).classification}
+                    </span>
+                  )}
+                </div>
               </div>
-              {/* Bot badge for bot-sent outbound messages */}
-              {msg.direction === "outbound" && (msg as unknown as Message & { isBot?: boolean }).isBot && (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-violet-500/40 bg-violet-500/10 text-violet-400 flex items-center gap-1">
-                  <span>🤖</span> Bot
-                </span>
-              )}
-              {/* AI classification badge for inbound messages */}
-              {msg.direction === "inbound" && (msg as Message & { classification?: string }).classification && (
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
-                  CATEGORY_COLORS[(msg as Message & { classification?: string }).classification!] ?? "text-muted-foreground bg-muted border-border"
-                }`}>
-                  {(msg as Message & { classification?: string }).classification}
-                </span>
-              )}
-            </div>
-          ))
-        )}
+            );
+          });
+        })()}
       </div>
 
       {/* Send area */}
@@ -742,6 +797,39 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
           <Calendar className="h-4 w-4" />
           Send Booking Link
         </Button>
+        {/* Drip sequence button */}
+        {activeEnrollment ? (
+          <div className="flex items-center justify-between rounded-lg border border-violet-500/30 bg-violet-500/10 px-3 py-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Zap className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+              <span className="text-xs text-violet-400 font-medium truncate">
+                {activeSequence?.name ?? "Drip active"}
+              </span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                activeEnrollment.status === "active" ? "bg-green-500/20 text-green-400" : "bg-amber-500/20 text-amber-400"
+              }`}>{activeEnrollment.status}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-[10px] text-destructive hover:text-destructive shrink-0"
+              disabled={stopDrip.isPending}
+              onClick={() => stopDrip.mutate({ leadId: lead.id })}
+            >
+              <StopCircle className="h-3 w-3 mr-1" />
+              Remove
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            className="w-full gap-2 text-sm border-violet-500/30 text-violet-500 hover:bg-violet-500/10 hover:text-violet-500"
+            onClick={() => setDripOpen(true)}
+          >
+            <Zap className="h-4 w-4" />
+            Apply Drip Sequence
+          </Button>
+        )}
       </div>
 
       {/* Booking Link Dialog */}
@@ -807,6 +895,54 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Apply Drip Sequence Dialog */}
+      <Dialog open={dripOpen} onOpenChange={setDripOpen}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <Zap className="h-4 w-4 text-violet-400" />
+              Apply Drip Sequence
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Choose a sequence to enroll <span className="font-medium text-foreground">{lead.name}</span> in. Messages will send automatically on the schedule you defined.
+            </p>
+            {!sequences || sequences.length === 0 ? (
+              <div className="rounded-lg border border-border bg-muted/30 p-4 text-center">
+                <p className="text-sm text-muted-foreground">No drip sequences yet.</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Create one in the Drip Sequences page first.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {sequences.map((seq) => (
+                  <button
+                    key={seq.id}
+                    disabled={enrollDrip.isPending}
+                    onClick={() => enrollDrip.mutate({ leadId: lead.id, sequenceId: seq.id })}
+                    className="w-full text-left rounded-lg border border-border bg-card hover:bg-accent transition-colors px-4 py-3 group"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{seq.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {seq.steps.length} step{seq.steps.length !== 1 ? "s" : ""}
+                          {seq.triggerCategory ? ` · ${seq.triggerCategory}` : ""}
+                        </p>
+                      </div>
+                      <Zap className="h-4 w-4 text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDripOpen(false)} className="border-border">Cancel</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -605,3 +605,13 @@
 - [x] Bookings page: status action buttons per row (Mark Completed, Mark Cancelled, No Answer)
 - [x] Bookings page: status badge updates reflect new statuses with distinct colors
 - [x] Dashboard: show booking outcome breakdown (Completed, Cancelled, No Answer, Pending, Booked counts)
+
+## Apply Drip Sequence to Lead & Conversation Timestamps
+
+- [x] Lead conversation panel: add "Apply Drip Sequence" button in the action toolbar
+- [x] Clicking the button opens a popover/dialog listing all org drip sequences with name, step count, and description
+- [x] Selecting a sequence calls drip.enrollLead mutation and shows success toast
+- [x] If lead is already enrolled in a drip, show current sequence name + "Remove from Drip" option
+- [x] Conversation thread: show full date + time on every message bubble (e.g. "Apr 16, 2026 3:04 PM")
+- [x] Conversation thread: group messages by date with a date divider (e.g. "Today", "Yesterday", "Apr 14")
+- [x] Vitest: drip enrollment validation (lead already enrolled, sequence not found)
