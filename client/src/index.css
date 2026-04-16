@@ -5,6 +5,7 @@
 
 @theme inline {
   --font-sans: 'Inter', system-ui, sans-serif;
+  --breakpoint-xs: 400px;
 }
 
 @theme inline {

@@ -519,14 +519,14 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
   return (
     <div className="flex flex-col h-full bg-card border-l border-border">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-        <div>
-          <h3 className="font-semibold text-foreground">{lead.name}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">{lead.phone}{lead.company ? ` · ${lead.company}` : ""}</p>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border gap-2">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{lead.name}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{lead.phone}{lead.company ? ` · ${lead.company}` : ""}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <StatusBadge status={lead.status} />
-          <button onClick={onClose} className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent transition-colors text-muted-foreground">
+          <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors text-muted-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -567,7 +567,7 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -581,7 +581,7 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className={`flex flex-col gap-1 ${msg.direction === "outbound" ? "items-end" : "items-start"}`}>
-              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+              <div className={`max-w-[85%] rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 text-sm leading-relaxed ${
                 msg.direction === "outbound"
                   ? "bg-primary text-primary-foreground rounded-br-sm"
                   : "bg-muted text-foreground rounded-bl-sm"
@@ -798,58 +798,100 @@ export default function LeadsPage() {
               </Button>
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  {["Name", "Phone", "Company", "Email", "Milestone", "Added", ""].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Mobile card list - visible on small screens */}
+              <div className="block sm:hidden divide-y divide-border/50">
                 {leads.map((lead) => (
-                  <tr
+                  <div
                     key={lead.id}
-                    className={`border-b border-border/50 hover:bg-accent/30 transition-colors cursor-pointer ${
-                      selectedLead?.id === lead.id ? "bg-accent/40" : ""
-                    }`}
+                    className={`px-4 py-3 cursor-pointer transition-colors ${selectedLead?.id === lead.id ? "bg-accent/40" : "hover:bg-accent/20"}`}
                     onClick={() => setSelectedLead(selectedLead?.id === lead.id ? null : lead)}
                   >
-                    <td className="px-4 py-3 font-medium text-foreground">{lead.name}</td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{lead.phone}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{lead.company ?? ""}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{lead.email ?? ""}</td>
-                    <td className="px-4 py-3"><StatusBadge status={lead.status} /></td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {new Date(lead.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => setSelectedLead(selectedLead?.id === lead.id ? null : lead)}
-                          className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
-                          title="View conversation"
-                        >
-                          <MessageSquare className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Delete ${lead.name}?`)) deleteLead.mutate({ id: lead.id });
-                          }}
-                          className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
-                          title="Delete lead"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                        <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform ${selectedLead?.id === lead.id ? "rotate-90" : ""}`} />
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground text-sm truncate">{lead.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono mt-0.5">{lead.phone}</p>
+                        {lead.company && <p className="text-xs text-muted-foreground truncate">{lead.company}</p>}
                       </div>
-                    </td>
-                  </tr>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <StatusBadge status={lead.status} />
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => setSelectedLead(selectedLead?.id === lead.id ? null : lead)}
+                            className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
+                            title="View conversation"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => { if (confirm(`Delete ${lead.name}?`)) deleteLead.mutate({ id: lead.id }); }}
+                            className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                            title="Delete lead"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+              {/* Desktop table - hidden on small screens */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      {["Name", "Phone", "Company", "Email", "Milestone", "Added", ""].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leads.map((lead) => (
+                      <tr
+                        key={lead.id}
+                        className={`border-b border-border/50 hover:bg-accent/30 transition-colors cursor-pointer ${
+                          selectedLead?.id === lead.id ? "bg-accent/40" : ""
+                        }`}
+                        onClick={() => setSelectedLead(selectedLead?.id === lead.id ? null : lead)}
+                      >
+                        <td className="px-4 py-3 font-medium text-foreground">{lead.name}</td>
+                        <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{lead.phone}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{lead.company ?? ""}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{lead.email ?? ""}</td>
+                        <td className="px-4 py-3"><StatusBadge status={lead.status} /></td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
+                          {new Date(lead.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setSelectedLead(selectedLead?.id === lead.id ? null : lead)}
+                              className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
+                              title="View conversation"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`Delete ${lead.name}?`)) deleteLead.mutate({ id: lead.id });
+                              }}
+                              className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+                              title="Delete lead"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                            <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform ${selectedLead?.id === lead.id ? "rotate-90" : ""}`} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -508,3 +508,14 @@
 - [x] Add light mode CSS variables to index.css using #efe6dd as background (converted to OKLCH)
 - [x] Add dark/light toggle button to DashboardLayout header
 - [x] Persist theme preference in localStorage via ThemeProvider
+
+## Mobile Responsiveness & Light Mode Default
+- [x] Set light mode as the default theme in App.tsx (change defaultTheme="dark" to "light")
+- [x] Fix DashboardLayout header: ensure text, icons, and buttons are legible and properly sized on mobile
+- [x] Fix LeadsPage: conversation panel, message bubbles, and action buttons readable on small screens
+- [x] Fix BotConfigPage: form fields, labels, and test chat panel usable on mobile
+- [x] Fix DripPage: table/list and form inputs properly sized on mobile
+- [x] Fix AnalyticsPage / Dashboard: stat cards stack properly on mobile, text not truncated
+- [x] Fix AuthPage: form fields, labels, and buttons properly sized on mobile
+- [x] Ensure all page headings use responsive text sizes (text-xl sm:text-2xl pattern)
+- [x] Ensure table-heavy pages use horizontal scroll or card layout on mobile

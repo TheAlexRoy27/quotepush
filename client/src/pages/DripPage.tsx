@@ -297,7 +297,7 @@ function StepEditor({
           <span className="text-muted-foreground font-normal ml-1"> sent when lead replies {branchType === "positive" ? "positively (e.g. Yes, Interested)" : "negatively (e.g. Not now, Maybe later)"}</span>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Step Label</Label>
           <Input
@@ -1220,11 +1220,11 @@ export default function DripPage() {
 
   return (
     <TooltipProvider>
-      <div className="p-6 max-w-4xl mx-auto space-y-8">
+      <div className="p-3 sm:p-6 max-w-4xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Text Drip Sequences</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Text Drip Sequences</h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-lg">
               Build automated follow-up sequences that trigger when the AI detects a lead's intent.
               Each sequence sends messages on your schedule and stops the moment a lead replies.

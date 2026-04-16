@@ -411,15 +411,15 @@ function DashboardLayoutContent({
             </div>
           )}
           {/* Notification Bell + greeting pushed to right */}
-          <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
             <ThemeToggleButton />
             <NotificationBellButton />
-            {/* Wave greeting */}
-            <div className="flex items-center gap-1.5">
+            {/* Wave greeting - hidden on very small screens to save space */}
+            <div className="hidden xs:flex items-center gap-1.5">
               <button
                 key={animKey}
                 onClick={toggleEmoji}
-                className="text-xl select-none leading-none focus:outline-none hover:scale-110 transition-transform active:scale-95"
+                className="text-lg sm:text-xl select-none leading-none focus:outline-none hover:scale-110 transition-transform active:scale-95"
                 title={greetingEmoji === "wave" ? "Switch to call me" : "Switch to wave"}
                 style={greetingEmoji === "wave"
                   ? { display: 'inline-block', animation: 'wave 1.2s ease-in-out 1 forwards', transformOrigin: '70% 70%' }
