@@ -32,7 +32,6 @@ const menuItems = [
   { icon: TrendingUp, label: "My Dashboard", path: "/my-dashboard" },
   { icon: Bot, label: "AI Bot", path: "/bot" },
   { icon: Users, label: "Leads", path: "/leads" },
-  { icon: CalendarDays, label: "Bookings", path: "/bookings" },
   { icon: BookOpen, label: "Template Library", path: "/library" },
   { icon: Zap, label: "Drip Sequences", path: "/drip" },
   { icon: Building2, label: "Organization", path: "/organization" },

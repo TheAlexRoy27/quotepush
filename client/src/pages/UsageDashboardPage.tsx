@@ -30,6 +30,186 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  CalendarDays, User, CheckCircle2, Copy,
+  ChevronDown, PhoneOff, CheckCheck, Ban, XCircle, Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
+
+type AppointmentStatus = "pending" | "booked" | "cancelled" | "completed" | "no_answer";
+
+function formatSlot(slot: string) {
+  return new Date(slot).toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short",
+  });
+}
+
+function BookingStatusBadge({ status }: { status: string }) {
+  switch (status) {
+    case "booked": return <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">Booked</Badge>;
+    case "completed": return <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">Completed</Badge>;
+    case "cancelled": return <Badge variant="destructive">Cancelled</Badge>;
+    case "no_answer": return <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">No Answer</Badge>;
+    default: return <Badge variant="secondary">Pending</Badge>;
+  }
+}
+
+const BOOKING_STATUS_ACTIONS: { label: string; value: AppointmentStatus; icon: React.ReactNode; className?: string }[] = [
+  { label: "Mark Completed", value: "completed", icon: <CheckCheck className="h-3.5 w-3.5" />, className: "text-blue-600" },
+  { label: "No Answer", value: "no_answer", icon: <PhoneOff className="h-3.5 w-3.5" />, className: "text-amber-600" },
+  { label: "Mark Cancelled", value: "cancelled", icon: <Ban className="h-3.5 w-3.5" />, className: "text-destructive" },
+];
+
+function BookingsSection() {
+  const utils = trpc.useUtils();
+  const { data: bookings, isLoading } = trpc.booking.list.useQuery();
+  const updateStatus = trpc.booking.updateStatus.useMutation({
+    onSuccess: () => utils.booking.list.invalidate(),
+    onError: (err) => toast.error(err.message),
+  });
+  const [confirmAction, setConfirmAction] = useState<{ id: number; status: AppointmentStatus; label: string } | null>(null);
+
+  const copyLink = (token: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}/book/${token}`);
+    toast.success("Booking link copied!");
+  };
+
+  const confirmStatusChange = () => {
+    if (!confirmAction) return;
+    updateStatus.mutate({ id: confirmAction.id, status: confirmAction.status }, {
+      onSuccess: () => { toast.success(`Booking marked as ${confirmAction.label.toLowerCase().replace("mark ", "")}.`); setConfirmAction(null); },
+    });
+  };
+
+  const active = bookings?.filter(b => b.status !== "cancelled") ?? [];
+  const cancelled = bookings?.filter(b => b.status === "cancelled") ?? [];
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-sm font-semibold text-foreground">Bookings</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Track all booking links sent to leads. Leads pick a time and their status updates automatically.</p>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+      ) : active.length === 0 ? (
+        <Card className="text-center py-10">
+          <CardContent>
+            <CalendarDays className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-40" />
+            <p className="text-sm font-medium text-foreground">No bookings yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Go to a lead's conversation and click "Send Booking Link" to get started.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {active.map((b) => (
+            <Card key={b.id} className="shadow-sm">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium text-sm text-foreground">{b.agentName}</span>
+                      <BookingStatusBadge status={b.status} />
+                    </div>
+                    {b.bookedSlot ? (
+                      <div className="flex items-center gap-2 text-sm text-green-600">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>{formatSlot(b.bookedSlot)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>Waiting for lead to pick a time</span>
+                      </div>
+                    )}
+                    {b.agentNote && <p className="text-xs text-muted-foreground italic">{b.agentNote}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => copyLink(b.token)}>
+                      <Copy className="h-3.5 w-3.5" /> Copy Link
+                    </Button>
+                    {b.status !== "cancelled" && b.status !== "completed" && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="gap-1.5 text-xs" disabled={updateStatus.isPending}>
+                            Update Status <ChevronDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {BOOKING_STATUS_ACTIONS.filter(a => a.value !== b.status).map(action => (
+                            <DropdownMenuItem key={action.value} className={`gap-2 cursor-pointer ${action.className ?? ""}`}
+                              onClick={() => setConfirmAction({ id: b.id, status: action.value, label: action.label })}>
+                              {action.icon}{action.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {cancelled.length > 0 && (
+            <div>
+              <h2 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Cancelled</h2>
+              <div className="space-y-2">
+                {cancelled.map((b) => (
+                  <Card key={b.id} className="opacity-50 shadow-none">
+                    <CardContent className="pt-3 pb-3">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <User className="h-4 w-4" />
+                        <span>{b.agentName}</span>
+                        <BookingStatusBadge status={b.status} />
+                        {b.bookedSlot && <span className="text-xs">({formatSlot(b.bookedSlot)})</span>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => { if (!open) setConfirmAction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmAction?.label}?</AlertDialogTitle>
+            <AlertDialogDescription>This will update the booking status. You can change it again at any time.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmStatusChange} disabled={updateStatus.isPending}
+              className={confirmAction?.status === "cancelled" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}>
+              {updateStatus.isPending ? "Updating..." : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
 
 // ─── Color palettes ───────────────────────────────────────────────────────────
 const MILESTONE_COLORS: Record<string, string> = {
@@ -489,6 +669,12 @@ export default function UsageDashboardPage() {
             </ChartCard>
           </div>
         )}
+
+      {/* Bookings */}
+      <div className="rounded-xl border border-border bg-card/50 p-5">
+        <BookingsSection />
+      </div>
+
       </div>
     </div>
   );
