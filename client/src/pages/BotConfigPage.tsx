@@ -18,6 +18,7 @@ const TONE_OPTIONS = [
   { value: "empathetic", label: "Empathetic", description: "Understanding, patient, supportive" },
   { value: "direct", label: "Direct", description: "Concise, no-fluff, to the point" },
   { value: "karen", label: "Karen", description: "Aggressively helpful, relentless, lovably pushy" },
+  { value: "kevin", label: "Clumsy Kevin", description: "Typo opener, self-correction, then somehow closes the deal" },
 ] as const;
 
 const DEFAULT_OPENING = "Hey {firstName}! This is {botName} - I just wanted to reach out real quick. We only need about 10 minutes of your time to gather a little info and get you the most ideal quote possible. No pressure at all - just here to help! Feel free to ask me anything. 😊";
@@ -40,7 +41,7 @@ export default function BotConfigPage() {
 
   const [enabled, setEnabled] = useState(false);
   const [botName, setBotName] = useState("Alex");
-  const [tone, setTone] = useState<"friendly" | "professional" | "casual" | "empathetic" | "direct" | "karen">("friendly");
+  const [tone, setTone] = useState<"friendly" | "professional" | "casual" | "empathetic" | "direct" | "karen" | "kevin">("friendly");
   const [identity, setIdentity] = useState(DEFAULT_IDENTITY);
   const [openingMessage, setOpeningMessage] = useState(DEFAULT_OPENING);
   const [businessContext, setBusinessContext] = useState("");
@@ -244,34 +245,59 @@ export default function BotConfigPage() {
           <CardTitle className="text-base flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-violet-500" /> Opening Message
           </CardTitle>
-          <CardDescription>The first text sent automatically when a new lead is added.</CardDescription>
+          <CardDescription>
+            {tone === "kevin"
+              ? "Clumsy Kevin sends 3 separate texts in quick succession. No template needed."
+              : "The first text sent automatically when a new lead is added."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Message Template</Label>
-            <Textarea
-              value={openingMessage}
-              onChange={(e) => setOpeningMessage(e.target.value)}
-              rows={4}
-              maxLength={1000}
-              className="resize-none"
-              placeholder={DEFAULT_OPENING}
-            />
-            <p className="text-xs text-muted-foreground">
-              Available variables: <code className="bg-muted px-1 rounded">{"{firstName}"}</code> <code className="bg-muted px-1 rounded">{"{botName}"}</code>
-            </p>
-          </div>
-
-          {/* Live preview */}
-          <div className="rounded-lg bg-muted/50 border p-3 space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Preview</p>
-            <div className="flex gap-2 items-start">
-              <div className="w-6 h-6 rounded-full bg-violet-600 flex items-center justify-center shrink-0 mt-0.5">
-                <Bot className="w-3 h-3 text-white" />
+          {tone === "kevin" ? (
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 p-4 space-y-3">
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Kevin's Opening Sequence (auto-sent, randomly picks one variant)</p>
+              <div className="space-y-2">
+                {[
+                  ["Hey {firstName} — just reviewing your info now and I think we can—", "sorry, typo", "Hey, just reviewed your info and I think we can help pretty quickly. I'm clearly an elite texter. Are you free Monday for a quick 10-minute call?"],
+                  ["Hey {firstName} — looks like we can probbaly get you a—", "probably… wow", "Alright, off to a strong start. Anyway — I took a look and we should be able to get you a solid quote pretty fast. Are you free Monday for a quick 10-minute call?"],
+                  ["Hey {firstName} — just looked over your info and I thi—", "I think… typing is hard apparently", "Anyway, I took a look and we can likely get you a better rate pretty quickly. Got 10 minutes Monday to knock this out?"],
+                  ["Hey {firstName} — just looked over your info and we can—", "can help… clearly I type faster than I think", "Quick version: we can likely get you a better rate. Better to do a quick 10-minute call Monday or later in the week?"],
+                ][0].map((msg, i) => (
+                  <div key={i} className="flex gap-2 items-start">
+                    <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shrink-0 mt-0.5 text-white text-xs font-bold">{i + 1}</div>
+                    <p className="text-sm text-foreground leading-relaxed">{msg.replace("{firstName}", testLeadName || "Sarah")}</p>
+                  </div>
+                ))}
               </div>
-              <p className="text-sm leading-relaxed">{previewOpening || "(no message set)"}</p>
+              <p className="text-xs text-muted-foreground">Delays: ~2s between text 1 and 2, ~4s between text 2 and 3. Feels like a real person fumbling their phone.</p>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label>Message Template</Label>
+                <Textarea
+                  value={openingMessage}
+                  onChange={(e) => setOpeningMessage(e.target.value)}
+                  rows={4}
+                  maxLength={1000}
+                  className="resize-none"
+                  placeholder={DEFAULT_OPENING}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Available variables: <code className="bg-muted px-1 rounded">{'{firstName}'}</code> <code className="bg-muted px-1 rounded">{'{botName}'}</code>
+                </p>
+              </div>
+              {/* Live preview */}
+              <div className="rounded-lg bg-muted/50 border p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Preview</p>
+                <div className="flex gap-2 items-start">
+                  <div className="w-6 h-6 rounded-full bg-violet-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="w-3 h-3 text-white" />
+                  </div>
+                  <p className="text-sm leading-relaxed">{previewOpening || "(no message set)"}</p>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

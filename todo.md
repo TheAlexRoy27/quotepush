@@ -538,3 +538,11 @@
 - [x] Add Karen tone description to toneGuide in both index.ts and routers.ts
 - [x] Add Karen persona card to BotConfigPage tone selector with fun description
 - [x] Add first-text delay selector to BotConfigPage UI (same 3-option card style as reply delay)
+
+## Clumsy Kevin Persona
+- [x] Add "kevin" to BOT_TONES enum in schema.ts and apply migration
+- [x] Add kevin to saveConfig and testMessage zod enums in routers.ts
+- [x] Add kevin toneGuide entry in routers.ts testMessage and index.ts inbound handler
+- [x] Implement multi-message Kevin opening: typo msg (1-2s delay), correction msg (3-5s delay), funny comment + pitch + CTA (2-3s delay) — each sent as separate SMS
+- [x] Add Kevin persona card to BotConfigPage TONE_OPTIONS with description and opening sequence preview
+- [x] Kevin's follow-up replies (after opening) stay in character: slightly clumsy but effective

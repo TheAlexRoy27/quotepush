@@ -732,19 +732,58 @@ const leadsRouter = router({
           }
           const firstName = input.name.split(" ")[0] ?? input.name;
           const botName = botConfig.botName ?? "Alex";
-          const openingText = botConfig.openingMessage
-            .replace(/\{firstName\}/g, firstName)
-            .replace(/\{botName\}/g, botName);
+
+          // Helper to send one SMS and log it
           const orgConfig = await getOrgTwilioConfig(orgId);
-          if (orgConfig?.accountSid) {
-            const result = await sendSmsWithConfig(lead.phone, openingText, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
-            await createMessage({ orgId, leadId: lead.id, direction: "outbound", body: openingText, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent", isBot: true });
-          } else if (isTwilioConfigured()) {
-            const result = await sendSms(lead.phone, openingText);
-            await createMessage({ orgId, leadId: lead.id, direction: "outbound", body: openingText, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent", isBot: true });
+          const sendOne = async (body: string) => {
+            if (orgConfig?.accountSid) {
+              const r = await sendSmsWithConfig(lead.phone, body, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
+              await createMessage({ orgId, leadId: lead.id, direction: "outbound", body, twilioSid: r.sid ?? null, twilioStatus: r.status ?? "sent", isBot: true });
+            } else if (isTwilioConfigured()) {
+              const r = await sendSms(lead.phone, body);
+              await createMessage({ orgId, leadId: lead.id, direction: "outbound", body, twilioSid: r.sid ?? null, twilioStatus: r.status ?? "sent", isBot: true });
+            } else {
+              await createMessage({ orgId, leadId: lead.id, direction: "outbound", body, twilioSid: null, twilioStatus: "simulated", isBot: true });
+            }
+          };
+
+          if (botConfig.tone === "kevin") {
+            // Kevin's multi-message opening sequence
+            const kevinVariants = [
+              [
+                `Hey ${firstName} — just reviewing your info now and I think we can—`,
+                `sorry, typo`,
+                `Hey, just reviewed your info and I think we can help pretty quickly. I'm clearly an elite texter. Are you free Monday for a quick 10-minute call? I can help get your insurance quote squared away.`,
+              ],
+              [
+                `Hey ${firstName} — looks like we can probbaly get you a—`,
+                `probably… wow`,
+                `Alright, off to a strong start. Anyway — I took a look and we should be able to get you a solid quote pretty fast. Are you free Monday for a quick 10-minute call?`,
+              ],
+              [
+                `Hey ${firstName} — just looked over your info and I thi—`,
+                `I think… typing is hard apparently`,
+                `Anyway, I took a look and we can likely get you a better rate pretty quickly. Got 10 minutes Monday to knock this out?`,
+              ],
+              [
+                `Hey ${firstName} — just looked over your info and we can—`,
+                `can help… clearly I type faster than I think`,
+                `Quick version: we can likely get you a better rate. Better to do a quick 10-minute call Monday or later in the week?`,
+              ],
+            ];
+            const msgs = kevinVariants[Math.floor(Math.random() * kevinVariants.length)];
+            await sendOne(msgs[0]);
+            await new Promise((r) => setTimeout(r, 1500 + Math.random() * 2000)); // 1.5-3.5s
+            await sendOne(msgs[1]);
+            await new Promise((r) => setTimeout(r, 3000 + Math.random() * 3000)); // 3-6s
+            await sendOne(msgs[2]);
           } else {
-            await createMessage({ orgId, leadId: lead.id, direction: "outbound", body: openingText, twilioSid: null, twilioStatus: "simulated", isBot: true });
+            const openingText = botConfig.openingMessage
+              .replace(/\{firstName\}/g, firstName)
+              .replace(/\{botName\}/g, botName);
+            await sendOne(openingText);
           }
+
           await updateLead(lead.id, { status: "Sent" });
           console.log(`[AIBot] Sent opening message to new lead ${lead.id}`);
         }
@@ -1551,7 +1590,7 @@ const botRouter = router({
     .input(z.object({
       enabled: z.boolean().optional(),
       botName: z.string().min(1).max(100).optional(),
-      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct", "karen"]).optional(),
+      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct", "karen", "kevin"]).optional(),
       identity: z.string().max(2000).optional(),
       openingMessage: z.string().max(1000).optional(),
       businessContext: z.string().max(3000).optional(),
@@ -1569,7 +1608,7 @@ const botRouter = router({
     .input(z.object({
       // Current bot config (may not be saved yet)
       botName: z.string().optional(),
-      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct", "karen"]).optional(),
+      tone: z.enum(["friendly", "professional", "casual", "empathetic", "direct", "karen", "kevin"]).optional(),
       identity: z.string().optional(),
       businessContext: z.string().optional(),
       customInstructions: z.string().optional(),
@@ -1592,6 +1631,7 @@ const botRouter = router({
         empathetic: "Be understanding and patient. Acknowledge their situation before responding.",
         direct: "Be concise and to the point. No fluff.",
         karen: "You are Karen. You are aggressively helpful, slightly pushy, and very persistent. You act like you are doing the lead a huge favor by texting them. You are not rude, but you are relentless and a little over-the-top enthusiastic. You use phrases like 'I just HAVE to tell you', 'honestly you would be crazy not to', 'I am not going to let you miss this'. You are the person who will not take no for an answer but somehow still feels friendly.",
+        kevin: "You are Kevin, a slightly clumsy but surprisingly effective insurance advisor. You already sent the lead a funny opening sequence with a typo and a self-correction. Now you are in follow-up mode. Be warm, self-aware, and a little goofy but always pivot back to being genuinely helpful. You can reference your clumsy opener if it comes up naturally. Keep replies short, casual, and human. You are weirdly effective despite the chaos.",
       };
       const firstName = input.leadName ?? "there";
       const systemPrompt = [
