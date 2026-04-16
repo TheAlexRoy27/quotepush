@@ -1548,6 +1548,7 @@ const botRouter = router({
       businessContext: z.string().max(3000).optional(),
       customInstructions: z.string().max(2000).optional(),
       maxRepliesPerLead: z.number().int().min(1).max(50).optional(),
+      replyDelay: z.enum(["instant", "1min", "random"]).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
@@ -1588,7 +1589,8 @@ const botRouter = router({
         `Tone: ${toneGuide[input.tone ?? "friendly"]}`,
         input.businessContext ? `Business context:\n${input.businessContext}` : "",
         input.customInstructions ? `Rules:\n${input.customInstructions}` : "",
-        `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Never use em dashes (-). Always be respectful of their time.`,
+        `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Never use em dashes. Always be respectful of their time.`,
+        `IMPORTANT - Write like a real human texting from their phone, not a polished AI. Use casual language, occasional filler words like "yeah", "honestly", "so", "I mean". Vary your sentence length. Sometimes start mid-thought. Avoid bullet points, numbered lists, formal greetings, and sign-offs. Never sound like a robot or a customer service script. Typos are okay occasionally. Keep it real.`,
         `THIS IS A TEST SIMULATION - no real SMS will be sent.`,
       ].filter(Boolean).join("\n\n");
 

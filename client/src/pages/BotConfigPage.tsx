@@ -45,6 +45,7 @@ export default function BotConfigPage() {
   const [businessContext, setBusinessContext] = useState("");
   const [customInstructions, setCustomInstructions] = useState("");
   const [maxReplies, setMaxReplies] = useState(10);
+  const [replyDelay, setReplyDelay] = useState<"instant" | "1min" | "random">("instant");
 
   // Test bot state
   const [testLeadName, setTestLeadName] = useState("Sarah");
@@ -63,6 +64,7 @@ export default function BotConfigPage() {
       setBusinessContext(config.businessContext ?? "");
       setCustomInstructions(config.customInstructions ?? "");
       setMaxReplies(config.maxRepliesPerLead ?? 10);
+      setReplyDelay(((config as any).replyDelay as "instant" | "1min" | "random") ?? "instant");
     }
   }, [config]);
 
@@ -80,6 +82,7 @@ export default function BotConfigPage() {
       businessContext: businessContext.trim() || undefined,
       customInstructions: customInstructions.trim() || undefined,
       maxRepliesPerLead: maxReplies,
+      replyDelay,
     });
   };
 
@@ -318,6 +321,32 @@ export default function BotConfigPage() {
                 className="w-24"
               />
               <p className="text-sm text-muted-foreground">After this many bot replies, the conversation is handed off to you.</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Reply Delay</Label>
+            <p className="text-xs text-muted-foreground">Add a pause before the bot replies so it feels like a real person typing, not a machine.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+              {([
+                { value: "instant", label: "Instant", desc: "Replies right away" },
+                { value: "1min", label: "1 Minute", desc: "Waits ~60 seconds" },
+                { value: "random", label: "Random (1-3 min)", desc: "Waits 1 to 3 min randomly" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setReplyDelay(opt.value)}
+                  className={`flex flex-col items-start gap-0.5 rounded-xl border p-3 text-left transition-all ${
+                    replyDelay === opt.value
+                      ? "border-violet-500 bg-violet-500/10 ring-1 ring-violet-500/40"
+                      : "border-border bg-muted/20 hover:border-violet-400/50"
+                  }`}
+                >
+                  <span className={`text-sm font-medium ${replyDelay === opt.value ? "text-violet-400" : "text-foreground"}`}>{opt.label}</span>
+                  <span className="text-xs text-muted-foreground">{opt.desc}</span>
+                </button>
+              ))}
             </div>
           </div>
         </CardContent>

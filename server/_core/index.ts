@@ -213,9 +213,20 @@ async function startServer() {
                 `Tone: ${toneGuide[botConfig.tone ?? "friendly"]}`,
                 botConfig.businessContext ? `Business context:\n${botConfig.businessContext}` : "",
                 botConfig.customInstructions ? `Rules:\n${botConfig.customInstructions}` : "",
-                `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Never use em dashes (-). Always be respectful of their time.`,
+                `You are texting ${firstName}. Keep replies SHORT (1-3 sentences max). Never use markdown. Never use em dashes. Always be respectful of their time.`,
+                `IMPORTANT - Write like a real human texting from their phone, not a polished AI. Use casual language, occasional filler words like "yeah", "honestly", "so", "I mean". Vary your sentence length. Sometimes start mid-thought. Avoid bullet points, numbered lists, formal greetings, and sign-offs. Never sound like a robot or a customer service script. Typos are okay occasionally. Keep it real.`,
                 `You have sent ${botReplies} bot replies so far. After ${botConfig.maxRepliesPerLead} total, a human agent will take over.`,
               ].filter(Boolean).join("\n\n");
+
+              // Apply reply delay to feel more human
+              const replyDelay = (botConfig as any).replyDelay ?? "instant";
+              if (replyDelay === "1min") {
+                await new Promise((r) => setTimeout(r, 60_000));
+              } else if (replyDelay === "random") {
+                const ms = (60 + Math.floor(Math.random() * 120)) * 1000; // 60-180 seconds
+                console.log(`[AIBot] Random delay: ${Math.round(ms / 1000)}s`);
+                await new Promise((r) => setTimeout(r, ms));
+              }
 
               const { invokeLLM } = await import("./llm");
               const response = await invokeLLM({

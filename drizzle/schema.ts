@@ -458,6 +458,7 @@ export const botConfigs = mysqlTable("bot_configs", {
   businessContext: text("businessContext"),                        // what the bot knows about the business / products
   customInstructions: text("customInstructions"),                  // extra rules / things to avoid
   maxRepliesPerLead: int("maxRepliesPerLead").notNull().default(10), // safety cap per lead
+  replyDelay: mysqlEnum("replyDelay", ["instant", "1min", "random"]).notNull().default("instant"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

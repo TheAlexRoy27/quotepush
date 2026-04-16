@@ -519,3 +519,12 @@
 - [x] Fix AuthPage: form fields, labels, and buttons properly sized on mobile
 - [x] Ensure all page headings use responsive text sizes (text-xl sm:text-2xl pattern)
 - [x] Ensure table-heavy pages use horizontal scroll or card layout on mobile
+
+## Bot Reply Delay & Human Feel
+- [x] Add replyDelay field to bot_configs schema: enum 'instant' | '1min' | 'random' (default 'instant')
+- [x] Apply ALTER TABLE migration to add replyDelay column
+- [x] Update getBotConfig / upsertBotConfig db helpers to include replyDelay
+- [x] Update botRouter getConfig / saveConfig procedures to expose replyDelay
+- [x] In inbound SMS handler: before sending bot reply, sleep based on replyDelay (0s, 60s, or 60-180s random)
+- [x] Inject humanizing instructions into bot LLM system prompt: casual tone, occasional filler words, short sentences, no em dashes, no bullet points, no formal sign-offs
+- [x] Add reply delay selector to BotConfigPage UI (Instant / 1 Minute / Random 1-3 min) with description
