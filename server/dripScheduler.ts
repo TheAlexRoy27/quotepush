@@ -17,10 +17,37 @@ import { isTwilioConfigured, renderTemplate, sendSms, sendSmsWithConfig } from "
 import { createMessage } from "./db";
 
 const SCHEDULER_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 2000; // 2s, 4s, 8s
+
+/** Returns true if the error looks like a transient DB connection reset */
+function isTransientError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  const cause = (err as { cause?: Error })?.cause;
+  const causeMsg = cause instanceof Error ? cause.message : String(cause ?? "");
+  return /ECONNRESET|ETIMEDOUT|ECONNREFUSED|socket hang up/i.test(msg + causeMsg);
+}
+
+/** Retry a DB operation with exponential backoff on transient errors */
+async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (!isTransientError(err) || attempt === MAX_RETRIES) throw err;
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+      console.warn(`[DripScheduler] Transient error in ${label}, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
+      await new Promise(res => setTimeout(res, delay));
+    }
+  }
+  throw lastErr;
+}
 
 export async function runDripSchedulerTick(): Promise<void> {
   try {
-    const dueEnrollments = await getDueEnrollments();
+    const dueEnrollments = await withRetry(() => getDueEnrollments(), "getDueEnrollments");
     if (dueEnrollments.length === 0) return;
 
     console.log(`[DripScheduler] Processing ${dueEnrollments.length} due enrollment(s)`);

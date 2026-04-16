@@ -25,6 +25,8 @@ import KeywordPromotionPage from "./pages/KeywordPromotionPage";
 import ReferralPage from "./pages/ReferralPage";
 import UsageDashboardPage from "./pages/UsageDashboardPage";
 import BotConfigPage from "./pages/BotConfigPage";
+import BookingPage from "./pages/BookingPage";
+import BookingsPage from "./pages/BookingsPage";
 
 function Router() {
   return (
@@ -36,6 +38,7 @@ function Router() {
       <Route path={"/owner-login"} component={OwnerLoginPage} />
       <Route path={"/terms"} component={TermsPage} />
       <Route path={"/privacy"} component={PrivacyPage} />
+      <Route path={"/book/:token"} component={BookingPage} />
       <Route>
         <DashboardLayout>
           <Switch>
@@ -53,6 +56,7 @@ function Router() {
             <Route path={"/referrals"} component={ReferralPage} />
             <Route path={"/my-dashboard"} component={UsageDashboardPage} />
             <Route path={"/bot"} component={BotConfigPage} />
+            <Route path={"/bookings"} component={BookingsPage} />
             <Route path={"/404"} component={NotFound} />
             <Route component={NotFound} />
           </Switch>

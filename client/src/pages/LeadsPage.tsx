@@ -47,8 +47,9 @@ function AddLeadModal({ open, onClose, onSuccess }: {
   open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
   const [form, setForm] = useState({ name: "", phone: "", company: "", email: "", notes: "", consentUrl: "" });
+  const [consentConfirmed, setConsentConfirmed] = useState(false);
   const createLead = trpc.leads.create.useMutation({
-    onSuccess: () => { toast.success("Lead added successfully"); onSuccess(); onClose(); setForm({ name: "", phone: "", company: "", email: "", notes: "", consentUrl: "" }); },
+    onSuccess: () => { toast.success("Lead added successfully"); onSuccess(); onClose(); setForm({ name: "", phone: "", company: "", email: "", notes: "", consentUrl: "" }); setConsentConfirmed(false); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -101,12 +102,25 @@ function AddLeadModal({ open, onClose, onSuccess }: {
             />
             <p className="text-xs text-muted-foreground">Link to a webpage, screenshot, or document proving the lead gave consent to receive SMS.</p>
           </div>
+          {/* TCPA Consent Checkbox */}
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30 p-3">
+            <input
+              type="checkbox"
+              id="tcpa-consent"
+              checked={consentConfirmed}
+              onChange={(e) => setConsentConfirmed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-amber-600 cursor-pointer shrink-0"
+            />
+            <label htmlFor="tcpa-consent" className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed cursor-pointer">
+              <strong>TCPA Consent Required:</strong> I confirm this lead has given express written consent to receive SMS marketing messages from my business. I have documentation on file. Sending without consent may violate federal law.
+            </label>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} className="border-border text-foreground">Cancel</Button>
           <Button
-            onClick={() => createLead.mutate(form)}
-            disabled={!form.name || !form.phone || createLead.isPending}
+            onClick={() => createLead.mutate({ ...form, consentConfirmed })}
+            disabled={!form.name || !form.phone || !consentConfirmed || createLead.isPending}
           >
             {createLead.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Add Lead
@@ -491,7 +505,31 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
   lead: Lead; onClose: () => void; onStatusChange: () => void;
 }) {
   const [schedulingLink, setSchedulingLink] = useState("");
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingSlots, setBookingSlots] = useState("");
+  const [bookingNote, setBookingNote] = useState("");
+  const [bookingCreated, setBookingCreated] = useState<string | null>(null);
   const utils = trpc.useUtils();
+  const createBooking = trpc.booking.create.useMutation({
+    onSuccess: (result) => {
+      const url = `${window.location.origin}/book/${result.token}`;
+      setBookingCreated(url);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const sendBookingLinkSms = trpc.sms.send.useMutation({
+    onSuccess: () => {
+      toast.success("Booking link sent!");
+      setBookingOpen(false);
+      setBookingCreated(null);
+      setBookingSlots("");
+      setBookingNote("");
+      utils.leads.getById.invalidate({ id: lead.id });
+      utils.leads.list.invalidate();
+      onStatusChange();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const { data, isLoading } = trpc.leads.getById.useQuery({ id: lead.id });
 
@@ -628,7 +666,81 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
           {sendSms.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <SendHorizonal className="h-4 w-4 mr-2" />}
           Send Outreach SMS
         </Button>
+        <Button
+          variant="outline"
+          className="w-full gap-2 text-sm"
+          onClick={() => setBookingOpen(true)}
+        >
+          <Calendar className="h-4 w-4" />
+          Send Booking Link
+        </Button>
       </div>
+
+      {/* Booking Link Dialog */}
+      <Dialog open={bookingOpen} onOpenChange={(o) => { setBookingOpen(o); if (!o) { setBookingCreated(null); setBookingSlots(""); setBookingNote(""); } }}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Send Booking Link to {lead.name}</DialogTitle>
+          </DialogHeader>
+          {!bookingCreated ? (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">Enter 2-4 available time slots. The lead will pick one from a friendly booking page.</p>
+              <div className="space-y-1.5">
+                <Label className="text-sm text-foreground">Available Time Slots</Label>
+                <Textarea
+                  placeholder={"Monday Apr 21 at 10am CDT\nMonday Apr 21 at 2pm CDT\nTuesday Apr 22 at 11am CDT"}
+                  value={bookingSlots}
+                  onChange={(e) => setBookingSlots(e.target.value)}
+                  className="bg-input border-border text-foreground placeholder:text-muted-foreground resize-none text-sm"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">One slot per line. Plain text is fine.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm text-foreground">Personal Note <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Textarea
+                  placeholder={`Hey ${lead.name?.split(' ')[0] || 'there'}, just need 10 minutes to get your quote sorted out. No pressure at all.`}
+                  value={bookingNote}
+                  onChange={(e) => setBookingNote(e.target.value)}
+                  className="bg-input border-border text-foreground placeholder:text-muted-foreground resize-none text-sm"
+                  rows={2}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setBookingOpen(false)} className="border-border">Cancel</Button>
+                <Button
+                  disabled={!bookingSlots.trim() || createBooking.isPending}
+                  onClick={() => {
+                    const slots = bookingSlots.split("\n").map(s => s.trim()).filter(Boolean);
+                    createBooking.mutate({ leadId: lead.id, availableSlots: slots, agentNote: bookingNote || undefined });
+                  }}
+                >
+                  {createBooking.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Generate Link
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">
+                <p className="text-xs text-green-700 dark:text-green-400 font-medium mb-1">Booking link ready</p>
+                <p className="text-xs text-green-600 dark:text-green-500 break-all font-mono">{bookingCreated}</p>
+              </div>
+              <p className="text-sm text-muted-foreground">Send this link to {lead.name} via SMS now?</p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setBookingOpen(false)} className="border-border">Close</Button>
+                <Button
+                  disabled={sendBookingLinkSms.isPending}
+                  onClick={() => sendBookingLinkSms.mutate({ leadId: lead.id, schedulingLink: bookingCreated })}
+                >
+                  {sendBookingLinkSms.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <SendHorizonal className="h-4 w-4 mr-2" />}
+                  Send via SMS
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -731,6 +843,18 @@ export default function LeadsPage() {
             </Button>
           </div>
         </div>
+
+        {/* Twilio Not Configured Banner */}
+        {!twilioConfigured && (
+          <div className="flex items-start sm:items-center gap-3 rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 mb-4">
+            <span className="text-amber-500 text-lg shrink-0">⚠️</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Twilio is not configured</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">No SMS messages will be sent until you add your Twilio credentials. The AI bot and drip sequences are ready but inactive.</p>
+            </div>
+            <a href="/settings" className="shrink-0 text-xs font-semibold text-amber-700 dark:text-amber-300 underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100 whitespace-nowrap">Go to Settings</a>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">

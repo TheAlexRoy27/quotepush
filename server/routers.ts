@@ -28,6 +28,10 @@ import {
   updateLead,
   updateTemplate,
   upsertBotConfig,
+  createAppointment,
+  getAppointmentByToken,
+  getAppointmentsByOrg,
+  updateAppointment,
 } from "./db";
 import {
   acceptInvite,
@@ -702,6 +706,7 @@ const leadsRouter = router({
       email: z.string().email().optional().or(z.literal("")),
       notes: z.string().optional(),
       consentUrl: z.string().url().optional().or(z.literal("")),
+      consentConfirmed: z.boolean().optional().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
@@ -713,6 +718,7 @@ const leadsRouter = router({
         email: input.email || null,
         notes: input.notes ?? null,
         consentUrl: input.consentUrl || null,
+        consentConfirmed: input.consentConfirmed ?? false,
         status: "Pending",
       });
 
@@ -1658,6 +1664,95 @@ const botRouter = router({
     }),
 });
 
+// ─── Booking Router ──────────────────────────────────────────────────────────────────────────────
+
+const bookingRouter = router({
+  // Create a booking link for a lead (protected - agent only)
+  create: protectedProcedure
+    .input(z.object({
+      leadId: z.number(),
+      agentNote: z.string().optional(),
+      availableSlots: z.array(z.string()).min(1).max(20),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const lead = await getLeadById(input.leadId);
+      if (!lead || lead.orgId !== orgId) throw new TRPCError({ code: 'NOT_FOUND' });
+      const crypto = await import('crypto');
+      const token = crypto.randomBytes(24).toString('hex');
+      const appt = await createAppointment({
+        orgId,
+        leadId: input.leadId,
+        token,
+        agentName: ctx.user.name ?? 'Agent',
+        agentNote: input.agentNote ?? null,
+        availableSlots: JSON.stringify(input.availableSlots),
+        status: 'pending',
+      });
+      return { appointment: appt, token };
+    }),
+
+  // List all bookings for the org (protected)
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    const appts = await getAppointmentsByOrg(orgId);
+    return appts;
+  }),
+
+  // Get a booking by token (public - for the lead's booking page)
+  getByToken: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const appt = await getAppointmentByToken(input.token);
+      if (!appt) throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking link not found or expired.' });
+      return {
+        id: appt.id,
+        agentName: appt.agentName,
+        agentNote: appt.agentNote,
+        availableSlots: JSON.parse(appt.availableSlots) as string[],
+        bookedSlot: appt.bookedSlot,
+        status: appt.status,
+      };
+    }),
+
+  // Confirm a slot (public - lead picks a time)
+  confirmSlot: publicProcedure
+    .input(z.object({ token: z.string(), slot: z.string() }))
+    .mutation(async ({ input }) => {
+      const appt = await getAppointmentByToken(input.token);
+      if (!appt) throw new TRPCError({ code: 'NOT_FOUND' });
+      if (appt.status === 'booked') throw new TRPCError({ code: 'CONFLICT', message: 'This time has already been booked.' });
+      const slots: string[] = JSON.parse(appt.availableSlots);
+      if (!slots.includes(input.slot)) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid slot selected.' });
+      await updateAppointment(appt.id, { bookedSlot: input.slot, status: 'booked' });
+      // Update lead status to Scheduled
+      await updateLead(appt.leadId, { status: 'Scheduled' });
+      // Notify the agent
+      try {
+        const lead = await getLeadById(appt.leadId);
+        await notifyOwner({
+          title: `Appointment booked: ${lead?.name ?? 'Lead'}`,
+          content: `${lead?.name ?? 'A lead'} just booked a call for ${new Date(input.slot).toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}. Their lead status has been updated to Scheduled.`,
+        });
+      } catch { /* non-fatal */ }
+      return { success: true };
+    }),
+
+  // Cancel/delete a booking (protected)
+  cancel: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const appt = await getAppointmentByToken('');
+      // Get by id via org list
+      const all = await getAppointmentsByOrg(orgId);
+      const target = all.find(a => a.id === input.id);
+      if (!target) throw new TRPCError({ code: 'NOT_FOUND' });
+      await updateAppointment(input.id, { status: 'cancelled' });
+      return { success: true };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -1686,6 +1781,7 @@ export const appRouter = router({
   referrals: referralsRouter,
   usageDashboard: usageDashboardRouter,
   bot: botRouter,
+  booking: bookingRouter,
 });
 
 export type AppRouter = typeof appRouter;

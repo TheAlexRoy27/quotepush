@@ -254,6 +254,29 @@ async function startServer() {
               }
             } else {
               console.log(`[AIBot] Lead ${lead.id} hit max bot replies (${botConfig.maxRepliesPerLead}), handing off to human.`);
+              // Notify the agent that the bot has handed off
+              try {
+                await notifyOwner({
+                  title: `Bot handed off: ${lead.name}`,
+                  content: `${lead.name} (${lead.phone}) has reached the bot reply limit (${botConfig.maxRepliesPerLead} messages). They just texted: "${body.slice(0, 120)}${body.length > 120 ? '...' : ''}". Time to jump in personally.`,
+                });
+              } catch (notifyErr) {
+                console.error('[AIBot] Handoff notification failed:', notifyErr);
+              }
+              // Send a final friendly handoff SMS to the lead
+              try {
+                const handoffMsg = `Hey, just wanted to let you know a real person from our team will be following up with you shortly. Talk soon!`;
+                const orgConfig = await getOrgTwilioConfig(lead.orgId);
+                if (orgConfig?.accountSid) {
+                  const result = await sendSmsWithConfig(lead.phone, handoffMsg, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
+                  await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: 'outbound', body: handoffMsg, twilioSid: result.sid ?? null, twilioStatus: result.status ?? 'sent', isBot: true });
+                } else if (isTwilioConfigured()) {
+                  const result = await sendSms(lead.phone, handoffMsg);
+                  await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: 'outbound', body: handoffMsg, twilioSid: result.sid ?? null, twilioStatus: result.status ?? 'sent', isBot: true });
+                }
+              } catch (handoffSmsErr) {
+                console.error('[AIBot] Handoff SMS failed:', handoffSmsErr);
+              }
             }
           }
         }

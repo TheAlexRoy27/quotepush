@@ -29,7 +29,7 @@ const PLAN_FEATURES = {
     "Multi-step drip sequences",
     "A/B branch reply flows",
     "Priority support",
-    "Advanced analytics (coming soon)",
+    "Advanced analytics dashboard",
   ],
   enterprise: [
     "Everything in Elite",

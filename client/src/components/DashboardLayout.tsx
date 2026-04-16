@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, Bell, BookOpen, Bot, Building2, CreditCard, FileText, Gift, LogOut, MessageSquare, Moon, PanelLeft, Settings, Shield, Sun, TrendingUp, Users, Webhook, Zap } from "lucide-react";
+import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, CreditCard, FileText, Gift, LogOut, MessageSquare, Moon, PanelLeft, Settings, Shield, Sun, TrendingUp, Users, Webhook, Zap } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -32,6 +32,7 @@ const menuItems = [
   { icon: TrendingUp, label: "My Dashboard", path: "/my-dashboard" },
   { icon: Bot, label: "AI Bot", path: "/bot" },
   { icon: Users, label: "Leads", path: "/leads" },
+  { icon: CalendarDays, label: "Bookings", path: "/bookings" },
   { icon: FileText, label: "SMS Template", path: "/template" },
   { icon: BookOpen, label: "Template Library", path: "/library" },
   { icon: Zap, label: "Drip Sequences", path: "/drip" },

@@ -546,3 +546,18 @@
 - [x] Implement multi-message Kevin opening: typo msg (1-2s delay), correction msg (3-5s delay), funny comment + pitch + CTA (2-3s delay) — each sent as separate SMS
 - [x] Add Kevin persona card to BotConfigPage TONE_OPTIONS with description and opening sequence preview
 - [x] Kevin's follow-up replies (after opening) stay in character: slightly clumsy but effective
+
+## Pre-Launch Risk Fixes
+- [x] Add TCPA consent checkbox to Add Lead modal (agent must confirm consent on file before saving)
+- [x] Add TCPA consent acknowledgment to CSV import modal (checkbox before import proceeds)
+- [x] Store consentConfirmed boolean on leads table (schema + migration)
+- [x] Add Twilio not-configured banner to dashboard and leads page (prominent, links to Settings)
+- [x] Add bot handoff notification when maxRepliesPerLead is hit (push notify agent + optional final SMS to lead)
+- [x] Build appointments table, migration, tRPC procedures (createBookingLink, getByToken, confirmSlot, listForOrg, cancelBooking)
+- [x] Build public /book/:token booking page (casual tone, slot picker, confirmation screen)
+- [x] Add Send Booking Link button to Leads page per-lead action
+- [x] Build Bookings dashboard page with status table
+- [x] Add Bookings nav item to sidebar
+- [x] Add drip scheduler DB retry logic (retry failed queries up to 3x with exponential backoff)
+- [x] Remove "Advanced analytics (coming soon)" from Elite plan feature list on BillingPage
+- [x] Remove "White-label options (coming soon)" from Elite plan feature list on BillingPage

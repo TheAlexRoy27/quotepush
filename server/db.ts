@@ -18,6 +18,9 @@ import {
   referrals,
   smsTemplates,
   users,
+  appointments,
+  InsertAppointment,
+  Appointment,
 } from "../drizzle/schema";
 import type { InsertUser } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -424,4 +427,36 @@ export async function countBotReplies(leadId: number): Promise<number> {
     .from(messages)
     .where(and(eq(messages.leadId, leadId), eq(messages.isBot, true)));
   return Number(rows[0]?.count ?? 0);
+}
+
+// ─── Appointments ─────────────────────────────────────────────────────────────
+
+export async function createAppointment(data: InsertAppointment): Promise<Appointment> {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const [result] = await db.insert(appointments).values(data);
+  const insertId = (result as any).insertId;
+  const rows = await db.select().from(appointments).where(eq(appointments.id, insertId)).limit(1);
+  return rows[0];
+}
+
+export async function getAppointmentByToken(token: string): Promise<Appointment | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(appointments).where(eq(appointments.token, token)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getAppointmentsByOrg(orgId: number): Promise<Appointment[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(appointments).where(eq(appointments.orgId, orgId)).orderBy(desc(appointments.createdAt));
+}
+
+export async function updateAppointment(id: number, data: Partial<InsertAppointment>): Promise<Appointment | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(appointments).set(data).where(eq(appointments.id, id));
+  const rows = await db.select().from(appointments).where(eq(appointments.id, id)).limit(1);
+  return rows[0] ?? null;
 }
