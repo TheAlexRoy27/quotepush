@@ -176,6 +176,13 @@
       "when": 1776397375512,
       "tag": "0024_same_mandarin",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1776463478409,
+      "tag": "0025_empty_guardsmen",
+      "breakpoints": true
     }
   ]
 }

@@ -130,6 +130,13 @@ export const leads = mysqlTable("leads", {
     .default("Pending")
     .notNull(),
   notes: text("notes"),
+  // Lead qualification fields
+  source: varchar("source", { length: 100 }),                      // e.g. Facebook, Zillow, Referral, Manual, Webhook, CSV Import
+  doNotContact: boolean("doNotContact").notNull().default(false),  // manual DNC flag (agent-set)
+  doNotContactAt: timestamp("doNotContactAt"),
+  age: int("age"),                                                 // lead's age (for insurance qualification)
+  state: varchar("state", { length: 50 }),                        // US state
+  productType: varchar("productType", { length: 100 }),            // e.g. Medicare, Life, Auto, Home, Final Expense
   consentUrl: varchar("consentUrl", { length: 2048 }),
   consentConfirmed: boolean("consentConfirmed").notNull().default(false),
   optedOut: boolean("optedOut").notNull().default(false),
@@ -464,6 +471,11 @@ export const botConfigs = mysqlTable("bot_configs", {
   maxRepliesPerLead: int("maxRepliesPerLead").notNull().default(10), // safety cap per lead
   replyDelay: mysqlEnum("replyDelay", ["instant", "1min", "random"]).notNull().default("instant"),
   firstMessageDelay: mysqlEnum("firstMessageDelay", ["instant", "1min", "random"]).notNull().default("instant"),
+  // TCPA quiet hours - no messages sent outside this window
+  quietHoursEnabled: boolean("quietHoursEnabled").notNull().default(true),
+  quietHoursStart: int("quietHoursStart").notNull().default(8),   // hour in 24h format (default 8am)
+  quietHoursEnd: int("quietHoursEnd").notNull().default(21),      // hour in 24h format (default 9pm)
+  quietHoursTimezone: varchar("quietHoursTimezone", { length: 64 }).notNull().default("America/New_York"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

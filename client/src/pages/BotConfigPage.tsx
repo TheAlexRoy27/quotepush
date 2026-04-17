@@ -68,6 +68,10 @@ export default function BotConfigPage() {
   const [maxReplies, setMaxReplies] = useState(10);
   const [replyDelay, setReplyDelay] = useState<"instant" | "1min" | "random">("instant");
   const [firstMessageDelay, setFirstMessageDelay] = useState<"instant" | "1min" | "random">("instant");
+  const [quietHoursEnabled, setQuietHoursEnabled] = useState(true);
+  const [quietHoursStart, setQuietHoursStart] = useState(8);
+  const [quietHoursEnd, setQuietHoursEnd] = useState(21);
+  const [quietHoursTimezone, setQuietHoursTimezone] = useState("America/New_York");
 
   // Test bot state
   const [testLeadName, setTestLeadName] = useState("Sarah");
@@ -88,6 +92,10 @@ export default function BotConfigPage() {
       setMaxReplies(config.maxRepliesPerLead ?? 10);
       setReplyDelay(((config as any).replyDelay as "instant" | "1min" | "random") ?? "instant");
       setFirstMessageDelay(((config as any).firstMessageDelay as "instant" | "1min" | "random") ?? "instant");
+      setQuietHoursEnabled((config as any).quietHoursEnabled ?? true);
+      setQuietHoursStart((config as any).quietHoursStart ?? 8);
+      setQuietHoursEnd((config as any).quietHoursEnd ?? 21);
+      setQuietHoursTimezone((config as any).quietHoursTimezone ?? "America/New_York");
     }
   }, [config]);
 
@@ -107,6 +115,10 @@ export default function BotConfigPage() {
       maxRepliesPerLead: maxReplies,
       replyDelay,
       firstMessageDelay,
+      quietHoursEnabled,
+      quietHoursStart,
+      quietHoursEnd,
+      quietHoursTimezone,
     });
   };
 
@@ -559,6 +571,89 @@ export default function BotConfigPage() {
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* ─── Quiet Hours (TCPA Compliance) ─────────────────────────────── */}
+      <Card className="border-amber-500/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" /> Quiet Hours
+            <Badge className="ml-1 bg-amber-500/15 text-amber-500 border-amber-500/30 text-xs">TCPA Required</Badge>
+          </CardTitle>
+          <CardDescription>
+            Block all outbound messages outside these hours. Under TCPA law, sending SMS before 8am or after 9pm in the recipient's timezone is a violation.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Enforce Quiet Hours</p>
+              <p className="text-xs text-muted-foreground">No messages will be sent outside the window below</p>
+            </div>
+            <Switch checked={quietHoursEnabled} onCheckedChange={setQuietHoursEnabled} />
+          </div>
+
+          {quietHoursEnabled && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1">
+                  Start Hour
+                  <FieldHelp text="No messages before this hour. 8 = 8:00 AM" />
+                </Label>
+                <Select value={String(quietHoursStart)} onValueChange={(v) => setQuietHoursStart(Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <SelectItem key={i} value={String(i)}>
+                        {i === 0 ? "12:00 AM" : i < 12 ? `${i}:00 AM` : i === 12 ? "12:00 PM" : `${i - 12}:00 PM`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1">
+                  End Hour
+                  <FieldHelp text="No messages after this hour. 21 = 9:00 PM" />
+                </Label>
+                <Select value={String(quietHoursEnd)} onValueChange={(v) => setQuietHoursEnd(Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <SelectItem key={i} value={String(i)}>
+                        {i === 0 ? "12:00 AM" : i < 12 ? `${i}:00 AM` : i === 12 ? "12:00 PM" : `${i - 12}:00 PM`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1">
+                  Timezone
+                  <FieldHelp text="All quiet hours are enforced in this timezone" />
+                </Label>
+                <Select value={quietHoursTimezone} onValueChange={setQuietHoursTimezone}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/New_York">Eastern (ET)</SelectItem>
+                    <SelectItem value="America/Chicago">Central (CT)</SelectItem>
+                    <SelectItem value="America/Denver">Mountain (MT)</SelectItem>
+                    <SelectItem value="America/Los_Angeles">Pacific (PT)</SelectItem>
+                    <SelectItem value="America/Anchorage">Alaska (AKT)</SelectItem>
+                    <SelectItem value="Pacific/Honolulu">Hawaii (HT)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span>Default window is 8:00 AM - 9:00 PM. Keeping this enabled is strongly recommended to stay TCPA compliant.</span>
+          </div>
         </CardContent>
       </Card>
 

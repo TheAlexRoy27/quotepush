@@ -712,6 +712,10 @@ const leadsRouter = router({
       notes: z.string().optional(),
       consentUrl: z.string().url().optional().or(z.literal("")),
       consentConfirmed: z.boolean().optional().default(false),
+      source: z.string().optional(),
+      age: z.number().int().min(0).max(120).optional(),
+      state: z.string().optional(),
+      productType: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);
@@ -724,6 +728,10 @@ const leadsRouter = router({
         notes: input.notes ?? null,
         consentUrl: input.consentUrl || null,
         consentConfirmed: input.consentConfirmed ?? false,
+        source: input.source ?? null,
+        age: input.age ?? null,
+        state: input.state ?? null,
+        productType: input.productType ?? null,
         status: "Pending",
       });
 
@@ -849,6 +857,11 @@ const leadsRouter = router({
       status: LeadStatusEnum.optional(),
       notes: z.string().optional(),
       consentUrl: z.string().url().optional().or(z.literal("")),
+      source: z.string().optional(),
+      doNotContact: z.boolean().optional(),
+      age: z.number().int().min(0).max(120).optional().nullable(),
+      state: z.string().optional().nullable(),
+      productType: z.string().optional().nullable(),
     }))
     .mutation(({ input }) => {
       const { id, ...data } = input;
@@ -1688,6 +1701,10 @@ const botRouter = router({
       maxRepliesPerLead: z.number().int().min(1).max(50).optional(),
       replyDelay: z.enum(["instant", "1min", "random"]).optional(),
       firstMessageDelay: z.enum(["instant", "1min", "random"]).optional(),
+      quietHoursEnabled: z.boolean().optional(),
+      quietHoursStart: z.number().int().min(0).max(23).optional(),
+      quietHoursEnd: z.number().int().min(0).max(23).optional(),
+      quietHoursTimezone: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const orgId = await requireOrgId(ctx.user.id);

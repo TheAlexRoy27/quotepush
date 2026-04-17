@@ -85,6 +85,31 @@ async function processDripEnrollment(
     return;
   }
 
+  // Skip Do Not Contact leads
+  if ((lead as any).doNotContact) {
+    console.log(`[DripScheduler] Lead ${leadId} is marked Do Not Contact, stopping enrollment`);
+    await stopEnrollment(leadId, "do_not_contact");
+    return;
+  }
+
+  // Quiet hours check (TCPA compliance) - defer if outside allowed window
+  try {
+    const { getBotConfig } = await import("./db");
+    const botConfig = await getBotConfig(orgId);
+    if (botConfig?.quietHoursEnabled) {
+      const tz = (botConfig as any).quietHoursTimezone ?? "America/New_York";
+      const nowHour = parseInt(new Date().toLocaleString("en-US", { timeZone: tz, hour: "numeric", hour12: false }), 10);
+      const qStart = (botConfig as any).quietHoursStart ?? 8;
+      const qEnd = (botConfig as any).quietHoursEnd ?? 21;
+      if (nowHour < qStart || nowHour >= qEnd) {
+        console.log(`[DripScheduler] Quiet hours active (${nowHour}h in ${tz}, window ${qStart}-${qEnd}h) - deferring drip step for lead ${leadId}`);
+        return; // skip this tick; will retry on next scheduler run
+      }
+    }
+  } catch (qhErr) {
+    console.warn("[DripScheduler] Quiet hours check failed (non-fatal):", qhErr);
+  }
+
   const sequence = await getDripSequenceById(sequenceId);
   if (!sequence || !sequence.isActive) {
     console.warn(`[DripScheduler] Sequence ${sequenceId} inactive or not found, skipping`);

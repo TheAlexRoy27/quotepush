@@ -50,10 +50,10 @@ function StatCard({ label, value, icon: Icon, color }: {
 function AddLeadModal({ open, onClose, onSuccess }: {
   open: boolean; onClose: () => void; onSuccess: () => void;
 }) {
-  const [form, setForm] = useState({ name: "", phone: "", company: "", email: "", notes: "", consentUrl: "" });
+  const [form, setForm] = useState({ name: "", phone: "", company: "", email: "", notes: "", consentUrl: "", source: "", state: "", productType: "", age: "" });
   const [consentConfirmed, setConsentConfirmed] = useState(false);
   const createLead = trpc.leads.create.useMutation({
-    onSuccess: () => { toast.success("Lead added successfully"); onSuccess(); onClose(); setForm({ name: "", phone: "", company: "", email: "", notes: "", consentUrl: "" }); setConsentConfirmed(false); },
+    onSuccess: () => { toast.success("Lead added successfully"); onSuccess(); onClose(); setForm({ name: "", phone: "", company: "", email: "", notes: "", consentUrl: "", source: "", state: "", productType: "", age: "" }); setConsentConfirmed(false); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -81,6 +81,71 @@ function AddLeadModal({ open, onClose, onSuccess }: {
               />
             </div>
           ))}
+          {/* Source, Age, State, Product Type */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="source" className="text-sm text-foreground">Lead Source</Label>
+              <select
+                id="source"
+                value={form.source}
+                onChange={(e) => setForm(f => ({ ...f, source: e.target.value }))}
+                className="w-full h-9 rounded-md border border-border bg-input px-3 text-sm text-foreground"
+              >
+                <option value="">Select source...</option>
+                <option value="Facebook">Facebook</option>
+                <option value="Zillow">Zillow</option>
+                <option value="Referral">Referral</option>
+                <option value="Website">Website</option>
+                <option value="Cold Call">Cold Call</option>
+                <option value="CSV Import">CSV Import</option>
+                <option value="Webhook">Webhook</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="age" className="text-sm text-foreground">Age</Label>
+              <Input
+                id="age"
+                type="number"
+                placeholder="e.g. 45"
+                value={form.age}
+                onChange={(e) => setForm(f => ({ ...f, age: e.target.value }))}
+                className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+                min={0} max={120}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="state" className="text-sm text-foreground">State</Label>
+              <select
+                id="state"
+                value={form.state}
+                onChange={(e) => setForm(f => ({ ...f, state: e.target.value }))}
+                className="w-full h-9 rounded-md border border-border bg-input px-3 text-sm text-foreground"
+              >
+                <option value="">Select state...</option>
+                {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="productType" className="text-sm text-foreground">Product Type</Label>
+              <select
+                id="productType"
+                value={form.productType}
+                onChange={(e) => setForm(f => ({ ...f, productType: e.target.value }))}
+                className="w-full h-9 rounded-md border border-border bg-input px-3 text-sm text-foreground"
+              >
+                <option value="">Select product...</option>
+                <option value="Life Insurance">Life Insurance</option>
+                <option value="Health Insurance">Health Insurance</option>
+                <option value="Auto Insurance">Auto Insurance</option>
+                <option value="Home Insurance">Home Insurance</option>
+                <option value="Medicare">Medicare</option>
+                <option value="Annuity">Annuity</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="notes" className="text-sm text-foreground">Notes</Label>
             <Textarea
@@ -123,7 +188,7 @@ function AddLeadModal({ open, onClose, onSuccess }: {
         <DialogFooter>
           <Button variant="outline" onClick={onClose} className="border-border text-foreground">Cancel</Button>
           <Button
-            onClick={() => createLead.mutate({ ...form, consentConfirmed })}
+            onClick={() => createLead.mutate({ ...form, consentConfirmed, age: form.age ? parseInt(form.age) : undefined })}
             disabled={!form.name || !form.phone || !consentConfirmed || createLead.isPending}
           >
             {createLead.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -584,6 +649,14 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
     onError: (e) => toast.error(e.message),
   });
 
+  const toggleDNC = trpc.leads.update.useMutation({
+    onSuccess: () => {
+      utils.leads.list.invalidate();
+      utils.leads.getById.invalidate({ id: lead.id });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   // Drip sequences
   const { data: sequences } = trpc.drip.listSequences.useQuery();
   const { data: enrollments } = trpc.drip.leadEnrollments.useQuery({ leadId: lead.id });
@@ -717,6 +790,62 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
         </div>
       )}
 
+      {/* Lead Details (source, DNC, age, state, product) */}
+      <div className="px-4 py-3 border-b border-border">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-muted-foreground">Lead Details</span>
+        </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+          {(data?.lead as any)?.source && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Source:</span>
+              <span className="font-medium text-foreground">{(data?.lead as any).source}</span>
+            </div>
+          )}
+          {(data?.lead as any)?.age && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Age:</span>
+              <span className="font-medium text-foreground">{(data?.lead as any).age}</span>
+            </div>
+          )}
+          {(data?.lead as any)?.state && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">State:</span>
+              <span className="font-medium text-foreground">{(data?.lead as any).state}</span>
+            </div>
+          )}
+          {(data?.lead as any)?.productType && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Product:</span>
+              <span className="font-medium text-foreground">{(data?.lead as any).productType}</span>
+            </div>
+          )}
+        </div>
+        {/* DNC Toggle */}
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+          <div>
+            <span className="text-xs font-medium text-foreground">Do Not Contact</span>
+            <p className="text-[10px] text-muted-foreground">Blocks all automated messages to this lead</p>
+          </div>
+          <button
+            onClick={() => {
+              const current = (data?.lead as any)?.doNotContact ?? false;
+              toggleDNC.mutate({ id: lead.id, doNotContact: !current });
+              if (!current) toast.warning("Lead marked as Do Not Contact");
+              else toast.success("Do Not Contact removed");
+            }}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              (data?.lead as any)?.doNotContact ? "bg-rose-500" : "bg-muted"
+            }`}
+            title={(data?.lead as any)?.doNotContact ? "DNC is ON - click to remove" : "Click to mark as Do Not Contact"}
+          >
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+              (data?.lead as any)?.doNotContact ? "translate-x-4" : "translate-x-0.5"
+            }`} />
+          </button>
+        </div>
+      </div>
+
       {/* Milestone changer */}
       <div className="px-5 py-3 border-b border-border flex items-center gap-2">
         <span className="text-xs text-muted-foreground">Milestone:</span>
@@ -728,7 +857,7 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-popover border-border">
-            {["Pending", "Sent", "Replied", "Scheduled", "X-Dated"].map(s => (
+            {["Pending", "Sent", "Replied", "Scheduled", "Future Date"].map(s => (
               <SelectItem key={s} value={s} className="text-xs text-foreground">{s}</SelectItem>
             ))}
           </SelectContent>

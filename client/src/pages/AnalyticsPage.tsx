@@ -31,7 +31,8 @@ const MILESTONE_COLORS: Record<string, string> = {
   Sent: "#3b82f6",
   Replied: "#10b981",
   Scheduled: "#f59e0b",
-  "X-Dated": "#14b8a6",
+  "Future Date": "#14b8a6",
+  "X-Dated": "#14b8a6", // legacy alias
 };
 
 const CATEGORY_COLORS: Record<string, string> = {

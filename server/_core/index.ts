@@ -229,8 +229,23 @@ async function startServer() {
       try {
         // Don't bot-reply to unsubscribes
         if (category !== "Unsubscribe") {
+          // DNC check - never reply to a lead marked Do Not Contact
+          if ((lead as any).doNotContact) {
+            console.log(`[AIBot] Lead ${lead.id} is marked Do Not Contact - skipping bot reply`);
+          } else {
           const botConfig = await getBotConfig(lead.orgId);
           if (botConfig?.enabled) {
+            // Quiet hours check (TCPA compliance)
+            if (botConfig.quietHoursEnabled) {
+              const tz = (botConfig as any).quietHoursTimezone ?? "America/New_York";
+              const nowHour = parseInt(new Date().toLocaleString("en-US", { timeZone: tz, hour: "numeric", hour12: false }), 10);
+              const qStart = (botConfig as any).quietHoursStart ?? 8;
+              const qEnd = (botConfig as any).quietHoursEnd ?? 21;
+              if (nowHour < qStart || nowHour >= qEnd) {
+                console.log(`[AIBot] Quiet hours active (${nowHour}h in ${tz}, window ${qStart}-${qEnd}h) - skipping bot reply for lead ${lead.id}`);
+                return;
+              }
+            }
             const botReplies = await countBotReplies(lead.id);
             if (botReplies < botConfig.maxRepliesPerLead) {
               const firstName = lead.name.split(" ")[0] ?? lead.name;
@@ -317,6 +332,7 @@ async function startServer() {
               }
             }
           }
+          } // end DNC else
         }
       } catch (botErr) {
         console.error("[AIBot] Error:", botErr);

@@ -703,3 +703,18 @@
 - [x] Sidebar: add "Voice Calls" nav item with PhoneCall icon and "Soon" badge
 - [x] Create VoiceCallsPage at /calls with full Coming Soon overlay, persona previews, feature cards, call log empty state, and stat cards
 - [x] VoiceCallsPage includes ElevenLabs sign-up link and setup instructions
+
+## Critical Audit Fixes
+- [x] Schema: add source, doNotContact, age, state, productType to leads table (migration 0025 applied)
+- [x] Schema: add quietHoursEnabled, quietHoursStart, quietHoursEnd, quietHoursTimezone to botConfigs table
+- [x] Server: enforce quiet hours in live bot (block reply if outside window)
+- [x] Server: enforce quiet hours in drip scheduler (skip tick if outside window)
+- [x] Server: expose new lead fields (source, doNotContact, age, state, productType) in create/update procedures
+- [x] Server: block bot replies to leads with doNotContact = true
+- [x] Server: add quietHours fields to bot.saveConfig procedure
+- [x] UI: Quiet Hours card in Bot Settings with enabled toggle, start/end hour selectors, timezone dropdown, TCPA warning
+- [x] UI: DNC toggle in ConversationPanel with real mutation (toggleDNC)
+- [x] UI: source, age, state, productType fields in Add Lead form (2-col grid)
+- [x] UI: source, age, state, productType shown in ConversationPanel Lead Details section
+- [x] UI: Analytics page milestone chart now uses "Future Date" (legacy X-Dated alias kept for old data)
+- [x] UI: LeadsPage milestone dropdowns renamed X-Dated to Future Date
