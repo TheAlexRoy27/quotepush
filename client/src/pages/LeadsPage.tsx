@@ -11,11 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Plus, Upload, Search, Send, Trash2, MessageSquare, RefreshCw,
   Users, Clock, CheckCircle2, Calendar, ChevronRight, ChevronLeft, X, Loader2, SendHorizonal,
   Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp, ExternalLink,
-  Zap, StopCircle, NotebookPen, Save
+  Zap, StopCircle, NotebookPen, Save, Phone
 } from "lucide-react";
 import type { Lead, Message } from "../../../drizzle/schema";
 
@@ -660,6 +661,25 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <StatusBadge status={lead.status} />
+          {/* AI Call button - Coming Soon */}
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  disabled
+                  className="h-8 px-2.5 flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-medium opacity-60 cursor-not-allowed"
+                  aria-label="AI Voice Call - Coming Soon"
+                >
+                  <Phone className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">AI Call</span>
+                  <span className="text-[9px] bg-blue-500/20 text-blue-300 rounded px-1 py-0.5 leading-none">SOON</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs max-w-xs">
+                AI voice calls are coming soon. Sign up for ElevenLabs to unlock this feature.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {/* Back arrow on mobile, X on desktop */}
           <button onClick={onClose} className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-accent transition-colors text-muted-foreground" aria-label="Close">
             <span className="sm:hidden"><ChevronLeft className="h-5 w-5" /></span>

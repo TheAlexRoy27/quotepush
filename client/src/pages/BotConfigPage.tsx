@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Zap, MessageSquare, Info, Save, Sparkles, Send, RotateCcw, FlaskConical, HelpCircle, AlertTriangle } from "lucide-react";
+import { Bot, Zap, MessageSquare, Info, Save, Sparkles, Send, RotateCcw, FlaskConical, HelpCircle, AlertTriangle, Phone, PhoneCall, PhoneIncoming, PhoneOutgoing, Lock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function FieldHelp({ text }: { text: string }) {
@@ -559,6 +559,104 @@ export default function BotConfigPage() {
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* ─── Voice Call Agent (Coming Soon) ─────────────────────────────── */}
+      <Card className="border-blue-500/20 relative overflow-hidden">
+        {/* Coming Soon overlay */}
+        <div className="absolute inset-0 z-10 bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-3 rounded-xl">
+          <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 rounded-full px-4 py-2">
+            <Lock className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-semibold text-blue-400">Coming Soon</span>
+          </div>
+          <p className="text-xs text-muted-foreground text-center max-w-xs px-4">
+            Sign up for <a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline underline-offset-2">ElevenLabs</a> and add your API key in Settings to unlock AI voice calls.
+          </p>
+        </div>
+
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <PhoneCall className="w-4 h-4 text-blue-400" /> AI Voice Call Agent
+            <Badge className="ml-1 bg-blue-500/15 text-blue-400 border-blue-500/30 text-xs">Coming Soon</Badge>
+          </CardTitle>
+          <CardDescription>
+            Let your AI persona make and receive real phone calls - same character, same script, but spoken out loud in a real voice.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Voice persona selector */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1">
+              Voice Call Persona
+              <FieldHelp text="Choose which voice handles phone calls. Defaults to match your text persona. You can set a different voice for calls if you want." />
+            </Label>
+            <p className="text-xs text-muted-foreground">By default, your voice call uses the same persona as your text bot. Override it here if you want a different voice on calls.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              {[
+                { value: "match", label: "Match Text Persona", desc: "Same persona as your text bot", icon: MessageSquare },
+                { value: "brianna", label: "Brianna (Syosset, NY)", desc: "Direct, Long Island energy", icon: PhoneCall },
+                { value: "kayla", label: "Kayla (San Diego)", desc: "Chill, sunny, West Coast", icon: PhoneCall },
+                { value: "marcus", label: "Marcus (Orlando)", desc: "Smooth, Southern hustle", icon: PhoneCall },
+              ].map((opt) => (
+                <div
+                  key={opt.value}
+                  className="flex items-start gap-3 rounded-xl border border-border bg-muted/20 p-3 opacity-60 cursor-not-allowed"
+                >
+                  <opt.icon className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Call type toggles */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-3 opacity-60">
+              <div className="flex items-center gap-2">
+                <PhoneOutgoing className="w-4 h-4 text-blue-400" />
+                <div>
+                  <p className="text-sm font-medium">Outbound Calls</p>
+                  <p className="text-xs text-muted-foreground">AI calls leads on your behalf</p>
+                </div>
+              </div>
+              <Switch disabled checked={false} />
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 p-3 opacity-60">
+              <div className="flex items-center gap-2">
+                <PhoneIncoming className="w-4 h-4 text-blue-400" />
+                <div>
+                  <p className="text-sm font-medium">Inbound Calls</p>
+                  <p className="text-xs text-muted-foreground">AI answers calls from leads</p>
+                </div>
+              </div>
+              <Switch disabled checked={false} />
+            </div>
+          </div>
+
+          {/* ElevenLabs key input */}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1">
+              ElevenLabs API Key
+              <FieldHelp text="Get your API key from elevenlabs.io. Required for AI voice synthesis on calls." />
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                disabled
+                placeholder="sk_... (add in Settings once you have your key)"
+                className="font-mono text-xs opacity-60"
+              />
+              <Button disabled variant="outline" className="shrink-0 opacity-60">
+                Save Key
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Don't have a key yet? <a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline underline-offset-2">Sign up at ElevenLabs</a> - the Creator plan (~$22/mo) is enough for real usage.
+            </p>
+          </div>
         </CardContent>
       </Card>
 

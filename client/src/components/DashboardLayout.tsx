@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, Gift, LogOut, MessageSquare, Moon, PanelLeft, Settings, Shield, Sun, TrendingUp, Users, Zap } from "lucide-react";
+import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, Gift, LogOut, MessageSquare, Moon, PanelLeft, PhoneCall, Settings, Shield, Sun, TrendingUp, Users, Zap } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -37,6 +37,7 @@ const menuItems = [
   { icon: Zap, label: "Drip Sequences", path: "/drip" },
   { icon: Building2, label: "Organization", path: "/organization" },
   { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: PhoneCall, label: "Voice Calls", path: "/calls", badge: "Soon" },
   { icon: Gift, label: "Partner Referrals", path: "/referrals" },
 ];
 
@@ -319,7 +320,10 @@ function DashboardLayoutContent({
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
                       />
-                      <span>{item.label}</span>
+                      <span className="flex-1">{item.label}</span>
+                      {(item as any).badge && (
+                        <span className="text-[9px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 rounded px-1 py-0.5 leading-none shrink-0">{(item as any).badge}</span>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

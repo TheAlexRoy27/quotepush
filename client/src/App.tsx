@@ -27,6 +27,7 @@ import UsageDashboardPage from "./pages/UsageDashboardPage";
 import BotConfigPage from "./pages/BotConfigPage";
 import BookingPage from "./pages/BookingPage";
 import BookingsPage from "./pages/BookingsPage";
+import VoiceCallsPage from "./pages/VoiceCallsPage";
 
 function Router() {
   return (
@@ -57,6 +58,7 @@ function Router() {
             <Route path={"/my-dashboard"} component={UsageDashboardPage} />
             <Route path={"/bot"} component={BotConfigPage} />
             <Route path={"/bookings"} component={BookingsPage} />
+            <Route path={"/calls"} component={VoiceCallsPage} />
             <Route path={"/404"} component={NotFound} />
             <Route component={NotFound} />
           </Switch>

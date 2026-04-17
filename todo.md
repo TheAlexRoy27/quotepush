@@ -695,3 +695,11 @@
 - [x] Update frontend TONE_OPTIONS with new personas and accurate example messages
 - [x] Ensure tone is passed into the live bot (not just test) system prompt with PERSONA AND VOICE override label
 - [x] DB migration applied to add brianna, kayla, marcus to tone enum in bot_configs table
+
+## AI Voice Call UI (Coming Soon Scaffolding)
+- [x] Bot Settings: add "Voice Call Persona" section with separate voice selector (defaults to match text persona), ElevenLabs API key input field, and Coming Soon badge
+- [x] Bot Settings: add "Voice Call Settings" card explaining what voice calls will do, with a link to sign up for ElevenLabs
+- [x] Lead ConversationPanel: add disabled "AI Call" button with Coming Soon tooltip
+- [x] Sidebar: add "Voice Calls" nav item with PhoneCall icon and "Soon" badge
+- [x] Create VoiceCallsPage at /calls with full Coming Soon overlay, persona previews, feature cards, call log empty state, and stat cards
+- [x] VoiceCallsPage includes ElevenLabs sign-up link and setup instructions
