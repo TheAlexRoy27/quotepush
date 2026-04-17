@@ -430,8 +430,8 @@ function DashboardLayoutContent({
           <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
             <ThemeToggleButton />
             <NotificationBellButton />
-            {/* Wave greeting - hidden on very small screens to save space */}
-            <div className="hidden xs:flex items-center gap-1.5">
+            {/* Greeting - always visible */}
+            <div className="flex items-center gap-1.5">
               <button
                 key={animKey}
                 onClick={toggleEmoji}
@@ -444,7 +444,7 @@ function DashboardLayoutContent({
               >
                 {greetingEmoji === "wave" ? "👋" : "🤙🏼"}
               </button>
-              <span className="text-sm font-semibold text-foreground hidden sm:inline">
+              <span className="text-sm font-semibold text-foreground">
                 Hi, {user?.name?.split(' ')[0] ?? 'there'}!
               </span>
             </div>
