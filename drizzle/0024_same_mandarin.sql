@@ -1,0 +1,1 @@
+ALTER TABLE `bot_configs` MODIFY COLUMN `tone` enum('friendly','professional','casual','empathetic','direct','karen','kevin','brianna','kayla','marcus') NOT NULL DEFAULT 'friendly';

@@ -28,13 +28,16 @@ function FieldHelp({ text }: { text: string }) {
 }
 
 const TONE_OPTIONS = [
-  { value: "friendly", label: "Friendly", description: "Warm, approachable, conversational", example: "Hey Sarah! So glad you reached out. I'd love to help you find the best option - when's a good time to chat?" },
-  { value: "professional", label: "Professional", description: "Polished, business-like, formal", example: "Hello Sarah, thank you for your inquiry. I would be happy to assist you in reviewing your options at your earliest convenience." },
-  { value: "casual", label: "Casual", description: "Relaxed, like texting a friend", example: "Hey! Just saw your info come through. Super easy process, promise. Got like 10 mins this week?" },
-  { value: "empathetic", label: "Empathetic", description: "Understanding, patient, supportive", example: "Hi Sarah, I completely understand how overwhelming this can feel. I'm here to make it as simple as possible for you - no pressure at all." },
-  { value: "direct", label: "Direct", description: "Concise, no-fluff, to the point", example: "Hi Sarah. 10-minute call. I'll get you a quote. When works?" },
-  { value: "karen", label: "Karen", description: "Aggressively helpful, relentless, lovably pushy", example: "Sarah. Hi. I need you to know I WILL get you the best rate. I've already looked at 3 options. Can we talk NOW? Or in 5 minutes?" },
-  { value: "kevin", label: "Clumsy Kevin", description: "Typo opener, self-correction, then somehow closes the deal", example: "Hey Sarha! Soryr - Sarah* haha. Anyway I'm Alex and I jsut wanted to say we can totally help you out. You free tmrw?" },
+  { value: "friendly", label: "Friendly", description: "Warm, upbeat, uses first names and the occasional emoji", example: "Hey Sarah! Totally happy to help with this. Quick question - what kind of coverage are you thinking about? 😊" },
+  { value: "professional", label: "Professional", description: "Polished, no slang, no emoji, formal but brief", example: "Hello Sarah. I would be glad to assist you in reviewing your options. Please let me know when you are available for a brief call." },
+  { value: "casual", label: "Casual", description: "Texts like a friend, lowercase, fragments, real slang", example: "ok so ngl this is actually super easy lol. like 10 mins and you're done. you free this week?" },
+  { value: "empathetic", label: "Empathetic", description: "Leads with validation, never pushes, soft and patient", example: "I totally get it, this stuff can feel overwhelming. No rush at all. Whenever you're ready, I'm here to make it as easy as possible for you." },
+  { value: "direct", label: "Direct", description: "One sentence, no filler, just the ask", example: "Hi Sarah. 10 minutes. I'll get you a quote. Free this week?" },
+  { value: "karen", label: "Karen", description: "Aggressively helpful, ALL CAPS emphasis, lovably relentless", example: "Sarah. I NEED you to know I have already pulled 3 options for you. Honestly I would be doing you a disservice if I did not follow up. Can we talk today?" },
+  { value: "kevin", label: "Clumsy Kevin", description: "Typo opener, self-aware, goofy but weirdly effective", example: "ok so I promise I can type normally haha. anyway but seriously though - super easy process and I actually think we can save you some money. you free tmrw?" },
+  { value: "brianna", label: "Brianna (Syosset, NY)", description: "Long Island energy, sassy, direct, gets things done", example: "Ok so here's the thing hon, I'm not gonna lie, this is literally the easiest thing you'll do today. Real talk, 10 minutes and we're done. When works?" },
+  { value: "kayla", label: "Kayla (San Diego)", description: "Chill, sunny, zero pressure, breezy West Coast vibes", example: "Hey! So like, no rush at all but honestly it's super easy and totally worth it. Whenever the vibes are right for you just lmk! 🌊" },
+  { value: "marcus", label: "Marcus (Orlando)", description: "Smooth, confident, Southern hustle, feels like a hookup from a friend", example: "Hey, I got you straight up. Real talk, I've helped a ton of people down here and this is honestly the move. No cap. When can we connect?" },
 ] as const;
 
 const DEFAULT_OPENING = "Hey {firstName}! This is {botName} - I just wanted to reach out real quick. We only need about 10 minutes of your time to gather a little info and get you the most ideal quote possible. No pressure at all - just here to help! Feel free to ask me anything. 😊";
@@ -57,7 +60,7 @@ export default function BotConfigPage() {
 
   const [enabled, setEnabled] = useState(false);
   const [botName, setBotName] = useState("Alex");
-  const [tone, setTone] = useState<"friendly" | "professional" | "casual" | "empathetic" | "direct" | "karen" | "kevin">("friendly");
+  const [tone, setTone] = useState<"friendly" | "professional" | "casual" | "empathetic" | "direct" | "karen" | "kevin" | "brianna" | "kayla" | "marcus">("friendly");
   const [identity, setIdentity] = useState(DEFAULT_IDENTITY);
   const [openingMessage, setOpeningMessage] = useState(DEFAULT_OPENING);
   const [businessContext, setBusinessContext] = useState("");

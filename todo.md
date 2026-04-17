@@ -688,3 +688,10 @@
 - [x] #10 AI Bot tone selector: example preview already implemented below tone dropdown
 - [x] #11 Drip: "0 days delay" renamed to "Sends on enrollment" in step display
 - [x] #12 Mobile lead panel: back button already implemented (ChevronLeft on mobile, full-screen panel)
+
+## Bot Persona & Tone Overhaul
+- [x] Rewrite server-side tone system prompts so each persona produces genuinely distinct text (not just slightly different phrasing)
+- [x] Add 3 new regional voice personas: "Brianna from Syosset NY", "Kayla from San Diego", "Marcus from Orlando"
+- [x] Update frontend TONE_OPTIONS with new personas and accurate example messages
+- [x] Ensure tone is passed into the live bot (not just test) system prompt with PERSONA AND VOICE override label
+- [x] DB migration applied to add brianna, kayla, marcus to tone enum in bot_configs table

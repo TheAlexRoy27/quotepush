@@ -169,6 +169,13 @@
       "when": 1776369630993,
       "tag": "0023_soft_vertigo",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1776397375512,
+      "tag": "0024_same_mandarin",
+      "breakpoints": true
     }
   ]
 }

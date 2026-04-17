@@ -448,7 +448,7 @@ export type InsertAppointment = typeof appointments.$inferInsert;
 
 // ─── Bot Configs ──────────────────────────────────────────────────────────────
 // Per-org AI text bot configuration. One row per org.
-export const BOT_TONES = ["friendly", "professional", "casual", "empathetic", "direct", "karen", "kevin"] as const;
+export const BOT_TONES = ["friendly", "professional", "casual", "empathetic", "direct", "karen", "kevin", "brianna", "kayla", "marcus"] as const;
 export type BotTone = (typeof BOT_TONES)[number];
 
 export const botConfigs = mysqlTable("bot_configs", {
