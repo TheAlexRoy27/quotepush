@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Info, ExternalLink, Phone, Key, Link2, Eye, EyeOff, Save, Zap, Copy, HelpCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Info, ExternalLink, Phone, Key, Link2, Eye, EyeOff, Save, Zap, Copy, HelpCircle, Users, Clock, Mail, Shield, User, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { Button } from "@/components/ui/button";
@@ -308,9 +308,104 @@ function TwilioTab() {
   );
 }
 
+// ─── All Accounts Tab (owner-only) ────────────────────────────────────────────
+
+function AllAccountsTab() {
+  const { data: allUsers = [], isLoading } = trpc.admin.listAllUsers.useQuery();
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">All Accounts</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Every registered user across all organizations.</p>
+        </div>
+        <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+          {allUsers.length} total
+        </span>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : allUsers.length === 0 ? (
+        <div className="text-center py-12 text-sm text-muted-foreground">No accounts found.</div>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground">Name</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground hidden sm:table-cell">Contact</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground hidden md:table-cell">Role</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground hidden lg:table-cell">Joined</th>
+                <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground">Last Login</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {allUsers.map((account) => (
+                <tr key={account.id} className="hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                        {(account.name ?? account.email ?? account.phone ?? "?")[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">
+                          {account.name ?? account.email ?? account.phone ?? "Unknown"}
+                        </p>
+                        {account.loginMethod && (
+                          <p className="text-xs text-muted-foreground/60">via {account.loginMethod}</p>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <span className="text-xs text-muted-foreground truncate block max-w-[180px]">
+                      {account.email ?? account.phone ?? <span className="italic">-</span>}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${
+                      account.role === "admin"
+                        ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
+                        : "bg-muted text-muted-foreground border-border"
+                    }`}>
+                      {account.role === "admin" ? <Shield className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                      {account.role === "admin" ? "Admin" : "User"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    <span className="text-xs text-muted-foreground">
+                      {account.createdAt ? new Date(account.createdAt).toLocaleDateString() : "-"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {account.lastSignedIn ? (
+                      <span className="text-xs text-emerald-500">
+                        {new Date(account.lastSignedIn).toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Never</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Settings Page ───────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+  const { data: orgData } = trpc.org.me.useQuery();
+  const isOwner = orgData?.role === "owner";
   const [searchParams] = useState(() => new URLSearchParams(window.location.search));
   const initialTab = searchParams.get("tab") ?? "twilio";
 
@@ -328,6 +423,9 @@ export default function SettingsPage() {
             <TabsTrigger value="billing" className="text-xs sm:text-sm whitespace-nowrap">Billing</TabsTrigger>
             <TabsTrigger value="webhook" className="text-xs sm:text-sm whitespace-nowrap">CRM Webhook</TabsTrigger>
             <TabsTrigger value="autopromote" className="text-xs sm:text-sm whitespace-nowrap">Auto-Promote</TabsTrigger>
+            {isOwner && (
+              <TabsTrigger value="accounts" className="text-xs sm:text-sm whitespace-nowrap">Accounts</TabsTrigger>
+            )}
           </TabsList>
         </div>
 
@@ -346,6 +444,12 @@ export default function SettingsPage() {
         <TabsContent value="autopromote">
           <KeywordPromotionPage />
         </TabsContent>
+
+        {isOwner && (
+          <TabsContent value="accounts">
+            <AllAccountsTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

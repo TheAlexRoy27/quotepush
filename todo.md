@@ -669,3 +669,8 @@
 - [x] Template Library page: folder sidebar stacks vertically on mobile (flex-col md:flex-row, max-h-40 on mobile)
 - [x] Organization page: team member cards use grid-cols-1 sm:grid-cols-3 - already responsive
 - [x] All pages: verified no horizontal overflow at 375px viewport width
+
+## All Accounts in Settings (Owner View)
+- [x] Fix backend: listAllUsers now accessible to org owner (OWNER_OPEN_ID match) in addition to admin role users
+- [x] Add "Accounts" tab to Settings page showing the All Accounts table (name, phone/email, role, joined, last login)
+- [x] All Accounts section kept on OrgPage as well (secondary location)
