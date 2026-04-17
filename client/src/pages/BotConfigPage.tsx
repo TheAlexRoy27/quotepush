@@ -146,9 +146,14 @@ export default function BotConfigPage() {
     }
   };
 
+  const { data: twilioConfig } = trpc.org.getTwilioConfig.useQuery();
+  const twilioMissing = !twilioConfig?.accountSid || !twilioConfig?.phoneNumber;
+
   const previewOpening = openingMessage
     .replace(/\{botName\}/g, botName || "Alex")
     .replace(/\{firstName\}/g, "Sarah");
+
+  const selectedTone = TONE_OPTIONS.find(t => t.value === tone);
 
   if (isLoading) {
     return (
@@ -158,10 +163,6 @@ export default function BotConfigPage() {
       </div>
     );
   }
-
-  const { data: twilioConfig } = trpc.org.getTwilioConfig.useQuery();
-  const twilioMissing = !twilioConfig?.accountSid || !twilioConfig?.phoneNumber;
-  const selectedTone = TONE_OPTIONS.find(t => t.value === tone);
 
   return (
     <div className="p-3 sm:p-6 max-w-3xl mx-auto space-y-4 sm:space-y-6">
