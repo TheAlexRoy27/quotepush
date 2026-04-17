@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Zap, MessageSquare, Info, Save, Sparkles, Send, RotateCcw, FlaskConical, HelpCircle } from "lucide-react";
+import { Bot, Zap, MessageSquare, Info, Save, Sparkles, Send, RotateCcw, FlaskConical, HelpCircle, AlertTriangle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function FieldHelp({ text }: { text: string }) {
@@ -28,13 +28,13 @@ function FieldHelp({ text }: { text: string }) {
 }
 
 const TONE_OPTIONS = [
-  { value: "friendly", label: "Friendly", description: "Warm, approachable, conversational" },
-  { value: "professional", label: "Professional", description: "Polished, business-like, formal" },
-  { value: "casual", label: "Casual", description: "Relaxed, like texting a friend" },
-  { value: "empathetic", label: "Empathetic", description: "Understanding, patient, supportive" },
-  { value: "direct", label: "Direct", description: "Concise, no-fluff, to the point" },
-  { value: "karen", label: "Karen", description: "Aggressively helpful, relentless, lovably pushy" },
-  { value: "kevin", label: "Clumsy Kevin", description: "Typo opener, self-correction, then somehow closes the deal" },
+  { value: "friendly", label: "Friendly", description: "Warm, approachable, conversational", example: "Hey Sarah! So glad you reached out. I'd love to help you find the best option - when's a good time to chat?" },
+  { value: "professional", label: "Professional", description: "Polished, business-like, formal", example: "Hello Sarah, thank you for your inquiry. I would be happy to assist you in reviewing your options at your earliest convenience." },
+  { value: "casual", label: "Casual", description: "Relaxed, like texting a friend", example: "Hey! Just saw your info come through. Super easy process, promise. Got like 10 mins this week?" },
+  { value: "empathetic", label: "Empathetic", description: "Understanding, patient, supportive", example: "Hi Sarah, I completely understand how overwhelming this can feel. I'm here to make it as simple as possible for you - no pressure at all." },
+  { value: "direct", label: "Direct", description: "Concise, no-fluff, to the point", example: "Hi Sarah. 10-minute call. I'll get you a quote. When works?" },
+  { value: "karen", label: "Karen", description: "Aggressively helpful, relentless, lovably pushy", example: "Sarah. Hi. I need you to know I WILL get you the best rate. I've already looked at 3 options. Can we talk NOW? Or in 5 minutes?" },
+  { value: "kevin", label: "Clumsy Kevin", description: "Typo opener, self-correction, then somehow closes the deal", example: "Hey Sarha! Soryr - Sarah* haha. Anyway I'm Alex and I jsut wanted to say we can totally help you out. You free tmrw?" },
 ] as const;
 
 const DEFAULT_OPENING = "Hey {firstName}! This is {botName} - I just wanted to reach out real quick. We only need about 10 minutes of your time to gather a little info and get you the most ideal quote possible. No pressure at all - just here to help! Feel free to ask me anything. 😊";
@@ -159,8 +159,23 @@ export default function BotConfigPage() {
     );
   }
 
+  const { data: twilioConfig } = trpc.org.getTwilioConfig.useQuery();
+  const twilioMissing = !twilioConfig?.accountSid || !twilioConfig?.phoneNumber;
+  const selectedTone = TONE_OPTIONS.find(t => t.value === tone);
+
   return (
     <div className="p-3 sm:p-6 max-w-3xl mx-auto space-y-4 sm:space-y-6">
+      {/* Twilio Not Configured Warning */}
+      {twilioMissing && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">Twilio is not configured</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">The bot is ready but will not send any messages until you add your Twilio credentials. Even if you turn the bot ON, nothing will happen without Twilio.</p>
+          </div>
+          <a href="/settings" className="shrink-0 text-xs font-semibold text-amber-700 dark:text-amber-300 underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100 whitespace-nowrap">Set up Twilio</a>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
@@ -237,6 +252,12 @@ export default function BotConfigPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {selectedTone && (
+                <div className="mt-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-1">Example reply in this tone:</p>
+                  <p className="text-xs text-foreground italic">"{selectedTone.example}"</p>
+                </div>
+              )}
             </div>
           </div>
 

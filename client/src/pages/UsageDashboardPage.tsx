@@ -23,6 +23,7 @@ import {
   CreditCard,
   RefreshCw,
   CheckCircle,
+  AlertTriangle,
   Clock,
   ArrowUpRight,
 } from "lucide-react";
@@ -466,6 +467,45 @@ export default function UsageDashboardPage() {
           <a href="/settings" className="shrink-0 text-xs font-semibold text-amber-700 dark:text-amber-300 underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100 whitespace-nowrap">Go to Settings</a>
         </div>
       )}
+
+      {/* Get Started Checklist - shown until all 3 steps are done */}
+      {(() => {
+        const hasTwilio = !!twilioConfigured;
+        const hasLeads = (usageData.totalLeads ?? 0) > 0;
+        const hasBotOrDrip = (usageData.activeEnrollments ?? 0) > 0 || usageData.totalSent > 0;
+        const allDone = hasTwilio && hasLeads && hasBotOrDrip;
+        if (allDone) return null;
+        const steps = [
+          { done: hasTwilio, label: "Connect Twilio", desc: "Add your Account SID, Auth Token, and phone number so SMS messages can actually send.", href: "/settings", cta: "Go to Settings" },
+          { done: hasLeads, label: "Add your first lead", desc: "Import a CSV or manually add a lead. Once added, the AI bot can reach out automatically.", href: "/leads", cta: "Go to Leads" },
+          { done: hasBotOrDrip, label: "Activate the AI Bot or a Drip Sequence", desc: "Turn on the AI Bot to auto-text new leads, or enroll a lead in a drip sequence to start nurturing.", href: "/bot", cta: "Set Up Bot" },
+        ];
+        return (
+          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🚀</span>
+              <p className="text-sm font-semibold text-foreground">Get started in 3 steps</p>
+              <span className="ml-auto text-xs text-muted-foreground">{steps.filter(s => s.done).length} / 3 complete</span>
+            </div>
+            <div className="space-y-3">
+              {steps.map((step, i) => (
+                <div key={i} className={`flex items-start gap-3 rounded-lg px-3 py-2.5 border transition-colors ${step.done ? "border-emerald-500/20 bg-emerald-500/5 opacity-60" : "border-border bg-card"}`}>
+                  <div className={`mt-0.5 h-5 w-5 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${step.done ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground border border-border"}`}>
+                    {step.done ? "✓" : i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${step.done ? "line-through text-muted-foreground" : "text-foreground"}`}>{step.label}</p>
+                    {!step.done && <p className="text-xs text-muted-foreground mt-0.5">{step.desc}</p>}
+                  </div>
+                  {!step.done && (
+                    <a href={step.href} className="shrink-0 text-xs font-semibold text-indigo-400 hover:text-indigo-300 underline underline-offset-2 whitespace-nowrap">{step.cta}</a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">

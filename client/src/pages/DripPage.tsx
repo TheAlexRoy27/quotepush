@@ -59,6 +59,8 @@ import {
   ThumbsUp,
   Trash2,
   User,
+  Users,
+  X,
   Zap,
 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -167,7 +169,7 @@ function SmsBubble({
   branchType?: "positive" | "negative" | null;
 }) {
   const preview = renderPreview(body);
-  const delayLabel = delay === 0 ? "Immediately" : `After ${delay} ${unit}`;
+  const delayLabel = delay === 0 ? (stepNum === 1 ? "Sends on enrollment" : "Immediately after previous step") : `After ${delay} ${unit}`;
   const bubbleColor = branchType === "positive"
     ? "bg-emerald-600"
     : branchType === "negative"
@@ -627,6 +629,12 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
     onError: (e) => toast.error(e.message),
   });
 
+  const [showEnrolled, setShowEnrolled] = useState(false);
+  const { data: enrolledLeads } = trpc.drip.enrolledLeadsForSequence.useQuery(
+    { sequenceId: seq.id },
+    { enabled: showEnrolled }
+  );
+
   const isInterested = seq.triggerCategory === "Interested";
   const categoryColor = isInterested
     ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
@@ -674,12 +682,19 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
                 {duration}
               </span>
             )}
-            {hasBranches && (
+                {hasBranches && (
               <span className="inline-flex items-center gap-1 text-xs text-violet-300 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-full">
                 <GitBranch className="h-3 w-3" />
-                A/B branches
-              </span>
+                A/B branches</span>
             )}
+            {/* Enrolled leads count badge */}
+            <button
+              onClick={() => setShowEnrolled(v => !v)}
+              className="inline-flex items-center gap-1 text-xs text-blue-300 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded-full hover:bg-blue-500/20 transition-colors"
+            >
+              <Users className="h-3 w-3" />
+              {showEnrolled && enrolledLeads ? `${enrolledLeads.length} enrolled` : "View enrolled"}
+            </button>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
@@ -724,6 +739,37 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
           </Button>
         </div>
       </div>
+
+      {/* Enrolled leads dropdown */}
+      {showEnrolled && (
+        <div className="mx-5 mb-3 rounded-lg border border-blue-500/20 bg-blue-500/5 overflow-hidden">
+          <div className="px-3 py-2 border-b border-blue-500/20 flex items-center justify-between">
+            <p className="text-xs font-semibold text-blue-300">
+              {enrolledLeads ? `${enrolledLeads.length} lead${enrolledLeads.length !== 1 ? "s" : ""} currently enrolled` : "Loading..."}
+            </p>
+            <button onClick={() => setShowEnrolled(false)} className="text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>
+          </div>
+          {!enrolledLeads ? (
+            <p className="text-xs text-muted-foreground px-3 py-3">Loading...</p>
+          ) : enrolledLeads.length === 0 ? (
+            <p className="text-xs text-muted-foreground px-3 py-3">No active enrollments right now.</p>
+          ) : (
+            <div className="divide-y divide-blue-500/10 max-h-48 overflow-y-auto">
+              {enrolledLeads.map((e) => (
+                <div key={e.enrollmentId} className="flex items-center justify-between px-3 py-2 gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{e.leadName}</p>
+                    <p className="text-[10px] text-muted-foreground">{e.leadPhone} &middot; Step {e.currentStep}</p>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                    e.status === "active" ? "bg-green-500/20 text-green-400" : "bg-amber-500/20 text-amber-400"
+                  }`}>{e.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Expanded: timeline + editor */}
       {expanded && (

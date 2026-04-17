@@ -25,9 +25,9 @@ const statusConfig: Record<Status, { label: string; className: string; descripti
     description: "This lead has booked a time to connect. Check the Bookings section on your Dashboard for details.",
   },
   "X-Dated": {
-    label: "X-Dated",
+    label: "Future Date",
     className: "status-xdated",
-    description: "This lead is not ready right now but may be interested in the future. Common in insurance when a policy renews later.",
+    description: "Future Date (X-Date): This lead is not ready right now but has a future date when they may be interested, such as when their current policy renews. Follow up with them closer to that date.",
   },
 };
 

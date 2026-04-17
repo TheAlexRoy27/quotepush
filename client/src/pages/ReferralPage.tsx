@@ -26,10 +26,10 @@ export default function ReferralPage() {
       <div>
         <div className="flex items-center gap-2 mb-1">
           <Gift className="h-5 w-5 text-pink-400" />
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Referral Tracking</h1>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Partner Referrals</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Share your unique referral link. Every person who signs up through it is tracked here.
+          Refer other agents or business owners to QuotePush.io. Share your unique link and track every signup that comes through it. This is for referring other QuotePush users, not for tracking referrals from your own leads.
         </p>
       </div>
 

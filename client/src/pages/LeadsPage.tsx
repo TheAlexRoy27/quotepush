@@ -15,7 +15,7 @@ import {
   Plus, Upload, Search, Send, Trash2, MessageSquare, RefreshCw,
   Users, Clock, CheckCircle2, Calendar, ChevronRight, ChevronLeft, X, Loader2, SendHorizonal,
   Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp, ExternalLink,
-  Zap, StopCircle
+  Zap, StopCircle, NotebookPen, Save
 } from "lucide-react";
 import type { Lead, Message } from "../../../drizzle/schema";
 
@@ -569,7 +569,19 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
   const [bookingCreated, setBookingCreated] = useState<string | null>(null);
   const [dripOpen, setDripOpen] = useState(false);
   const [dripConfirmSeq, setDripConfirmSeq] = useState<{ id: number; name: string; steps: unknown[] } | null>(null);
+  const [notesText, setNotesText] = useState(lead.notes ?? "");
+  const [notesDirty, setNotesDirty] = useState(false);
   const utils = trpc.useUtils();
+
+  const saveNotes = trpc.leads.update.useMutation({
+    onSuccess: () => {
+      toast.success("Notes saved");
+      setNotesDirty(false);
+      utils.leads.list.invalidate();
+      utils.leads.getById.invalidate({ id: lead.id });
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   // Drip sequences
   const { data: sequences } = trpc.drip.listSequences.useQuery();
@@ -701,6 +713,32 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Notes */}
+      <div className="px-4 py-3 border-b border-border space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <NotebookPen className="h-3.5 w-3.5" /> Agent Notes
+          </label>
+          {notesDirty && (
+            <button
+              onClick={() => saveNotes.mutate({ id: lead.id, notes: notesText })}
+              disabled={saveNotes.isPending}
+              className="flex items-center gap-1 text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+            >
+              {saveNotes.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+              Save
+            </button>
+          )}
+        </div>
+        <Textarea
+          value={notesText}
+          onChange={(e) => { setNotesText(e.target.value); setNotesDirty(true); }}
+          placeholder="Log call outcomes, context, follow-up reminders..."
+          rows={2}
+          className="text-xs resize-none bg-input border-border text-foreground placeholder:text-muted-foreground"
+        />
       </div>
 
       {/* Messages */}

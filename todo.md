@@ -674,3 +674,17 @@
 - [x] Fix backend: listAllUsers now accessible to org owner (OWNER_OPEN_ID match) in addition to admin role users
 - [x] Add "Accounts" tab to Settings page showing the All Accounts table (name, phone/email, role, joined, last login)
 - [x] All Accounts section kept on OrgPage as well (secondary location)
+
+## UX Audit Fixes (All 12 Items)
+- [x] #1 Add Bookings to sidebar nav (CalendarDays icon, /bookings path)
+- [x] #2 Dashboard: 3-step Get Started checklist card for new users (Add Twilio, Add lead, Enable Bot)
+- [x] #3 AI Bot page: show Twilio-not-configured warning banner when Twilio is missing
+- [x] #4 Drip Sequences: show enrolled leads count badge and quick-view list per sequence
+- [x] #5 Rename Referrals nav to "Partner Referrals" and clarify page description
+- [x] #6 Seed sample template folders (Hot Leads, Follow-Ups, Opt-Out, Info Requests) on org creation; applied to all existing orgs
+- [x] #7 Lead notes field: notes column already in schema, textarea added to ConversationPanel in LeadsPage
+- [x] #8 Settings: Billing tab moved to last position
+- [x] #9 Status badges: X-Dated renamed to "Future Date" in StatusBadge component with tooltip
+- [x] #10 AI Bot tone selector: example preview already implemented below tone dropdown
+- [x] #11 Drip: "0 days delay" renamed to "Sends on enrollment" in step display
+- [x] #12 Mobile lead panel: back button already implemented (ChevronLeft on mobile, full-screen panel)

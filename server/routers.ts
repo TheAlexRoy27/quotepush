@@ -110,7 +110,7 @@ import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
 import bcrypt from "bcryptjs";
 import { getDb } from "./db";
-import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, sql } from "drizzle-orm";
 
 const LeadStatusEnum = z.enum(["Pending", "Sent", "Replied", "Scheduled", "X-Dated"]);
 const ReplyCategoryEnum = z.enum(REPLY_CATEGORIES);
@@ -172,6 +172,7 @@ const customAuthRouter = router({
       // Seed org defaults
       await seedFlowRules(org.id);
       await seedDefaultTemplates(org.id);
+      await seedTemplateFolders(org.id);
       await seedDefaultDripSequences(org.id);
 
       // Auto-create a lead for the owner so every new signup appears on the Leads page
@@ -314,6 +315,7 @@ const customAuthRouter = router({
       const org = await createOrganization(input.orgName, user.id);
       await seedFlowRules(org.id);
       await seedDefaultTemplates(org.id);
+      await seedTemplateFolders(org.id);
       await seedDefaultDripSequences(org.id);
 
       // Auto-create a lead for the owner so new signups appear on the Leads page
@@ -416,6 +418,7 @@ const customAuthRouter = router({
         const newOrg = await createOrganization(input.orgName, user.id);
         await seedFlowRules(newOrg.id);
         await seedDefaultTemplates(newOrg.id);
+        await seedTemplateFolders(newOrg.id);
         await seedDefaultDripSequences(newOrg.id);
         org = newOrg;
         isNew = true;
@@ -555,6 +558,7 @@ const orgRouter = router({
       const org = await createOrganization(input.name, ctx.user.id);
       await seedFlowRules(org.id);
       await seedDefaultTemplates(org.id);
+      await seedTemplateFolders(org.id);
       await seedDefaultDripSequences(org.id);
       return { org, role: "owner" as const };
     }),
@@ -1304,6 +1308,35 @@ const dripRouter = router({
   leadEnrollments: protectedProcedure
     .input(z.object({ leadId: z.number() }))
     .query(({ input }) => listEnrollmentsForLead(input.leadId)),
+
+  enrolledLeadsForSequence: protectedProcedure
+    .input(z.object({ sequenceId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db
+        .select({
+          enrollmentId: leadDripEnrollments.id,
+          leadId: leadDripEnrollments.leadId,
+          status: leadDripEnrollments.status,
+          currentStep: leadDripEnrollments.currentStep,
+          nextSendAt: leadDripEnrollments.nextSendAt,
+          leadName: leads.name,
+          leadPhone: leads.phone,
+        })
+        .from(leadDripEnrollments)
+        .innerJoin(leads, eq(leadDripEnrollments.leadId, leads.id))
+        .where(
+          and(
+            eq(leadDripEnrollments.sequenceId, input.sequenceId),
+            eq(leadDripEnrollments.orgId, orgId),
+            inArray(leadDripEnrollments.status, ["active", "paused"])
+          )
+        )
+        .orderBy(leadDripEnrollments.id);
+      return rows;
+    }),
 
   triggerCategories: protectedProcedure.query(() => DRIP_TRIGGER_CATEGORIES),
 
