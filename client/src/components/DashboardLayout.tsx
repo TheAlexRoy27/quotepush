@@ -207,10 +207,15 @@ function DashboardLayoutContent({
 
   const EMOJI_KEY = "greeting-emoji";
   const [greetingEmoji, setGreetingEmoji] = useState<"wave" | "callme">(() => {
-    return (localStorage.getItem(EMOJI_KEY) as "wave" | "callme") ?? "wave";
+    return (localStorage.getItem(EMOJI_KEY) as "wave" | "callme") ?? "callme";
   });
   // animKey increments on each toggle so React remounts the element and the animation plays once
   const [animKey, setAnimKey] = useState(0);
+
+  // Auto-vibrate on mount
+  useEffect(() => {
+    setAnimKey(k => k + 1);
+  }, []);
 
   const toggleEmoji = () => {
     setGreetingEmoji(prev => {
@@ -434,12 +439,12 @@ function DashboardLayoutContent({
                 title={greetingEmoji === "wave" ? "Switch to call me" : "Switch to wave"}
                 style={greetingEmoji === "wave"
                   ? { display: 'inline-block', animation: 'wave 1.2s ease-in-out 1 forwards', transformOrigin: '70% 70%' }
-                  : { display: 'inline-block', animation: 'jiggle 0.7s ease-in-out 1 forwards', transformOrigin: '50% 50%' }
+                  : { display: 'inline-block', animation: 'vibrate 1s ease-in-out 1 forwards', transformOrigin: '50% 50%' }
                 }
               >
-                {greetingEmoji === "wave" ? "👋" : "🤙"}
+                {greetingEmoji === "wave" ? "👋" : "🤙🏼"}
               </button>
-              <span className="text-sm font-medium text-foreground/80 hidden sm:inline">
+              <span className="text-sm font-semibold text-foreground hidden sm:inline">
                 Hi, {user?.name?.split(' ')[0] ?? 'there'}!
               </span>
             </div>
