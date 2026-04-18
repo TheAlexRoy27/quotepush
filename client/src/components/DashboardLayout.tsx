@@ -126,7 +126,7 @@ export default function DashboardLayout({
               <h2 className="text-sm font-semibold leading-snug text-indigo-300">They won't answer. But they will text back.</h2>
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              The average American ignores <strong className="text-foreground">76% of unknown calls</strong> but reads <strong className="text-foreground">98% of text messages</strong> within 3 minutes. Your leads aren't ghosting you — they just can't talk at the moment.
+              The average American ignores <strong className="text-foreground">76% of unknown calls</strong> but reads <strong className="text-foreground">98% of text messages</strong> within 3 minutes. Your leads aren't ghosting you, they just can't talk right now.
             </p>
             <div className="grid grid-cols-3 gap-3 pt-1">
               <div className="rounded-lg bg-background/40 px-3 py-2.5 text-center">
