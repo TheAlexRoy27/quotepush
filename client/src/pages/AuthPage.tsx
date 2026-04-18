@@ -25,7 +25,7 @@ function ReferralCodeField({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor="referral-code" className="text-xs flex items-center gap-1.5">
+      <Label htmlFor="referral-code" className="text-sm font-medium flex items-center gap-1.5">
         <Gift className="h-3 w-3 text-violet-400" />
         Referral Code
         <span className="text-muted-foreground font-normal">(optional)</span>
@@ -308,7 +308,7 @@ export default function AuthPage() {
     registerEmailMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-5">
       <div className="w-full max-w-md space-y-6">
         {/* Logo */}
         <div className="text-center space-y-3">
@@ -317,25 +317,25 @@ export default function AuthPage() {
             alt="QuotePush.io"
             className="h-24 w-24 rounded-3xl shadow-xl mx-auto"
           />
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">QuotePush.io</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">QuotePush.io</h1>
+          <p className="text-base leading-relaxed text-muted-foreground">
             {mode === "login" ? "Sign in to your account" : "Create your organization"}
           </p>
         </div>
 
         <Card className="border-border/60 bg-card/80 backdrop-blur-sm shadow-xl">
-          <CardContent className="p-6 space-y-5">
+          <CardContent className="p-6 space-y-6">
             {/* Mode toggle */}
             <div className="flex rounded-lg bg-muted/50 p-1 gap-1">
               <button
                 onClick={() => setMode("login")}
-                className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${mode === "login" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                className={`flex-1 text-sm py-2 rounded-md font-semibold transition-all ${mode === "login" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Sign In
               </button>
               <button
                 onClick={() => setMode("signup")}
-                className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${mode === "signup" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                className={`flex-1 text-sm py-2 rounded-md font-semibold transition-all ${mode === "signup" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Create Account
               </button>
@@ -343,14 +343,14 @@ export default function AuthPage() {
 
             {/* Method tabs */}
             <Tabs value={method} onValueChange={(v) => { setMethod(v as AuthMethod); setOtpSent(false); }}>
-              <TabsList className="w-full bg-muted/50">
-                <TabsTrigger value="phonepass" className="flex-1 gap-1.5 text-xs">
+              <TabsList className="w-full bg-muted/50 h-10">
+                <TabsTrigger value="phonepass" className="flex-1 gap-1.5 text-sm">
                   <Lock className="h-3.5 w-3.5" /> Phone
                 </TabsTrigger>
-                <TabsTrigger value="email" className="flex-1 gap-1.5 text-xs">
+                <TabsTrigger value="email" className="flex-1 gap-1.5 text-sm">
                   <Mail className="h-3.5 w-3.5" /> Email
                 </TabsTrigger>
-                <TabsTrigger value="phone" className="flex-1 gap-1.5 text-xs">
+                <TabsTrigger value="phone" className="flex-1 gap-1.5 text-sm">
                   <Phone className="h-3.5 w-3.5" /> OTP
                 </TabsTrigger>
               </TabsList>
@@ -360,7 +360,7 @@ export default function AuthPage() {
                 {mode === "signup" && (
                   <>
                     <div className="space-y-1.5">
-                      <Label htmlFor="pp-name" className="text-xs">Your Name</Label>
+                      <Label htmlFor="pp-name" className="text-sm font-medium">Your Name</Label>
                       <Input
                         id="pp-name"
                         placeholder="Jane Smith"
@@ -370,7 +370,7 @@ export default function AuthPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="pp-org" className="text-xs">Organization Name</Label>
+                      <Label htmlFor="pp-org" className="text-sm font-medium">Organization Name</Label>
                       <Input
                         id="pp-org"
                         placeholder="Acme Sales Co."
@@ -382,7 +382,7 @@ export default function AuthPage() {
                   </>
                 )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="pp-phone" className="text-xs">Mobile Number</Label>
+                  <Label htmlFor="pp-phone" className="text-sm font-medium">Mobile Number</Label>
                   <Input
                     id="pp-phone"
                     type="tel"
@@ -391,10 +391,10 @@ export default function AuthPage() {
                     onChange={(e) => setPpPhone(e.target.value)}
                     className="h-9 text-sm"
                   />
-                  <p className="text-xs text-muted-foreground">Digits only, no dashes or spaces</p>
+                  <p className="text-sm text-muted-foreground leading-snug">Digits only, no dashes or spaces</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="pp-password" className="text-xs">Password</Label>
+                  <Label htmlFor="pp-password" className="text-sm font-medium">Password</Label>
                   <Input
                     id="pp-password"
                     type="password"
@@ -432,7 +432,7 @@ export default function AuthPage() {
                 {mode === "signup" && (
                   <>
                     <div className="space-y-1.5">
-                      <Label htmlFor="email-name" className="text-xs">Your Name</Label>
+                      <Label htmlFor="email-name" className="text-sm font-medium">Your Name</Label>
                       <Input
                         id="email-name"
                         placeholder="Jane Smith"
@@ -442,7 +442,7 @@ export default function AuthPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="email-org" className="text-xs">Organization Name</Label>
+                      <Label htmlFor="email-org" className="text-sm font-medium">Organization Name</Label>
                       <Input
                         id="email-org"
                         placeholder="Acme Sales Co."
@@ -454,7 +454,7 @@ export default function AuthPage() {
                   </>
                 )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs">Email Address</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
                   <Input
                     id="email"
                     type="email"
@@ -465,7 +465,7 @@ export default function AuthPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="password" className="text-xs">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
                   <Input
                     id="password"
                     type="password"
@@ -503,7 +503,7 @@ export default function AuthPage() {
                     {mode === "signup" && (
                       <>
                         <div className="space-y-1.5">
-                          <Label htmlFor="phone-name" className="text-xs">Your Name</Label>
+                          <Label htmlFor="phone-name" className="text-sm font-medium">Your Name</Label>
                           <Input
                             id="phone-name"
                             placeholder="Jane Smith"
@@ -513,7 +513,7 @@ export default function AuthPage() {
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <Label htmlFor="phone-org" className="text-xs">Organization Name</Label>
+                          <Label htmlFor="phone-org" className="text-sm font-medium">Organization Name</Label>
                           <Input
                             id="phone-org"
                             placeholder="Acme Sales Co."
@@ -525,7 +525,7 @@ export default function AuthPage() {
                       </>
                     )}
                     <div className="space-y-1.5">
-                      <Label htmlFor="phone" className="text-xs">Mobile Number</Label>
+                      <Label htmlFor="phone" className="text-sm font-medium">Mobile Number</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -564,7 +564,7 @@ export default function AuthPage() {
                       <p className="text-xs text-emerald-300">Code sent to {phone}</p>
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="otp" className="text-xs">6-Digit Code</Label>
+                      <Label htmlFor="otp" className="text-sm font-medium">6-Digit Code</Label>
                       <Input
                         id="otp"
                         placeholder="123456"
@@ -596,7 +596,7 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3">
           <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
             By providing your phone number and clicking <strong className="text-foreground">Create Account</strong> or{" "}
             <strong className="text-foreground">Sign In</strong>, you expressly consent to receive recurring automated
@@ -604,7 +604,7 @@ export default function AuthPage() {
             Consent is not a condition of purchase. Message &amp; data rates may apply.
             Reply <strong className="text-foreground">STOP</strong> to unsubscribe at any time.
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             By continuing, you also agree to QuotePush.io&apos;s{" "}
             <a href="/terms" className="underline hover:text-foreground transition-colors">Terms of Service</a>{" "}
             and{" "}

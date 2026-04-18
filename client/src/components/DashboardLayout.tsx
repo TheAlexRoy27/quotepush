@@ -89,7 +89,7 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4 py-12">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background px-5 py-12">
         <div className="flex flex-col items-center gap-8 w-full max-w-md">
           {/* Logo + headline */}
           <div className="flex flex-col items-center gap-5">
@@ -98,11 +98,11 @@ export default function DashboardLayout({
               alt="QuotePush.io"
               className="h-28 w-28 rounded-3xl shadow-xl"
             />
-            <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 QuotePush.io
               </h1>
-              <p className="text-sm text-muted-foreground mt-1.5 max-w-xs">
+              <p className="text-base leading-relaxed text-muted-foreground max-w-xs">
                 Sign in to manage your leads and automate SMS outreach.
               </p>
             </div>
@@ -121,35 +121,35 @@ export default function DashboardLayout({
 
           {/* SMS is the future callout */}
           <div className="w-full rounded-xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-violet-500/5 p-5 space-y-4 text-center">
-            <div className="flex flex-col items-center gap-1.5">
+            <div className="flex flex-col items-center gap-2">
               <span className="text-3xl">📱</span>
-              <h2 className="text-sm font-semibold text-indigo-300">They won't answer. But they will text back.</h2>
+              <h2 className="text-sm font-semibold leading-snug text-indigo-300">They won't answer. But they will text back.</h2>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-sm leading-relaxed text-muted-foreground">
               The average American ignores <strong className="text-foreground">76% of unknown calls</strong> but reads <strong className="text-foreground">98% of text messages</strong> within 3 minutes. Your leads aren't ghosting you. They're just waiting for the right medium.
             </p>
             <div className="grid grid-cols-3 gap-3 pt-1">
-              <div className="rounded-lg bg-background/40 px-3 py-2 text-center">
-                <p className="text-lg font-bold text-indigo-400">98%</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">SMS open rate</p>
+              <div className="rounded-lg bg-background/40 px-3 py-2.5 text-center">
+                <p className="text-xl font-bold text-indigo-400">98%</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-tight">SMS open rate</p>
               </div>
-              <div className="rounded-lg bg-background/40 px-3 py-2 text-center">
-                <p className="text-lg font-bold text-violet-400">3 min</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">avg read time</p>
+              <div className="rounded-lg bg-background/40 px-3 py-2.5 text-center">
+                <p className="text-xl font-bold text-violet-400">3 min</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-tight">avg read time</p>
               </div>
-              <div className="rounded-lg bg-background/40 px-3 py-2 text-center">
-                <p className="text-lg font-bold text-sky-400">45%</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">reply rate</p>
+              <div className="rounded-lg bg-background/40 px-3 py-2.5 text-center">
+                <p className="text-xl font-bold text-sky-400">45%</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-tight">reply rate</p>
               </div>
             </div>
-            <p className="text-[11px] text-indigo-300/70 italic">
+            <p className="text-xs text-indigo-300/70 italic leading-relaxed">
               QuotePush.io turns fresh leads into booked calls. One text at a time.
             </p>
           </div>
         </div>
 
         {/* Footer */}
-        <footer className="mt-10 text-center text-xs text-muted-foreground/60 space-x-4">
+        <footer className="mt-10 text-center text-xs leading-relaxed text-muted-foreground/60 space-x-3">
           <a href="/terms" className="hover:text-muted-foreground transition-colors underline underline-offset-2">Terms of Service</a>
           <span>·</span>
           <a href="/privacy" className="hover:text-muted-foreground transition-colors underline underline-offset-2">Privacy Policy</a>
@@ -411,7 +411,7 @@ function DashboardLayoutContent({
               <SidebarTrigger className="h-9 w-9 rounded-lg bg-background shrink-0" />
             )}
             {isMobile && (
-              <span className="text-sm font-medium tracking-tight text-foreground truncate max-w-[120px]">
+              <span className="text-sm font-semibold tracking-tight text-foreground truncate max-w-[140px]">
                 {activeMenuItem?.label ?? "Menu"}
               </span>
             )}
@@ -450,7 +450,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         </div>
-        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-x-hidden">{children}</main>
+        <main className="flex-1 p-4 sm:p-5 md:p-6 overflow-x-hidden">{children}</main>
       </SidebarInset>
     </>
   );

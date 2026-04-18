@@ -304,9 +304,9 @@ function StatCard({
         {icon}
       </div>
       <div className={empty ? "opacity-30" : ""}>
-        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-2xl font-bold text-foreground mt-0.5">{empty ? "-" : value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{empty ? "No data yet" : sub}</p>}
+        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">{label}</p>
+        <p className="text-2xl font-bold text-foreground mt-1">{empty ? "-" : value}</p>
+        {sub && <p className="text-sm text-muted-foreground mt-0.5 leading-snug">{empty ? "No data yet" : sub}</p>}
       </div>
       {/* Hover tooltip for empty cards */}
       {empty && hovered && (
@@ -363,7 +363,7 @@ function ChartCard({ title, sub, children, hasData, emptyLabel, emptyHeight = 22
     <div className="bg-card border border-border rounded-xl p-5 space-y-4">
       <div>
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{sub}</p>
+        <p className="text-sm text-muted-foreground mt-0.5 leading-snug">{sub}</p>
       </div>
       {hasData ? children : <EmptyPlaceholder height={emptyHeight} label={emptyLabel} />}
     </div>
@@ -447,8 +447,8 @@ export default function UsageDashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">My Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">Your personal usage stats and pipeline performance.</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">My Dashboard</h1>
+          <p className="text-sm leading-relaxed text-muted-foreground mt-1.5">Your personal usage stats and pipeline performance.</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="bg-background">
           <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin" : ""}`} />
@@ -494,8 +494,8 @@ export default function UsageDashboardPage() {
                     {step.done ? "✓" : i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${step.done ? "line-through text-muted-foreground" : "text-foreground"}`}>{step.label}</p>
-                    {!step.done && <p className="text-xs text-muted-foreground mt-0.5">{step.desc}</p>}
+                    <p className={`text-sm font-semibold leading-snug ${step.done ? "line-through text-muted-foreground" : "text-foreground"}`}>{step.label}</p>
+                    {!step.done && <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{step.desc}</p>}
                   </div>
                   {!step.done && (
                     <a href={step.href} className="shrink-0 text-xs font-semibold text-indigo-400 hover:text-indigo-300 underline underline-offset-2 whitespace-nowrap">{step.cta}</a>
@@ -508,7 +508,7 @@ export default function UsageDashboardPage() {
       })()}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard icon={<Users className="h-5 w-5 text-indigo-400" />} label="Total Leads" value={usageData.totalLeads.toLocaleString()} color="bg-indigo-500/15" empty={usageData.totalLeads === 0} />
         <StatCard icon={<MessageSquare className="h-5 w-5 text-blue-400" />} label="Messages Sent" value={usageData.totalSent.toLocaleString()} sub="All time" color="bg-blue-500/15" empty={usageData.totalSent === 0} />
         <StatCard icon={<TrendingUp className="h-5 w-5 text-emerald-400" />} label="Reply Rate" value={`${usageData.replyRate}%`} sub={`${usageData.totalReplies} total replies`} color="bg-emerald-500/15" empty={usageData.totalReplies === 0} />
