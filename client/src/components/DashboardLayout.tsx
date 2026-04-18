@@ -458,7 +458,7 @@ function DashboardLayoutContent({
                   : { display: 'inline-block', animation: 'vibrate 1s ease-in-out 1 forwards', transformOrigin: '50% 50%' }
                 }
               >
-                {greetingEmoji === "wave" ? "👋" : "🤙🏼"}
+                {greetingEmoji === "wave" ? "👋🏼" : "🤙🏼"}
               </button>
               <span className="text-sm font-semibold text-foreground">
                 Hi, {user?.name?.split(' ')[0] ?? 'there'}!

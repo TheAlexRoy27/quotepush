@@ -342,7 +342,7 @@ export default function BillingPage() {
               <DialogTitle>Let's Talk Enterprise</DialogTitle>
             </div>
             <DialogDescription>
-              Hi there! 👋 I'm your Agency Success Manager at QuotePush.io. Leave your details below and I'll personally reach out within one business day to learn about your team's goals and put together a custom plan.
+              Hi there! 👋🏼 I'm your Agency Success Manager at QuotePush.io. Leave your details below and I'll personally reach out within one business day to learn about your team's goals and put together a custom plan.
             </DialogDescription>
           </DialogHeader>
 
