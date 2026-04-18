@@ -743,3 +743,9 @@
 - [x] UI: "My Leads" filter button in Leads toolbar (filters to leads assigned to current user)
 - [x] UI: internal notes section in ConversationPanel — amber/yellow background, "Note" label, @mention autocomplete
 - [x] UI: show assignee avatar on lead cards in mobile list and desktop table
+
+## Member Color Personalization
+- [x] DB: add accentColor column (varchar, nullable) to users table
+- [x] tRPC: auth.updateProfile — save accentColor for current user
+- [x] UI: color picker swatch in user profile dropdown (top-right avatar menu)
+- [x] UI: apply member color to avatars, team notes border/background, and assigned lead badge

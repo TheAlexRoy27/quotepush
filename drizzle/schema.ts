@@ -23,6 +23,7 @@ export const users = mysqlTable("users", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
   consentAcceptedAt: timestamp("consentAcceptedAt"),
+  accentColor: varchar("accentColor", { length: 32 }),
 });
 
 export type User = typeof users.$inferSelect;

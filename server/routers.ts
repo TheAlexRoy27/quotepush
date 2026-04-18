@@ -929,6 +929,7 @@ const notesRouter = router({
           createdAt: internalNotes.createdAt,
           authorId: internalNotes.authorId,
           authorName: users.name,
+          authorColor: users.accentColor,
         })
         .from(internalNotes)
         .leftJoin(users, eq(internalNotes.authorId, users.id))
@@ -1983,6 +1984,14 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    updateProfile: protectedProcedure
+      .input(z.object({ accentColor: z.string().max(32).nullable().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await db.update(users).set({ accentColor: input.accentColor ?? null }).where(eq(users.id, ctx.user.id));
+        return { success: true };
+      }),
   }),
   customAuth: customAuthRouter,
   org: orgRouter,

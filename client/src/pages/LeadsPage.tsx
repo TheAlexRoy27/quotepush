@@ -1000,22 +1000,30 @@ function ConversationPanel({ lead, onClose, onStatusChange, orgMembers, currentU
         )}
         {internalNotes.length > 0 && (
           <div className="space-y-1.5 max-h-32 overflow-y-auto">
-            {internalNotes.map((note: { id: number; body: string; createdAt: Date; authorName?: string | null }) => (
-              <div key={note.id} className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-foreground leading-snug flex-1">{note.body}</p>
-                  <button
-                    onClick={() => deleteNote.mutate({ id: note.id })}
-                    className="text-muted-foreground/50 hover:text-destructive transition-colors shrink-0 mt-0.5"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+            {internalNotes.map((note: { id: number; body: string; createdAt: Date; authorName?: string | null; authorColor?: string | null }) => {
+              const noteColor = note.authorColor ?? "#f59e0b";
+              return (
+                <div key={note.id} className="rounded-lg px-3 py-2 text-xs" style={{ backgroundColor: `${noteColor}15`, border: `1px solid ${noteColor}40` }}>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-foreground leading-snug flex-1">{note.body}</p>
+                    <button
+                      onClick={() => deleteNote.mutate({ id: note.id })}
+                      className="text-muted-foreground/50 hover:text-destructive transition-colors shrink-0 mt-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: noteColor }}>
+                      {(note.authorName ?? "T").charAt(0).toUpperCase()}
+                    </span>
+                    <p className="text-muted-foreground">
+                      {note.authorName ?? "Team member"} · {new Date(note.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-muted-foreground mt-1">
-                  {note.authorName ?? "Team member"} · {new Date(note.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -1379,7 +1387,7 @@ export default function LeadsPage() {
   const [myLeadsOnly, setMyLeadsOnly] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<(Lead & { assignedToName?: string | null; assignedToColor?: string | null }) | null>(null);
   const [bulkLink, setBulkLink] = useState("");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -1628,6 +1636,15 @@ export default function LeadsPage() {
                         {lead.company && <p className="text-xs text-muted-foreground truncate">{lead.company}</p>}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
+                        {(lead as any).assignedToName && (
+                          <span
+                            title={`Assigned to ${(lead as any).assignedToName}`}
+                            className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 border-2 border-background"
+                            style={{ backgroundColor: (lead as any).assignedToColor ?? "#6366f1" }}
+                          >
+                            {((lead as any).assignedToName as string).charAt(0).toUpperCase()}
+                          </span>
+                        )}
                         <StatusBadge status={lead.status} />
                         {(lead as any).optedOut && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20">Opted Out</span>
@@ -1730,6 +1747,15 @@ export default function LeadsPage() {
                             <StatusBadge status={lead.status} />
                             {(lead as any).optedOut && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20">Opted Out</span>
+                            )}
+                            {(lead as any).assignedToName && (
+                              <span
+                                title={`Assigned to ${(lead as any).assignedToName}`}
+                                className="h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                                style={{ backgroundColor: (lead as any).assignedToColor ?? "#6366f1" }}
+                              >
+                                {((lead as any).assignedToName as string).charAt(0).toUpperCase()}
+                              </span>
                             )}
                           </div>
                         </td>

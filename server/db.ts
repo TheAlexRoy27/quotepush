@@ -115,7 +115,36 @@ export async function listLeads(orgId: number, opts?: {
     );
   }
 
-  return db.select().from(leads).where(and(...conditions)).orderBy(desc(leads.createdAt));
+  const rows = await db
+    .select({
+      id: leads.id,
+      orgId: leads.orgId,
+      name: leads.name,
+      phone: leads.phone,
+      email: leads.email,
+      company: leads.company,
+      status: leads.status,
+      notes: leads.notes,
+      consentUrl: leads.consentUrl,
+      consentConfirmed: leads.consentConfirmed,
+      optedOut: leads.optedOut,
+      doNotContact: leads.doNotContact,
+      source: leads.source,
+      age: leads.age,
+      state: leads.state,
+      productType: leads.productType,
+      assignedToId: leads.assignedToId,
+      createdAt: leads.createdAt,
+      updatedAt: leads.updatedAt,
+      doNotContactAt: leads.doNotContactAt,
+      optedOutAt: leads.optedOutAt,
+      assignedToName: sql<string | null>`(SELECT u.name FROM users u WHERE u.id = ${leads.assignedToId})`,
+      assignedToColor: sql<string | null>`(SELECT u.accentColor FROM users u WHERE u.id = ${leads.assignedToId})`,
+    })
+    .from(leads)
+    .where(and(...conditions))
+    .orderBy(desc(leads.createdAt));
+  return rows;
 }
 
 export async function getLeadById(id: number) {

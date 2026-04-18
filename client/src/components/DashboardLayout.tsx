@@ -4,6 +4,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, Gift, LogOut, MessageSquare, Moon, PanelLeft, PhoneCall, Settings, Shield, Sun, TrendingUp, Users, Zap } from "lucide-react";
+import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, Gift, LogOut, MessageSquare, Moon, PanelLeft, Palette, PhoneCall, Settings, Shield, Sun, TrendingUp, Users, Zap } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState, useMemo } from "react";
 import { useLocation } from "wouter";
@@ -237,6 +238,24 @@ function DashboardLayoutContent({
     "/drip": dripStatus,
   };
   const { user, logout } = useAuth();
+  const utils = trpc.useUtils();
+  const updateProfile = trpc.auth.updateProfile.useMutation({
+    onSuccess: () => utils.auth.me.invalidate(),
+  });
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const ACCENT_COLORS = [
+    { label: "Indigo", value: "#6366f1" },
+    { label: "Violet", value: "#8b5cf6" },
+    { label: "Rose", value: "#f43f5e" },
+    { label: "Orange", value: "#f97316" },
+    { label: "Amber", value: "#f59e0b" },
+    { label: "Emerald", value: "#10b981" },
+    { label: "Cyan", value: "#06b6d4" },
+    { label: "Sky", value: "#0ea5e9" },
+    { label: "Pink", value: "#ec4899" },
+    { label: "Slate", value: "#64748b" },
+  ];
+  const userColor = (user as any)?.accentColor ?? "#6366f1";
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar, setOpenMobile, isMobile: sidebarIsMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -424,8 +443,8 @@ function DashboardLayoutContent({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
+                  <Avatar className="h-9 w-9 border-2 shrink-0" style={{ borderColor: userColor }}>
+                    <AvatarFallback className="text-xs font-bold text-white" style={{ backgroundColor: userColor }}>
                       {user?.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -439,7 +458,38 @@ function DashboardLayoutContent({
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem
+                  onClick={() => setShowColorPicker(p => !p)}
+                  className="cursor-pointer"
+                >
+                  <Palette className="mr-2 h-4 w-4" />
+                  <span>My Color</span>
+                  <span className="ml-auto h-4 w-4 rounded-full border" style={{ backgroundColor: userColor }} />
+                </DropdownMenuItem>
+                {showColorPicker && (
+                  <div className="px-2 pb-2">
+                    <div className="grid grid-cols-5 gap-1.5 pt-1">
+                      {ACCENT_COLORS.map(c => (
+                        <button
+                          key={c.value}
+                          title={c.label}
+                          onClick={() => {
+                            updateProfile.mutate({ accentColor: c.value });
+                            setShowColorPicker(false);
+                          }}
+                          className="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none"
+                          style={{
+                            backgroundColor: c.value,
+                            borderColor: userColor === c.value ? "white" : "transparent",
+                            boxShadow: userColor === c.value ? `0 0 0 2px ${c.value}` : undefined,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
