@@ -23,7 +23,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, Gift, LogOut, MessageSquare, Moon, PanelLeft, PhoneCall, Settings, Shield, Sun, TrendingUp, Users, Zap } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef, useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
@@ -61,6 +61,27 @@ export default function DashboardLayout({
   });
   const { loading, user } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Status indicator queries — lightweight, stale-while-revalidate
+  const botConfigQuery = trpc.bot.getConfig.useQuery(undefined, { enabled: !!user, staleTime: 30_000 });
+  const twilioConfigQuery = trpc.org.getTwilioConfig.useQuery(undefined, { enabled: !!user, staleTime: 30_000 });
+  const dripListQuery = trpc.drip.listSequences.useQuery(undefined, { enabled: !!user, staleTime: 30_000 });
+
+  const botStatus = useMemo(() => {
+    if (!botConfigQuery.data) return "off";
+    return botConfigQuery.data.enabled ? "on" : "off";
+  }, [botConfigQuery.data]);
+
+  const twilioStatus = useMemo(() => {
+    if (!twilioConfigQuery.data) return "off";
+    return twilioConfigQuery.data.accountSid ? "on" : "off";
+  }, [twilioConfigQuery.data]);
+
+  const dripStatus = useMemo(() => {
+    if (!dripListQuery.data) return "off";
+    return dripListQuery.data.some((d: any) => d.isActive) ? "on" : "off";
+  }, [dripListQuery.data]);
+
   const orgQuery = trpc.org.me.useQuery(undefined, {
     enabled: !!user,
     retry: false,
@@ -184,7 +205,7 @@ export default function DashboardLayout({
         } as CSSProperties
       }
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} customLogoUrl={orgQuery.data?.org?.customLogoUrl ?? null} lightLogoUrl={orgQuery.data?.org?.lightLogoUrl ?? null}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} customLogoUrl={orgQuery.data?.org?.customLogoUrl ?? null} lightLogoUrl={orgQuery.data?.org?.lightLogoUrl ?? null} botStatus={botStatus} twilioStatus={twilioStatus} dripStatus={dripStatus}>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -196,6 +217,9 @@ type DashboardLayoutContentProps = {
   setSidebarWidth: (width: number) => void;
   customLogoUrl: string | null;
   lightLogoUrl: string | null;
+  botStatus: "on" | "off";
+  twilioStatus: "on" | "off";
+  dripStatus: "on" | "off";
 };
 
 function DashboardLayoutContent({
@@ -203,7 +227,15 @@ function DashboardLayoutContent({
   setSidebarWidth,
   customLogoUrl,
   lightLogoUrl,
+  botStatus,
+  twilioStatus,
+  dripStatus,
 }: DashboardLayoutContentProps) {
+  const statusMap: Record<string, "on" | "off"> = {
+    "/bot": botStatus,
+    "/settings": twilioStatus,
+    "/drip": dripStatus,
+  };
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar, setOpenMobile, isMobile: sidebarIsMobile } = useSidebar();
@@ -344,6 +376,16 @@ function DashboardLayoutContent({
                       <span className="flex-1">{item.label}</span>
                       {(item as any).badge && (
                         <span className="text-[9px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 rounded px-1 py-0.5 leading-none shrink-0">{(item as any).badge}</span>
+                      )}
+                      {statusMap[item.path] !== undefined && (
+                        <span
+                          title={statusMap[item.path] === "on" ? "Active" : "Not configured"}
+                          className={`h-2 w-2 rounded-full shrink-0 transition-colors ${
+                            statusMap[item.path] === "on"
+                              ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.8)]"
+                              : "bg-zinc-500"
+                          }`}
+                        />
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>

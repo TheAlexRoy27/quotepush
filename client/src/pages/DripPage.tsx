@@ -340,28 +340,55 @@ function StepEditor({
         </div>
       </div>
 
+      {/* AI Write-for-me panel */}
+      {!body && (
+        <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 p-3 space-y-2.5">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+            <p className="text-xs font-semibold text-violet-300">Let AI write this message for you</p>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Click the button below and the AI will write a message based on your sequence name and the lead's intent. You can always edit it afterward.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full h-8 text-xs gap-1.5 border-violet-500/40 text-violet-300 hover:bg-violet-500/10"
+            onClick={handleGenerate}
+            disabled={generateAI.isPending}
+          >
+            {generateAI.isPending ? (
+              <><Loader2 className="h-3 w-3 animate-spin" /> Writing your message...</>
+            ) : (
+              <><Sparkles className="h-3 w-3" /> Write this message for me</>
+            )}
+          </Button>
+        </div>
+      )}
+
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium">Message
             <TooltipProvider delayDuration={200}><Tooltip><TooltipTrigger asChild><HelpCircle className="h-3 w-3 text-muted-foreground cursor-help inline-block ml-1 align-middle" /></TooltipTrigger><TooltipContent side="top" className="max-w-xs text-xs">The SMS text sent to the lead. Use &#123;&#123;firstName&#125;&#125; for their first name, &#123;&#123;company&#125;&#125; for their company, and &#123;&#123;link&#125;&#125; for a scheduling link.</TooltipContent></Tooltip></TooltipProvider>
           </Label>
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-6 px-2 text-xs gap-1 border-violet-500/40 text-violet-300 hover:bg-violet-500/10"
-              onClick={handleGenerate}
-              disabled={generateAI.isPending}
-            >
-              {generateAI.isPending ? (
-                <><Loader2 className="h-3 w-3 animate-spin" /> Crafting…</>
-              ) : body ? (
-                <><RefreshCw className="h-3 w-3" /> Regenerate</>
-              ) : (
-                <><Sparkles className="h-3 w-3" /> Generate with AI</>
-              )}
-            </Button>
+            {body && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-6 px-2 text-xs gap-1 border-violet-500/40 text-violet-300 hover:bg-violet-500/10"
+                onClick={handleGenerate}
+                disabled={generateAI.isPending}
+              >
+                {generateAI.isPending ? (
+                  <><Loader2 className="h-3 w-3 animate-spin" /> Crafting...</>
+                ) : (
+                  <><RefreshCw className="h-3 w-3" /> Regenerate</>
+                )}
+              </Button>
+            )}
             <span className={`text-xs ${chars > 160 ? "text-amber-400" : "text-muted-foreground"}`}>
               {chars} chars · {segments} SMS segment{segments !== 1 ? "s" : ""}
             </span>

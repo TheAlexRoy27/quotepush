@@ -26,11 +26,13 @@ import {
   AlertTriangle,
   Clock,
   ArrowUpRight,
+  Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useState } from "react";
+import { SetupWizard } from "@/components/SetupWizard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -373,6 +375,7 @@ function ChartCard({ title, sub, children, hasData, emptyLabel, emptyHeight = 22
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function UsageDashboardPage() {
   const { data: twilioConfigured } = trpc.sms.isConfigured.useQuery();
+  const [wizardOpen, setWizardOpen] = useState(false);
   const { data, isLoading, refetch, isFetching } = trpc.usageDashboard.stats.useQuery(undefined, {
     refetchOnWindowFocus: false,
   });
@@ -450,11 +453,20 @@ export default function UsageDashboardPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">My Dashboard</h1>
           <p className="text-sm leading-relaxed text-muted-foreground mt-1.5">Your personal usage stats and pipeline performance.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="bg-background">
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {!twilioConfigured && (
+            <Button size="sm" onClick={() => setWizardOpen(true)} className="gap-1.5">
+              <Rocket className="h-3.5 w-3.5" /> Start Setup
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="bg-background">
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      <SetupWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
 
       {/* Twilio Not Configured Banner */}
       {!twilioConfigured && (

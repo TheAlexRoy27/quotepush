@@ -868,11 +868,39 @@ const leadsRouter = router({
       return updateLead(id, data);
     }),
 
-  delete: protectedProcedure
+   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ input }) => deleteLead(input.id)),
-});
 
+  suggestNextAction: protectedProcedure
+    .input(z.object({
+      leadName: z.string(),
+      leadStatus: z.string(),
+      lastMessages: z.array(z.object({
+        direction: z.enum(["inbound", "outbound"]),
+        body: z.string(),
+        classification: z.string().optional(),
+      })).max(6),
+      hasActiveEnrollment: z.boolean(),
+    }))
+    .query(async ({ input }) => {
+      const { leadName, leadStatus, lastMessages, hasActiveEnrollment } = input;
+      const convoContext = lastMessages.length > 0
+        ? lastMessages.map(m => `${m.direction === "inbound" ? leadName : "Agent"}: ${m.body}${m.classification ? ` [${m.classification}]` : ""}`).join("\n")
+        : "No messages yet.";
+
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are a helpful sales coach for insurance agents. Given a lead conversation, suggest ONE clear next action in plain English. Be specific and actionable. Keep it under 20 words. Never use em dashes." },
+          { role: "user", content: `Lead: ${leadName} (Status: ${leadStatus}, Drip active: ${hasActiveEnrollment})\n\nRecent conversation:\n${convoContext}\n\nWhat should the agent do next?` },
+        ],
+      });
+
+      const raw = response?.choices?.[0]?.message?.content;
+      const suggestion = (typeof raw === "string" ? raw : "").trim().replace(/^["']|["']$/g, "");
+      return { suggestion };
+    }),
+});
 // ─── Templates Router ─────────────────────────────────────────────────────────
 
 const templatesRouter = router({

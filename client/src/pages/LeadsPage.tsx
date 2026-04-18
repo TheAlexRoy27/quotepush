@@ -16,7 +16,7 @@ import {
   Plus, Upload, Search, Send, Trash2, MessageSquare, RefreshCw,
   Users, Clock, CheckCircle2, Calendar, ChevronRight, ChevronLeft, X, Loader2, SendHorizonal,
   Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp, ExternalLink,
-  Zap, StopCircle, NotebookPen, Save, Phone
+  Zap, StopCircle, NotebookPen, Save, Phone, Sparkles
 } from "lucide-react";
 import type { Lead, Message } from "../../../drizzle/schema";
 
@@ -378,9 +378,18 @@ function CsvImportModal({ open, onClose, onSuccess }: {
           {/* ── Step 1: Upload ── */}
           {step === "upload" && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Upload any CSV file we'll help you map the columns to lead fields in the next step.
-              </p>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                <div className="h-8 w-8 rounded-full bg-blue-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <Download className="h-4 w-4 text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">Not sure how to format your file?</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">Download our ready-made template. Just open it in Excel or Google Sheets, fill in your leads, save as CSV, and upload it here.</p>
+                  <Button variant="outline" size="sm" onClick={downloadSampleCSV} className="mt-2 gap-1.5 text-xs h-7">
+                    <Download className="h-3 w-3" /> Download Template
+                  </Button>
+                </div>
+              </div>
               <div
                 className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
                   isDragging ? "border-indigo-500 bg-indigo-500/10" : "border-border hover:border-indigo-500/50 hover:bg-muted/30"
@@ -724,6 +733,17 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
 
   const messages = data?.messages ?? [];
 
+  // AI next-action suggestion
+  const lastMessages = messages.slice(-6).map(m => ({
+    direction: m.direction as "inbound" | "outbound",
+    body: m.body,
+    classification: (m as Message & { classification?: string }).classification,
+  }));
+  const { data: suggestionData, isLoading: suggestionLoading, refetch: refetchSuggestion } = trpc.leads.suggestNextAction.useQuery(
+    { leadName: lead.name, leadStatus: lead.status, lastMessages, hasActiveEnrollment: !!activeEnrollment },
+    { enabled: messages.length > 0, staleTime: 1000 * 60 * 5, refetchOnWindowFocus: false }
+  );
+
   return (
     <div className="flex flex-col h-full bg-card border-l border-border">
       {/* Header */}
@@ -965,6 +985,35 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
           });
         })()}
       </div>
+
+      {/* AI Next-Action Suggestion Bar */}
+      {(suggestionLoading || suggestionData?.suggestion) && (
+        <div className="px-3 sm:px-4 py-2 border-t border-border bg-violet-500/5">
+          <div className="flex items-start gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-violet-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold text-violet-400 uppercase tracking-wide mb-0.5">Suggested next step</p>
+              {suggestionLoading ? (
+                <div className="flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Thinking...</span>
+                </div>
+              ) : (
+                <p className="text-xs text-foreground leading-snug">{suggestionData?.suggestion}</p>
+              )}
+            </div>
+            {!suggestionLoading && (
+              <button
+                onClick={() => refetchSuggestion()}
+                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                title="Refresh suggestion"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Send area - sticky on mobile */}
       <div className="p-3 sm:p-4 border-t border-border space-y-2 bg-card">
@@ -1247,6 +1296,14 @@ export default function LeadsPage() {
   const { data: stats } = trpc.leads.stats.useQuery();
   const { data: twilioConfigured } = trpc.sms.isConfigured.useQuery();
 
+  const quickUpdateStatus = trpc.leads.update.useMutation({
+    onSuccess: () => {
+      utils.leads.list.invalidate();
+      utils.leads.stats.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const deleteLead = trpc.leads.delete.useMutation({
     onSuccess: () => {
       toast.success("Lead deleted");
@@ -1462,6 +1519,30 @@ export default function LeadsPage() {
                           </button>
                         </div>
                       </div>
+                    </div>
+                    {/* Quick action row */}
+                    <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/40" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => quickUpdateStatus.mutate({ id: lead.id, status: "Scheduled" })}
+                        className="flex-1 flex items-center justify-center gap-1 h-7 rounded-md text-[11px] font-medium bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
+                        title="Mark as Scheduled"
+                      >
+                        <Calendar className="h-3 w-3" /> Book a Call
+                      </button>
+                      <button
+                        onClick={() => quickUpdateStatus.mutate({ id: lead.id, status: "X-Dated" })}
+                        className="flex-1 flex items-center justify-center gap-1 h-7 rounded-md text-[11px] font-medium bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors border border-amber-500/20"
+                        title="Mark as Future Date"
+                      >
+                        <Clock className="h-3 w-3" /> Future Date
+                      </button>
+                      <button
+                        onClick={() => quickUpdateStatus.mutate({ id: lead.id, status: "Pending" })}
+                        className="flex items-center justify-center gap-1 h-7 px-2 rounded-md text-[11px] font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-colors border border-border"
+                        title="Mark as Not Interested"
+                      >
+                        <X className="h-3 w-3" /> Not Now
+                      </button>
                     </div>
                   </div>
                 ))}

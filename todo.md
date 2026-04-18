@@ -723,3 +723,10 @@
 - [x] Add floating "Request a Demo" button on main landing page with Cal.com popup widget
 - [x] Apply Deep Violet Glow logo app-wide (sidebar, favicon, OG image)
 - [x] Update logo to v3 (no box, speech bubble + rocket only) and increase size in sidebar and landing panel
+- [x] Sidebar status indicators: show Bot/Twilio/Drip live status pills next to sidebar nav items
+- [x] Plain-English tooltips on all technical fields in Settings (Account SID, Auth Token, etc.)
+- [x] Guided setup wizard modal for first-time users (Twilio setup, first lead, first drip)
+- [x] CSV template download + column mapping preview on lead import
+- [x] AI-assisted "Write for me" button in drip sequence message editor
+- [x] AI suggested next-action bar in ConversationPanel ("This lead asked about pricing. Suggested reply: ...")
+- [x] One-tap quick actions on lead list cards (Mark Not Interested, Book a Call, Pause Texts)
