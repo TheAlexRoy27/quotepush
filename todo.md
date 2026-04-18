@@ -718,3 +718,4 @@
 - [x] UI: source, age, state, productType shown in ConversationPanel Lead Details section
 - [x] UI: Analytics page milestone chart now uses "Future Date" (legacy X-Dated alias kept for old data)
 - [x] UI: LeadsPage milestone dropdowns renamed X-Dated to Future Date
+- [x] Apply Option A Gradient Glow button style app-wide (blue→violet gradient primary, glow hover, matching outline/ghost/destructive variants)
