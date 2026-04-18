@@ -720,3 +720,4 @@
 - [x] UI: LeadsPage milestone dropdowns renamed X-Dated to Future Date
 - [x] Apply Option A Gradient Glow button style app-wide (blue→violet gradient primary, glow hover, matching outline/ghost/destructive variants)
 - [x] Mobile typography: improve line spacing, font sizes, and legibility on Dashboard and main/auth pages at 375px
+- [x] Add floating "Request a Demo" button on main landing page with Cal.com popup widget
