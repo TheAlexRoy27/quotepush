@@ -110,9 +110,9 @@ export default function DashboardLayout({
           {/* Logo + headline */}
           <div className="flex flex-col items-center gap-5">
             <img
-              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663548851963/jHgkNXiqnDMniUxJ.png"
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-v3-dWJJLeWcheDRJYCh4pGcdC.webp"
               alt="QuotePush.io"
-              className="h-28 w-28 rounded-3xl shadow-xl"
+              className="h-36 w-36 drop-shadow-xl"
             />
             <div className="text-center space-y-2">
               <h1 className="text-3xl font-bold tracking-tight text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
@@ -302,9 +302,9 @@ function DashboardLayoutContent({
                   aria-label="Go to home"
                 >
                   <img
-                    src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663548851963/jHgkNXiqnDMniUxJ.png"
+                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-v3-dWJJLeWcheDRJYCh4pGcdC.webp"
                     alt="QuotePush.io"
-                    className="h-11 w-11 rounded-xl shrink-0 object-cover shadow-sm"
+                    className="h-12 w-12 shrink-0 object-contain"
                   />
                   <span className="font-semibold tracking-tight truncate text-foreground" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     QuotePush.io
@@ -317,9 +317,9 @@ function DashboardLayoutContent({
                   aria-label="Go to home"
                 >
                   <img
-                    src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663548851963/jHgkNXiqnDMniUxJ.png"
+                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-v3-dWJJLeWcheDRJYCh4pGcdC.webp"
                     alt="QuotePush.io"
-                    className="h-11 w-11 rounded-xl object-cover shadow-sm"
+                    className="h-12 w-12 object-contain"
                   />
                 </button>
               )}
