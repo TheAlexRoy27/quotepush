@@ -646,92 +646,95 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
   return (
     <div className={`border rounded-xl overflow-hidden bg-card transition-all ${seq.isActive ? "border-border" : "border-border/50 opacity-70"}`}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4">
-        <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${isInterested ? "bg-emerald-500/15" : "bg-blue-500/15"}`}>
-          <Zap className={`h-4 w-4 ${isInterested ? "text-emerald-400" : "text-blue-400"}`} />
-        </div>
-        <div className="flex-1 min-w-0">
-          {renaming ? (
-            <form
-              className="flex items-center gap-2"
-              onSubmit={(e) => { e.preventDefault(); rename.mutate({ id: seq.id, name: renameValue }); }}
-            >
-              <input
-                autoFocus
-                className="flex-1 bg-background border border-border rounded-md px-2 py-1 text-sm font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Escape') setRenaming(false); }}
-              />
-              <Button type="submit" size="sm" className="h-7 px-2 text-xs" disabled={rename.isPending}>Save</Button>
-              <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setRenaming(false)}>Cancel</Button>
-            </form>
-          ) : (
-            <p className="font-semibold text-foreground truncate">{seq.name}</p>
-          )}
-          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${categoryColor}`}>
-              {seq.triggerCategory}
-            </span>
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {seq.steps?.length ?? 0} step{(seq.steps?.length ?? 0) !== 1 ? "s" : ""}
-              {(seq.steps?.length ?? 0) > 0 && ` · ${duration}`}
-            </span>
-                {hasBranches && (
-              <span className="inline-flex items-center gap-1 text-xs text-violet-300 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-full">
-                <GitBranch className="h-3 w-3" />
-                A/B branches</span>
-            )}
-            {/* Enrolled leads count badge */}
-            <button
-              onClick={() => setShowEnrolled(v => !v)}
-              className="inline-flex items-center gap-1 text-xs text-blue-300 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded-full hover:bg-blue-500/20 transition-colors"
-            >
-              <Users className="h-3 w-3" />
-              {showEnrolled && enrolledLeads ? `${enrolledLeads.length} enrolled` : "View enrolled"}
-            </button>
+      <div className="flex flex-col gap-2 px-4 py-3">
+        {/* Row 1: icon + name + toggle + expand */}
+        <div className="flex items-center gap-3">
+          <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${isInterested ? "bg-emerald-500/15" : "bg-blue-500/15"}`}>
+            <Zap className={`h-4 w-4 ${isInterested ? "text-emerald-400" : "text-blue-400"}`} />
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground hidden sm:inline">{seq.isActive ? "Active" : "Paused"}</span>
+          <div className="flex-1 min-w-0">
+            {renaming ? (
+              <form
+                className="flex items-center gap-2"
+                onSubmit={(e) => { e.preventDefault(); rename.mutate({ id: seq.id, name: renameValue }); }}
+              >
+                <input
+                  autoFocus
+                  className="flex-1 bg-background border border-border rounded-md px-2 py-1 text-sm font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setRenaming(false); }}
+                />
+                <Button type="submit" size="sm" className="h-7 px-2 text-xs" disabled={rename.isPending}>Save</Button>
+                <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setRenaming(false)}>Cancel</Button>
+              </form>
+            ) : (
+              <p className="font-semibold text-foreground truncate">{seq.name}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             <Switch
               checked={!!seq.isActive}
               onCheckedChange={(v) => toggleActive.mutate({ id: seq.id, isActive: v })}
             />
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setExpanded((v) => !v)}>
+              {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setRenameValue(seq.name); setRenaming(true); }}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Rename</TooltipContent>
-            </Tooltip>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-3 text-xs gap-1.5"
-              onClick={() => clone.mutate({ id: seq.id })}
-              disabled={clone.isPending}
-            >
-              <Copy className="h-3.5 w-3.5" />
-              Clone
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-3 text-xs gap-1.5 border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
-              onClick={() => { setAbVariantName(`${seq.name} Variant B`); setAbTestOpen(true); }}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              A/B Test
-            </Button>
-          </TooltipProvider>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setExpanded((v) => !v)}>
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
+        </div>
+        {/* Row 2: badges + stats + action buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${categoryColor}`}>
+            {seq.triggerCategory}
+          </span>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {seq.steps?.length ?? 0} step{(seq.steps?.length ?? 0) !== 1 ? "s" : ""}
+            {(seq.steps?.length ?? 0) > 0 && ` · ${duration}`}
+          </span>
+          {hasBranches && (
+            <span className="inline-flex items-center gap-1 text-xs text-violet-300 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-full">
+              <GitBranch className="h-3 w-3" />
+              A/B branches
+            </span>
+          )}
+          <button
+            onClick={() => setShowEnrolled(v => !v)}
+            className="inline-flex items-center gap-1 text-xs text-blue-300 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded-full hover:bg-blue-500/20 transition-colors"
+          >
+            <Users className="h-3 w-3" />
+            {showEnrolled && enrolledLeads ? `${enrolledLeads.length} enrolled` : "View enrolled"}
+          </button>
+          <div className="flex items-center gap-1.5 ml-auto">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setRenameValue(seq.name); setRenaming(true); }}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Rename</TooltipContent>
+              </Tooltip>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2.5 text-xs gap-1"
+                onClick={() => clone.mutate({ id: seq.id })}
+                disabled={clone.isPending}
+              >
+                <Copy className="h-3 w-3" />
+                Clone
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2.5 text-xs gap-1 border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
+                onClick={() => { setAbVariantName(`${seq.name} Variant B`); setAbTestOpen(true); }}
+              >
+                <Sparkles className="h-3 w-3" />
+                A/B Test
+              </Button>
+            </TooltipProvider>
+          </div>
         </div>
       </div>
 
