@@ -689,6 +689,15 @@ function ConversationPanel({ lead, onClose, onStatusChange, orgMembers, currentU
     onError: (e) => toast.error(e.message),
   });
 
+  const dncCheckMutation = trpc.dnc.checkLead.useMutation({
+    onSuccess: () => {
+      utils.leads.getById.invalidate({ id: lead.id });
+      utils.leads.list.invalidate();
+      toast.success("DNC check complete");
+    },
+    onError: () => toast.error("DNC check failed -- upload registry files first"),
+  });
+
   // Drip sequences
   const { data: sequences } = trpc.drip.listSequences.useQuery();
   const { data: enrollments } = trpc.drip.leadEnrollments.useQuery({ leadId: lead.id });
@@ -885,6 +894,29 @@ function ConversationPanel({ lead, onClose, onStatusChange, orgMembers, currentU
               <span className="font-medium text-foreground">{(data?.lead as any).productType}</span>
             </div>
           )}
+        </div>
+        {/* DNC Registry Check */}
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+          <div>
+            <span className="text-xs font-medium text-foreground">National DNC Registry</span>
+            <p className="text-[10px] text-muted-foreground">
+              {(data?.lead as any)?.dncCheckedAt
+                ? `Last checked ${new Date((data?.lead as any).dncCheckedAt).toLocaleDateString()}`
+                : "Not yet checked"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {(data?.lead as any)?.dncFlagged && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-600/15 text-red-500 border border-red-500/30">DNC</span>
+            )}
+            <button
+              onClick={() => dncCheckMutation.mutate({ leadId: lead.id })}
+              disabled={dncCheckMutation.isPending}
+              className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors border border-border"
+            >
+              {dncCheckMutation.isPending ? "Checking..." : "Check"}
+            </button>
+          </div>
         </div>
         {/* DNC Toggle */}
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
@@ -1387,7 +1419,7 @@ export default function LeadsPage() {
   const [myLeadsOnly, setMyLeadsOnly] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<(Lead & { assignedToName?: string | null; assignedToColor?: string | null }) | null>(null);
+  const [selectedLead, setSelectedLead] = useState<(Lead & { assignedToName?: string | null; assignedToColor?: string | null; dncFlagged?: boolean; dncCheckedAt?: Date | null }) | null>(null);
   const [bulkLink, setBulkLink] = useState("");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -1649,6 +1681,9 @@ export default function LeadsPage() {
                         {(lead as any).optedOut && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20">Opted Out</span>
                         )}
+                        {(lead as any).dncFlagged && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-bold bg-red-600/15 text-red-500 border border-red-500/30" title="On National Do Not Call Registry">DNC</span>
+                        )}
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => setSelectedLead(selectedLead?.id === lead.id ? null : lead)}
@@ -1747,6 +1782,9 @@ export default function LeadsPage() {
                             <StatusBadge status={lead.status} />
                             {(lead as any).optedOut && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20">Opted Out</span>
+                            )}
+                            {(lead as any).dncFlagged && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-bold bg-red-600/15 text-red-500 border border-red-500/30" title="On National Do Not Call Registry">DNC</span>
                             )}
                             {(lead as any).assignedToName && (
                               <span

@@ -138,6 +138,8 @@ export async function listLeads(orgId: number, opts?: {
       updatedAt: leads.updatedAt,
       doNotContactAt: leads.doNotContactAt,
       optedOutAt: leads.optedOutAt,
+      dncFlagged: leads.dncFlagged,
+      dncCheckedAt: leads.dncCheckedAt,
       assignedToName: sql<string | null>`(SELECT u.name FROM users u WHERE u.id = ${leads.assignedToId})`,
       assignedToColor: sql<string | null>`(SELECT u.accentColor FROM users u WHERE u.id = ${leads.assignedToId})`,
     })

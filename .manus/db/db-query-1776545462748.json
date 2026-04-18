@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `dnc_numbers` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`orgId` int NOT NULL,\n\t`phoneNormalized` varchar(20) NOT NULL,\n\t`areaCode` varchar(3),\n\t`uploadedAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `dnc_numbers_id` PRIMARY KEY(`id`)\n);\nALTER TABLE `leads` ADD `dncFlagged` boolean DEFAULT false NOT NULL;\nALTER TABLE `leads` ADD `dncCheckedAt` timestamp;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway05.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4GXwoiRNBdbsaBg.6a617cdd395a --database Q7eUYZ7wbDUp67BwzgNDrw --execute CREATE TABLE `dnc_numbers` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`orgId` int NOT NULL,\n\t`phoneNormalized` varchar(20) NOT NULL,\n\t`areaCode` varchar(3),\n\t`uploadedAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `dnc_numbers_id` PRIMARY KEY(`id`)\n);\nALTER TABLE `leads` ADD `dncFlagged` boolean DEFAULT false NOT NULL;\nALTER TABLE `leads` ADD `dncCheckedAt` timestamp;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 894
+}

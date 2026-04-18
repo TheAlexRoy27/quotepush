@@ -28,6 +28,7 @@ import BotConfigPage from "./pages/BotConfigPage";
 import BookingPage from "./pages/BookingPage";
 import BookingsPage from "./pages/BookingsPage";
 import VoiceCallsPage from "./pages/VoiceCallsPage";
+import DncPage from "./pages/DncPage";
 
 function Router() {
   return (
@@ -59,6 +60,7 @@ function Router() {
             <Route path={"/bot"} component={BotConfigPage} />
             <Route path={"/bookings"} component={BookingsPage} />
             <Route path={"/calls"} component={VoiceCallsPage} />
+            <Route path={"/dnc"} component={DncPage} />
             <Route path={"/404"} component={NotFound} />
             <Route component={NotFound} />
           </Switch>

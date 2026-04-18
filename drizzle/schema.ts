@@ -143,6 +143,8 @@ export const leads = mysqlTable("leads", {
   optedOut: boolean("optedOut").notNull().default(false),
   optedOutAt: timestamp("optedOutAt"),
   assignedToId: int("assignedToId"),  // FK to users.id
+  dncFlagged: boolean("dncFlagged").notNull().default(false),      // flagged by national DNC registry scrub
+  dncCheckedAt: timestamp("dncCheckedAt"),                          // when the DNC check was last run
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -500,3 +502,15 @@ export const botConfigs = mysqlTable("bot_configs", {
 
 export type BotConfig = typeof botConfigs.$inferSelect;
 export type InsertBotConfig = typeof botConfigs.$inferInsert;
+
+// ─── DNC Registry ─────────────────────────────────────────────────────────────
+// Stores normalized phone numbers uploaded from the FTC National DNC Registry.
+export const dncNumbers = mysqlTable("dnc_numbers", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  phoneNormalized: varchar("phoneNormalized", { length: 20 }).notNull(), // digits only, e.g. "18005551234"
+  areaCode: varchar("areaCode", { length: 3 }),
+  uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
+});
+export type DncNumber = typeof dncNumbers.$inferSelect;
+export type InsertDncNumber = typeof dncNumbers.$inferInsert;

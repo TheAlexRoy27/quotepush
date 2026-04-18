@@ -105,7 +105,7 @@ import {
   deleteDripStep,
   seedDefaultDripSequences,
 } from "./dripDb";
-import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials, users, leadDripEnrollments, appointments } from "../drizzle/schema";
+import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials, users, leadDripEnrollments, appointments, dncNumbers } from "../drizzle/schema";
 import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
 import bcrypt from "bcryptjs";
@@ -828,7 +828,7 @@ const leadsRouter = router({
         if (!l.skipDuplicates) return true;
         return !existingPhones.has(l.phone.replace(/\D/g, ""));
       });
-      return bulkCreateLeads(orgId, rows.map((l) => ({
+      const result = await bulkCreateLeads(orgId, rows.map((l) => ({
         orgId,
         name: l.name,
         phone: l.phone,
@@ -836,6 +836,30 @@ const leadsRouter = router({
         email: l.email || null,
         status: "Pending" as const,
       })));
+      // Auto-check newly imported leads against DNC registry (non-fatal)
+      try {
+        const db = await getDb();
+        if (db) {
+          const [countRow] = await db.select({ count: sql<number>`COUNT(*)` }).from(dncNumbers).where(eq(dncNumbers.orgId, orgId));
+          if (countRow && Number(countRow.count) > 0) {
+            const dncList = await db.select({ phoneNormalized: dncNumbers.phoneNormalized }).from(dncNumbers).where(eq(dncNumbers.orgId, orgId));
+            const dncSet = new Set(dncList.map(d => d.phoneNormalized));
+            const now = new Date();
+            for (const l of rows) {
+              const digits = l.phone.replace(/\D/g, "");
+              const normalized = digits.length === 10 ? "1" + digits : digits;
+              const flagged = dncSet.has(normalized);
+              const [inserted] = await db.select({ id: leads.id }).from(leads).where(and(eq(leads.orgId, orgId), eq(leads.phone, l.phone))).limit(1);
+              if (inserted) {
+                await db.update(leads).set({ dncFlagged: flagged, dncCheckedAt: now }).where(eq(leads.id, inserted.id));
+              }
+            }
+          }
+        }
+      } catch (_e) {
+        // Non-fatal: DNC auto-check failure should not block import
+      }
+      return result;
     }),
 
   checkDuplicates: protectedProcedure
@@ -1975,6 +1999,106 @@ const bookingRouter = router({
     }),
 });
 
+// ─── DNC Router ──────────────────────────────────────────────────────────────
+const dncRouter = router({
+  // Upload FTC DNC registry file (text content, one number per line)
+  uploadRegistry: protectedProcedure
+    .input(z.object({
+      fileContent: z.string(), // raw text content of the FTC .txt file
+      areaCode: z.string().length(3).optional(), // optional area code label
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const orgId = await requireOrgId(ctx.user.id);
+      // Normalize: extract 10-digit numbers, strip formatting
+      const lines = input.fileContent.split(/\r?\n/);
+      const normalized: string[] = [];
+      for (const line of lines) {
+        const digits = line.replace(/\D/g, "");
+        if (digits.length === 10) normalized.push("1" + digits);
+        else if (digits.length === 11 && digits.startsWith("1")) normalized.push(digits);
+      }
+      if (normalized.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "No valid phone numbers found in file" });
+      // Delete existing numbers for this org + area code to avoid duplicates
+      const conditions = [eq(dncNumbers.orgId, orgId)];
+      if (input.areaCode) conditions.push(eq(dncNumbers.areaCode, input.areaCode));
+      await db.delete(dncNumbers).where(and(...conditions));
+      // Bulk insert in batches of 500
+      const batchSize = 500;
+      for (let i = 0; i < normalized.length; i += batchSize) {
+        const batch = normalized.slice(i, i + batchSize).map(phone => ({
+          orgId,
+          phoneNormalized: phone,
+          areaCode: input.areaCode ?? phone.slice(1, 4),
+        }));
+        await db.insert(dncNumbers).values(batch);
+      }
+      return { inserted: normalized.length };
+    }),
+
+  // Get registry stats for the current org
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const orgId = await requireOrgId(ctx.user.id);
+    const [countRow] = await db.select({ count: sql<number>`COUNT(*)` }).from(dncNumbers).where(eq(dncNumbers.orgId, orgId));
+    const [lastUpload] = await db.select({ uploadedAt: dncNumbers.uploadedAt }).from(dncNumbers).where(eq(dncNumbers.orgId, orgId)).orderBy(sql`uploadedAt DESC`).limit(1);
+    const [flaggedRow] = await db.select({ count: sql<number>`COUNT(*)` }).from(leads).where(and(eq(leads.orgId, orgId), eq(leads.dncFlagged, true)));
+    return {
+      totalNumbers: Number(countRow?.count ?? 0),
+      lastUploadedAt: lastUpload?.uploadedAt ?? null,
+      flaggedLeads: Number(flaggedRow?.count ?? 0),
+    };
+  }),
+
+  // Check a single lead against the DNC registry
+  checkLead: protectedProcedure
+    .input(z.object({ leadId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const orgId = await requireOrgId(ctx.user.id);
+      const lead = await db.select().from(leads).where(and(eq(leads.id, input.leadId), eq(leads.orgId, orgId))).limit(1);
+      if (!lead[0]) throw new TRPCError({ code: "NOT_FOUND" });
+      const digits = lead[0].phone.replace(/\D/g, "");
+      const normalized = digits.length === 10 ? "1" + digits : digits;
+      const [match] = await db.select().from(dncNumbers).where(and(eq(dncNumbers.orgId, orgId), eq(dncNumbers.phoneNormalized, normalized))).limit(1);
+      const flagged = !!match;
+      await db.update(leads).set({ dncFlagged: flagged, dncCheckedAt: new Date() }).where(eq(leads.id, input.leadId));
+      return { flagged, phone: lead[0].phone };
+    }),
+
+  // Bulk scrub all org leads against the current registry
+  bulkScrub: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const orgId = await requireOrgId(ctx.user.id);
+    const allLeads = await db.select({ id: leads.id, phone: leads.phone }).from(leads).where(eq(leads.orgId, orgId));
+    const dncList = await db.select({ phoneNormalized: dncNumbers.phoneNormalized }).from(dncNumbers).where(eq(dncNumbers.orgId, orgId));
+    const dncSet = new Set(dncList.map(d => d.phoneNormalized));
+    let flaggedCount = 0;
+    const now = new Date();
+    for (const lead of allLeads) {
+      const digits = lead.phone.replace(/\D/g, "");
+      const normalized = digits.length === 10 ? "1" + digits : digits;
+      const flagged = dncSet.has(normalized);
+      if (flagged) flaggedCount++;
+      await db.update(leads).set({ dncFlagged: flagged, dncCheckedAt: now }).where(eq(leads.id, lead.id));
+    }
+    return { total: allLeads.length, flagged: flaggedCount };
+  }),
+
+  // Clear all DNC numbers for this org
+  clearRegistry: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const orgId = await requireOrgId(ctx.user.id);
+    await db.delete(dncNumbers).where(eq(dncNumbers.orgId, orgId));
+    return { success: true };
+  }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -2013,6 +2137,7 @@ export const appRouter = router({
   bot: botRouter,
   booking: bookingRouter,
   notes: notesRouter,
+  dnc: dncRouter,
 });
 
 export type AppRouter = typeof appRouter;

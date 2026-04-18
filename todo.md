@@ -749,3 +749,17 @@
 - [x] tRPC: auth.updateProfile — save accentColor for current user
 - [x] UI: color picker swatch in user profile dropdown (top-right avatar menu)
 - [x] UI: apply member color to avatars, team notes border/background, and assigned lead badge
+
+## National Do Not Call Registry (FTC Option A)
+- [x] DB: add dnc_numbers table (id, orgId, phoneNormalized, areaCode, uploadedAt)
+- [x] DB: add dncCheckedAt (timestamp) and dncFlagged (boolean) columns to leads table
+- [x] tRPC: dnc.uploadRegistry -- parse FTC .txt file, bulk-insert normalized numbers
+- [x] tRPC: dnc.checkLead -- check a single lead's phone against the registry
+- [x] tRPC: dnc.bulkScrub -- re-scrub all org leads against current registry, update dncFlagged
+- [x] tRPC: dnc.getStats -- return registry size, last upload date, flagged lead count
+- [x] Auto-scrub on CSV import: after bulkCreate, run DNC check on all imported leads
+- [x] UI: DNC Registry page at /dnc with file upload, registry stats, bulk scrub button
+- [x] UI: DNC badge (red "DNC" pill) on lead cards in mobile list and desktop table
+- [x] UI: DNC warning in ConversationPanel header when lead is flagged
+- [x] UI: "Check DNC" button in ConversationPanel lead details section
+- [x] UI: DNC Registry nav item in sidebar (ShieldCheck icon)

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, Gift, LogOut, MessageSquare, Moon, PanelLeft, Palette, PhoneCall, Settings, Shield, Sun, TrendingUp, Users, Zap } from "lucide-react";
+import { BarChart2, Bell, BookOpen, Bot, Building2, CalendarDays, Gift, LogOut, MessageSquare, Moon, PanelLeft, Palette, PhoneCall, Settings, Shield, ShieldCheck, Sun, TrendingUp, Users, Zap } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CSSProperties, useEffect, useRef, useState, useMemo } from "react";
 import { useLocation } from "wouter";
@@ -40,6 +40,7 @@ const menuItems = [
   { icon: Settings, label: "Settings", path: "/settings" },
   { icon: PhoneCall, label: "Voice Calls", path: "/calls", badge: "Soon" },
   { icon: Gift, label: "Partner Referrals", path: "/referrals" },
+  { icon: ShieldCheck, label: "DNC Registry", path: "/dnc" },
 ];
 
 const adminMenuItems = [
