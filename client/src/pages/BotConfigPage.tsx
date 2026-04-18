@@ -511,11 +511,11 @@ export default function BotConfigPage() {
               </div>
 
               {/* SMS thread */}
-              <div className="rounded-xl border bg-muted/20 p-4 h-72 overflow-y-auto flex flex-col gap-3">
+              <div className="rounded-xl border bg-muted/20 p-3 h-72 overflow-y-auto flex flex-col gap-3">
                 {chatHistory.map((msg, i) => (
                   <div
                     key={i}
-                    className={`flex flex-col gap-0.5 ${msg.role === "assistant" ? "items-start" : "items-end"}`}
+                    className={`flex flex-col gap-0.5 w-full ${msg.role === "assistant" ? "items-start" : "items-end"}`}
                   >
                     {msg.role === "assistant" && (
                       <span className="text-[10px] text-muted-foreground ml-1 flex items-center gap-1">
@@ -526,7 +526,7 @@ export default function BotConfigPage() {
                       <span className="text-[10px] text-muted-foreground mr-1">{testLeadName || "Lead"}</span>
                     )}
                     <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                      className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm leading-relaxed break-words ${
                         msg.role === "assistant"
                           ? "bg-violet-600/20 text-foreground rounded-bl-sm border border-violet-600/20"
                           : "bg-primary text-primary-foreground rounded-br-sm"
