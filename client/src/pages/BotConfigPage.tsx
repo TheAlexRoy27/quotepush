@@ -260,9 +260,9 @@ export default function BotConfigPage() {
                 <SelectContent>
                   {TONE_OPTIONS.map((t) => (
                     <SelectItem key={t.value} value={t.value}>
-                      <div>
+                      <div className="flex flex-col">
                         <span className="font-medium">{t.label}</span>
-                        <span className="text-muted-foreground text-xs ml-2">{t.description}</span>
+                        <span className="text-muted-foreground text-xs">{t.description}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -278,7 +278,7 @@ export default function BotConfigPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Persona / Identity <FieldHelp text="A short description of who the bot is. Think of it as the bot's backstory. The more specific you are, the more consistent its replies will be." /></Label>
+            <Label>Bot Backstory <FieldHelp text="Describe who the bot is. The more specific you are, the more consistent its replies will be. Use {botName} as a placeholder for the bot's name." /></Label>
             <Textarea
               value={identity}
               onChange={(e) => setIdentity(e.target.value)}
@@ -287,7 +287,7 @@ export default function BotConfigPage() {
               maxLength={2000}
               className="resize-none"
             />
-            <p className="text-xs text-muted-foreground">Describe who the bot is. Use {"{botName}"} as a placeholder. This becomes the bot's system prompt.</p>
+            <p className="text-xs text-muted-foreground">This becomes the bot's personality. Use {"{botName}"} as a placeholder for the bot's name.</p>
           </div>
         </CardContent>
       </Card>

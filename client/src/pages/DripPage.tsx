@@ -673,15 +673,10 @@ function SequenceCard({ seq, onDeleted }: { seq: DripSequence; onDeleted: () => 
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${categoryColor}`}>
               {seq.triggerCategory}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
               {seq.steps?.length ?? 0} step{(seq.steps?.length ?? 0) !== 1 ? "s" : ""}
+              {(seq.steps?.length ?? 0) > 0 && ` · ${duration}`}
             </span>
-            {(seq.steps?.length ?? 0) > 0 && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {duration}
-              </span>
-            )}
                 {hasBranches && (
               <span className="inline-flex items-center gap-1 text-xs text-violet-300 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-full">
                 <GitBranch className="h-3 w-3" />
