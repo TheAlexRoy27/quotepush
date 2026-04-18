@@ -110,7 +110,7 @@ export default function DashboardLayout({
           {/* Logo + headline */}
           <div className="flex flex-col items-center gap-5">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-favicon-hsV6w9Xq6ruPjUPpEDFYpV.webp"
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663548851963/jHgkNXiqnDMniUxJ.png"
               alt="QuotePush.io"
               className="h-28 w-28 rounded-3xl shadow-xl"
             />
@@ -302,7 +302,7 @@ function DashboardLayoutContent({
                   aria-label="Go to home"
                 >
                   <img
-                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-favicon-hsV6w9Xq6ruPjUPpEDFYpV.webp"
+                    src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663548851963/jHgkNXiqnDMniUxJ.png"
                     alt="QuotePush.io"
                     className="h-11 w-11 rounded-xl shrink-0 object-cover shadow-sm"
                   />
@@ -317,7 +317,7 @@ function DashboardLayoutContent({
                   aria-label="Go to home"
                 >
                   <img
-                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-favicon-hsV6w9Xq6ruPjUPpEDFYpV.webp"
+                    src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663548851963/jHgkNXiqnDMniUxJ.png"
                     alt="QuotePush.io"
                     className="h-11 w-11 rounded-xl object-cover shadow-sm"
                   />
