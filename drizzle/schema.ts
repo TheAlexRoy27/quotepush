@@ -141,12 +141,29 @@ export const leads = mysqlTable("leads", {
   consentConfirmed: boolean("consentConfirmed").notNull().default(false),
   optedOut: boolean("optedOut").notNull().default(false),
   optedOutAt: timestamp("optedOutAt"),
+  assignedToId: int("assignedToId"),  // FK to users.id
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = typeof leads.$inferInsert;
+
+// ─── Internal Notes ───────────────────────────────────────────────────────────
+
+export const internalNotes = mysqlTable("internal_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  leadId: int("leadId").notNull(),
+  authorId: int("authorId").notNull(),  // FK to users.id
+  body: text("body").notNull(),
+  mentionedUserIds: text("mentionedUserIds"),  // JSON array of user IDs
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type InternalNote = typeof internalNotes.$inferSelect;
+export type InsertInternalNote = typeof internalNotes.$inferInsert;
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Papa from "papaparse";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import {
   Plus, Upload, Search, Send, Trash2, MessageSquare, RefreshCw,
   Users, Clock, CheckCircle2, Calendar, ChevronRight, ChevronLeft, X, Loader2, SendHorizonal,
   Download, AlertTriangle, CheckCheck, FileText, RotateCcw, ChevronDown, ChevronUp, ExternalLink,
-  Zap, StopCircle, NotebookPen, Save, Phone, Sparkles
+  Zap, StopCircle, NotebookPen, Save, Phone, Sparkles, UserCheck, MessageSquarePlus, Trash2 as TrashIcon
 } from "lucide-react";
 import type { Lead, Message } from "../../../drizzle/schema";
 
@@ -634,8 +635,13 @@ function CsvImportModal({ open, onClose, onSuccess }: {
 
 // ─── Conversation Panel ───────────────────────────────────────────────────────
 
-function ConversationPanel({ lead, onClose, onStatusChange }: {
-  lead: Lead; onClose: () => void; onStatusChange: () => void;
+function ConversationPanel({ lead, onClose, onStatusChange, orgMembers, currentUserId, onAssign }: {
+  lead: Lead & { assignedToId?: number | null };
+  onClose: () => void;
+  onStatusChange: () => void;
+  orgMembers: { userId: number; name: string | null; role: string }[];
+  currentUserId?: number;
+  onAssign: (leadId: number, assignedToId: number | null) => void;
 }) {
   const [schedulingLink, setSchedulingLink] = useState("");
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -646,7 +652,24 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
   const [dripConfirmSeq, setDripConfirmSeq] = useState<{ id: number; name: string; steps: unknown[] } | null>(null);
   const [notesText, setNotesText] = useState(lead.notes ?? "");
   const [notesDirty, setNotesDirty] = useState(false);
+  const [internalNoteText, setInternalNoteText] = useState("");
+  const [internalNoteOpen, setInternalNoteOpen] = useState(false);
   const utils = trpc.useUtils();
+  // Internal notes
+  const { data: internalNotes = [] } = trpc.notes.list.useQuery({ leadId: lead.id });
+  const createNote = trpc.notes.create.useMutation({
+    onSuccess: () => {
+      setInternalNoteText("");
+      setInternalNoteOpen(false);
+      utils.notes.list.invalidate({ leadId: lead.id });
+      toast.success("Note added");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteNote = trpc.notes.delete.useMutation({
+    onSuccess: () => utils.notes.list.invalidate({ leadId: lead.id }),
+    onError: (e) => toast.error(e.message),
+  });
 
   const saveNotes = trpc.leads.update.useMutation({
     onSuccess: () => {
@@ -781,6 +804,28 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
         </div>
       </div>
 
+      {/* Assignment Row */}
+      <div className="px-3 sm:px-4 py-2 border-b border-border flex items-center gap-2">
+        <UserCheck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <span className="text-xs text-muted-foreground shrink-0">Assigned to:</span>
+        <Select
+          value={String(lead.assignedToId ?? "unassigned")}
+          onValueChange={(val) => onAssign(lead.id, val === "unassigned" ? null : Number(val))}
+        >
+          <SelectTrigger className="h-7 text-xs flex-1 min-w-0 bg-input border-border text-foreground">
+            <SelectValue placeholder="Unassigned" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover border-border">
+            <SelectItem value="unassigned" className="text-xs text-muted-foreground">Unassigned</SelectItem>
+            {orgMembers.map((m) => (
+              <SelectItem key={m.userId} value={String(m.userId)} className="text-xs text-foreground">
+                {m.name ?? `Member #${m.userId}`}{m.userId === currentUserId ? " (me)" : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Opted Out Warning Banner */}
       {(data?.lead as any)?.optedOut && (
         <div className="px-4 py-2.5 bg-rose-500/10 border-b border-rose-500/20 flex items-center gap-2">
@@ -908,6 +953,71 @@ function ConversationPanel({ lead, onClose, onStatusChange }: {
           rows={2}
           className="text-xs resize-none bg-input border-border text-foreground placeholder:text-muted-foreground"
         />
+      </div>
+
+      {/* Internal Team Notes */}
+      <div className="px-4 py-3 border-b border-border space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <MessageSquarePlus className="h-3.5 w-3.5" /> Team Notes
+          </label>
+          <button
+            onClick={() => setInternalNoteOpen(!internalNoteOpen)}
+            className="text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+          >
+            <Plus className="h-3 w-3" /> Add Note
+          </button>
+        </div>
+        {internalNoteOpen && (
+          <div className="space-y-1.5">
+            <Textarea
+              value={internalNoteText}
+              onChange={(e) => setInternalNoteText(e.target.value)}
+              placeholder="Add a team note... Use @name to mention a teammate"
+              rows={2}
+              className="text-xs resize-none bg-input border-border text-foreground placeholder:text-muted-foreground"
+              autoFocus
+            />
+            <div className="flex gap-1.5">
+              <Button
+                size="sm"
+                className="h-6 text-[10px] px-2"
+                disabled={!internalNoteText.trim() || createNote.isPending}
+                onClick={() => createNote.mutate({ leadId: lead.id, body: internalNoteText })}
+              >
+                {createNote.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Post"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 text-[10px] px-2 text-muted-foreground"
+                onClick={() => { setInternalNoteOpen(false); setInternalNoteText(""); }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+        {internalNotes.length > 0 && (
+          <div className="space-y-1.5 max-h-32 overflow-y-auto">
+            {internalNotes.map((note: { id: number; body: string; createdAt: Date; authorName?: string | null }) => (
+              <div key={note.id} className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-foreground leading-snug flex-1">{note.body}</p>
+                  <button
+                    onClick={() => deleteNote.mutate({ id: note.id })}
+                    className="text-muted-foreground/50 hover:text-destructive transition-colors shrink-0 mt-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+                <p className="text-muted-foreground mt-1">
+                  {note.authorName ?? "Team member"} · {new Date(note.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Messages */}
@@ -1263,8 +1373,10 @@ function BulkDripConfirm({
 // ─── Main Leads Page ──────────────────────────────────────────────────────────
 
 export default function LeadsPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [myLeadsOnly, setMyLeadsOnly] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -1276,13 +1388,22 @@ export default function LeadsPage() {
 
   const utils = trpc.useUtils();
 
-  const { data: leads = [], isLoading } = trpc.leads.list.useQuery({
+  const { data: allLeads = [], isLoading } = trpc.leads.list.useQuery({
     search: search || undefined,
     status: (statusFilter !== "all" && statusFilter !== "opted-out" ? statusFilter : undefined) as Lead["status"] | undefined,
     optedOut: statusFilter === "opted-out" ? true : undefined,
   });
+  const leads = useMemo(() => {
+    if (!myLeadsOnly || !user) return allLeads;
+    return allLeads.filter((l: Lead & { assignedToId?: number | null }) => l.assignedToId === user.id);
+  }, [allLeads, myLeadsOnly, user]);
 
   const { data: sequences = [] } = trpc.drip.listSequences.useQuery();
+  const { data: orgMembers = [] } = trpc.org.members.useQuery();
+  const assignLead = trpc.leads.assign.useMutation({
+    onSuccess: () => { utils.leads.list.invalidate(); utils.leads.getById.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
 
   // Deselect all when filter/search changes
   const prevFilterRef = useRef({ search, statusFilter });
@@ -1432,6 +1553,15 @@ export default function LeadsPage() {
             className="border-border text-muted-foreground hover:text-foreground"
           >
             <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={myLeadsOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setMyLeadsOnly(!myLeadsOnly)}
+            className={myLeadsOnly ? "" : "border-border text-muted-foreground hover:text-foreground"}
+          >
+            <UserCheck className="h-4 w-4 mr-1.5" />
+            My Leads
           </Button>
           {(stats?.pending ?? 0) > 0 && (
             <Button
@@ -1641,16 +1771,18 @@ export default function LeadsPage() {
       {selectedLead && (
         <div className="w-full sm:w-96 shrink-0 sm:ml-4 rounded-xl overflow-hidden border border-border fixed sm:relative inset-0 sm:inset-auto z-20 sm:z-auto bg-background sm:bg-transparent">
           <ConversationPanel
-            lead={selectedLead}
+            lead={selectedLead as Lead & { assignedToId?: number | null }}
             onClose={() => setSelectedLead(null)}
             onStatusChange={() => {
               utils.leads.list.invalidate();
               utils.leads.stats.invalidate();
-              // Refresh selected lead status
               if (selectedLead) {
                 utils.leads.getById.invalidate({ id: selectedLead.id });
               }
             }}
+            orgMembers={(orgMembers as unknown as { userId: number; user: { name: string | null }; role: string }[]).map(m => ({ userId: m.userId, name: m.user?.name ?? null, role: m.role }))}
+            currentUserId={user?.id}
+            onAssign={(leadId, assignedToId) => assignLead.mutate({ id: leadId, assignedToId })}
           />
         </div>
       )}

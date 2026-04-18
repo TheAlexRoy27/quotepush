@@ -900,6 +900,83 @@ const leadsRouter = router({
       const suggestion = (typeof raw === "string" ? raw : "").trim().replace(/^["']|["']$/g, "");
       return { suggestion };
     }),
+  assign: protectedProcedure
+    .input(z.object({ id: z.number(), assignedToId: z.number().nullable() }))
+    .mutation(async ({ input, ctx }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      await db.update(leads)
+        .set({ assignedToId: input.assignedToId })
+        .where(and(eq(leads.id, input.id), eq(leads.orgId, orgId)));
+      return { success: true };
+    }),
+});
+// ─── Notes Router ─────────────────────────────────────────────────────────────
+const notesRouter = router({
+  list: protectedProcedure
+    .input(z.object({ leadId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const db = await getDb();
+      if (!db) return [];
+      const { internalNotes } = await import("../drizzle/schema");
+      const notes = await db
+        .select({
+          id: internalNotes.id,
+          body: internalNotes.body,
+          mentionedUserIds: internalNotes.mentionedUserIds,
+          createdAt: internalNotes.createdAt,
+          authorId: internalNotes.authorId,
+          authorName: users.name,
+        })
+        .from(internalNotes)
+        .leftJoin(users, eq(internalNotes.authorId, users.id))
+        .where(and(eq(internalNotes.leadId, input.leadId), eq(internalNotes.orgId, orgId)))
+        .orderBy(internalNotes.createdAt);
+      return notes;
+    }),
+  create: protectedProcedure
+    .input(z.object({
+      leadId: z.number(),
+      body: z.string().min(1).max(2000),
+      mentionedUserIds: z.array(z.number()).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const { internalNotes } = await import("../drizzle/schema");
+      const [note] = await db.insert(internalNotes).values({
+        orgId,
+        leadId: input.leadId,
+        authorId: ctx.user.id,
+        body: input.body,
+        mentionedUserIds: input.mentionedUserIds ? JSON.stringify(input.mentionedUserIds) : null,
+      }).$returningId();
+      if (input.mentionedUserIds && input.mentionedUserIds.length > 0) {
+        await notifyOwner({
+          title: "You were mentioned in a note",
+          content: `${ctx.user.name ?? "A teammate"} mentioned you: "${input.body.slice(0, 100)}${input.body.length > 100 ? "..." : ""}"`
+        }).catch(() => {});
+      }
+      return { id: note.id };
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const { internalNotes } = await import("../drizzle/schema");
+      await db.delete(internalNotes)
+        .where(and(
+          eq(internalNotes.id, input.id),
+          eq(internalNotes.orgId, orgId),
+          eq(internalNotes.authorId, ctx.user.id),
+        ));
+      return { success: true };
+    }),
 });
 // ─── Templates Router ─────────────────────────────────────────────────────────
 
@@ -1926,6 +2003,7 @@ export const appRouter = router({
   usageDashboard: usageDashboardRouter,
   bot: botRouter,
   booking: bookingRouter,
+  notes: notesRouter,
 });
 
 export type AppRouter = typeof appRouter;

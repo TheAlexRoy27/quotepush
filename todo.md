@@ -730,3 +730,16 @@
 - [x] AI-assisted "Write for me" button in drip sequence message editor
 - [x] AI suggested next-action bar in ConversationPanel ("This lead asked about pricing. Suggested reply: ...")
 - [x] One-tap quick actions on lead list cards (Mark Not Interested, Book a Call, Pause Texts)
+
+## Team Collaboration
+- [x] DB: add assignedToId (FK to users) column on leads table
+- [x] DB: add internal_notes table (id, leadId, orgId, authorId, body, mentionedUserIds JSON, createdAt)
+- [x] tRPC: leads.assign — assign/unassign a lead to a team member
+- [x] tRPC: notes.create — create internal note with @mention parsing
+- [x] tRPC: notes.list — list notes for a lead
+- [x] tRPC: notes.delete — delete own note
+- [x] In-app notification on @mention (bell icon, notifyOwner or notification table)
+- [x] UI: assignment dropdown on lead detail panel header (shows avatar + name of assignee)
+- [x] UI: "My Leads" filter button in Leads toolbar (filters to leads assigned to current user)
+- [x] UI: internal notes section in ConversationPanel — amber/yellow background, "Note" label, @mention autocomplete
+- [x] UI: show assignee avatar on lead cards in mobile list and desktop table

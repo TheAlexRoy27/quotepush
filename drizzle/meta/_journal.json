@@ -183,6 +183,13 @@
       "when": 1776463478409,
       "tag": "0025_empty_guardsmen",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1776542835441,
+      "tag": "0026_tidy_radioactive_man",
+      "breakpoints": true
     }
   ]
 }
