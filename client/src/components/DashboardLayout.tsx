@@ -193,12 +193,14 @@ export default function DashboardLayout({
         </div>
 
         {/* Footer */}
-        <footer className="mt-10 text-center text-xs leading-relaxed text-muted-foreground/60 space-x-3">
-          <a href="/terms" className="hover:text-muted-foreground transition-colors underline underline-offset-2">Terms of Service</a>
-          <span>·</span>
-          <a href="/privacy" className="hover:text-muted-foreground transition-colors underline underline-offset-2">Privacy Policy</a>
-          <span>·</span>
-          <span>© {new Date().getFullYear()} QuotePush.io</span>
+        <footer className="mt-10 text-center text-xs leading-relaxed text-muted-foreground/60">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            <a href="/terms" className="hover:text-muted-foreground transition-colors underline underline-offset-2">Terms of Service</a>
+            <span>·</span>
+            <a href="/privacy" className="hover:text-muted-foreground transition-colors underline underline-offset-2">Privacy Policy</a>
+            <span>·</span>
+            <span className="whitespace-nowrap">© {new Date().getFullYear()} QuotePush.io</span>
+          </div>
         </footer>
       </div>
     );
