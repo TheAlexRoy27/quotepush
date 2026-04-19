@@ -67,6 +67,7 @@ export default function DashboardLayout({
   // Status indicator queries — lightweight, stale-while-revalidate
   const botConfigQuery = trpc.bot.getConfig.useQuery(undefined, { enabled: !!user, staleTime: 30_000 });
   const twilioConfigQuery = trpc.org.getTwilioConfig.useQuery(undefined, { enabled: !!user, staleTime: 30_000 });
+  const sendblueConfigQuery = trpc.org.getSendblueConfig.useQuery(undefined, { enabled: !!user, staleTime: 30_000 });
   const dripListQuery = trpc.drip.listSequences.useQuery(undefined, { enabled: !!user, staleTime: 30_000 });
 
   const botStatus = useMemo(() => {
@@ -75,9 +76,13 @@ export default function DashboardLayout({
   }, [botConfigQuery.data]);
 
   const twilioStatus = useMemo(() => {
+    const provider = sendblueConfigQuery.data?.smsProvider ?? "twilio";
+    if (provider === "sendblue") {
+      return sendblueConfigQuery.data?.isConfigured ? "on" : "off";
+    }
     if (!twilioConfigQuery.data) return "off";
     return twilioConfigQuery.data.accountSid ? "on" : "off";
-  }, [twilioConfigQuery.data]);
+  }, [twilioConfigQuery.data, sendblueConfigQuery.data]);
 
   const dripStatus = useMemo(() => {
     if (!dripListQuery.data) return "off";

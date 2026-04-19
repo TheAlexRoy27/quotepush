@@ -774,8 +774,8 @@
 - [x] tRPC: org.setSmsProvider -- switch active provider for the org
 - [x] Update sms.send procedure: route through SendBlue if org smsProvider = sendblue
 - [x] Update sms.sendBulk procedure: route through SendBlue if org smsProvider = sendblue
-- [ ] Update drip scheduler: route through SendBlue if org smsProvider = sendblue
+- [x] Update drip scheduler: route through SendBlue if org smsProvider = sendblue
 - [x] Add POST /api/webhooks/sendblue inbound handler (mirrors Twilio webhook handler)
 - [x] Wire SendBlue inbound webhook into AI classifier + auto-flow engine
-- [ ] Show provider badge (iMessage / SMS) on message bubbles in ConversationPanel
-- [ ] Update sidebar status dot for SMS provider (show SendBlue status when active)
+- [x] Show provider badge (iMessage / SMS) on message bubbles in ConversationPanel
+- [x] Update sidebar status dot for SMS provider (show SendBlue status when active)

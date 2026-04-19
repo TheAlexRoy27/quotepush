@@ -1121,6 +1121,12 @@ function ConversationPanel({ lead, onClose, onStatusChange, orgMembers, currentU
                       <span>🤖</span> Bot
                     </span>
                   )}
+                  {/* iMessage provider badge for SendBlue messages */}
+                  {msg.direction === "outbound" && msg.twilioSid && !/^SM/i.test(msg.twilioSid) && msg.twilioStatus !== "simulated" && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-blue-500/40 bg-blue-500/10 text-blue-400 flex items-center gap-1">
+                      <span>💬</span> iMessage
+                    </span>
+                  )}
                   {/* AI classification badge for inbound messages */}
                   {msg.direction === "inbound" && (msg as Message & { classification?: string }).classification && (
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${

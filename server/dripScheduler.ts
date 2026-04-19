@@ -15,7 +15,10 @@ import {
 } from "./dripDb";
 import { getOrgTwilioConfig } from "./orgDb";
 import { isTwilioConfigured, renderTemplate, sendSms, sendSmsWithConfig } from "./twilio";
-import { createMessage } from "./db";
+import { sendSendblue } from "./sendblue";
+import { createMessage, getDb } from "./db";
+import { organizations } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 const SCHEDULER_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_RETRIES = 3;
@@ -132,10 +135,17 @@ async function processDripEnrollment(
   });
 
   const orgConfig = await getOrgTwilioConfig(orgId);
+  const db = await getDb();
+  const orgRows = db ? await db.select().from(organizations).where(eq(organizations.id, orgId)).limit(1) : [];
+  const activeProvider = orgRows[0]?.smsProvider ?? "twilio";
   let twilioSid: string | null = null;
   let twilioStatus = "simulated";
 
-  if (orgConfig?.accountSid) {
+  if (activeProvider === "sendblue" && orgConfig?.sendblueApiKeyId && orgConfig?.sendblueApiSecret && orgConfig?.sendblueFromNumber) {
+    const result = await sendSendblue({ apiKeyId: orgConfig.sendblueApiKeyId, apiSecret: orgConfig.sendblueApiSecret, fromNumber: orgConfig.sendblueFromNumber }, lead.phone, body);
+    twilioSid = result.message_handle ?? null;
+    twilioStatus = result.status ?? "sent";
+  } else if (orgConfig?.accountSid) {
     const result = await sendSmsWithConfig(
       lead.phone,
       body,
