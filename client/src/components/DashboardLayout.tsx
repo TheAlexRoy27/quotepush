@@ -28,18 +28,21 @@ import { CSSProperties, useEffect, useRef, useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
-
-const menuItems = [
+const navItems = [
+  // Core Pipeline
   { icon: TrendingUp, label: "My Dashboard", path: "/my-dashboard" },
-  { icon: Bot, label: "AI Bot", path: "/bot" },
   { icon: Users, label: "Leads", path: "/leads" },
   { icon: CalendarDays, label: "Bookings", path: "/bookings" },
-  { icon: BookOpen, label: "Template Library", path: "/library" },
+  // Outreach & Automation
+  { icon: Bot, label: "AI Bot", path: "/bot" },
   { icon: Zap, label: "Drip Sequences", path: "/drip" },
+  { icon: PhoneCall, label: "Voice Calls", path: "/calls", badge: "Soon" },
+  // Content & Growth
+  { icon: BookOpen, label: "Template Library", path: "/library" },
+  { icon: Gift, label: "Partner Referrals", path: "/referrals" },
+  // Admin
   { icon: Building2, label: "Organization", path: "/organization" },
   { icon: Settings, label: "Settings", path: "/settings" },
-  { icon: PhoneCall, label: "Voice Calls", path: "/calls", badge: "Soon" },
-  { icon: Gift, label: "Partner Referrals", path: "/referrals" },
   { icon: ShieldCheck, label: "DNC Registry", path: "/dnc" },
 ];
 
@@ -269,7 +272,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = navItems.find(item => item.path === location);
 
   // Auto-close mobile sidebar on navigation
   useEffect(() => {
@@ -387,7 +390,7 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {navItems.map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
