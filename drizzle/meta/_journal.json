@@ -204,6 +204,13 @@
       "when": 1776545449865,
       "tag": "0028_woozy_hobgoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1776571797992,
+      "tag": "0029_oval_klaw",
+      "breakpoints": true
     }
   ]
 }

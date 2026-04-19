@@ -342,7 +342,116 @@ async function startServer() {
     }
   });
 
-  // ─── CRM Inbound Webhook ──────────────────────────────────────────────────
+  // ─── SendBlue Inbound Webhook ────────────────────────────────────────────────────────────────────────────────────────
+  app.post("/api/webhooks/sendblue", async (req, res) => {
+    res.status(200).json({ received: true });
+    try {
+      const payload = req.body;
+      if (!payload || typeof payload !== "object") return;
+      // SendBlue sends { from_number, content, is_outbound, message_handle, ... }
+      const from: string = payload.from_number ?? payload.number ?? "";
+      const body: string = payload.content ?? "";
+      const isOutbound: boolean = payload.is_outbound ?? false;
+      if (isOutbound || !from || !body) return;
+
+      const normalize = (p: string) => p.replace(/\D/g, "").slice(-10);
+      const fromNorm = normalize(from);
+      const db = await import("../db").then(m => m.getDb());
+      if (!db) return;
+      const { leads } = await import("../../drizzle/schema");
+      const allLeads = await db.select().from(leads);
+      const lead = allLeads.find((l) => normalize(l.phone) === fromNorm);
+      if (!lead) {
+        console.log(`[SendBlue Webhook] No lead found for phone ${from}`);
+        return;
+      }
+
+      // STOP / Opt-Out Detection (TCPA)
+      const STOP_KEYWORDS = ["stop", "stopall", "unsubscribe", "cancel", "end", "quit", "no", "remove me", "don't text me", "dont text me", "take me off", "opt out", "opt-out", "optout"];
+      const bodyNorm = body.trim().toLowerCase();
+      const isOptOut = STOP_KEYWORDS.some((kw) => bodyNorm === kw || bodyNorm.startsWith(kw + " ") || bodyNorm.endsWith(" " + kw));
+      if (isOptOut) {
+        await updateLead(lead.id, { optedOut: true, optedOutAt: new Date() });
+        await stopEnrollment(lead.id, "unsubscribed");
+        await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "inbound", body, twilioSid: payload.message_handle ?? null, twilioStatus: "received" });
+        try { await notifyOwner({ title: `Opt-out received: ${lead.name}`, content: `${lead.name} (${lead.phone}) replied "${body}" and has been opted out.` }); } catch { /* non-fatal */ }
+        console.log(`[TCPA/SendBlue] Lead ${lead.id} opted out via "${body}"`);
+        return;
+      }
+
+      const savedMsg = await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "inbound", body, twilioSid: payload.message_handle ?? null, twilioStatus: "received" });
+      if (lead.status === "Sent" || lead.status === "Pending") await updateLead(lead.id, { status: "Replied" });
+
+      // Keyword Promotion
+      try {
+        const { getActiveKeywordRules } = await import("../db");
+        const rules = await getActiveKeywordRules(lead.orgId);
+        const bodyLower = body.toLowerCase();
+        for (const rule of rules) {
+          if (bodyLower.includes(rule.keyword.toLowerCase())) {
+            await updateLead(lead.id, { status: rule.targetStatus });
+            await notifyOwner({ title: `Lead promoted: ${lead.name} is now "${rule.targetStatus}"`, content: `Keyword "${rule.keyword}" detected in reply from ${lead.name}.\n\nMessage: "${body}"` });
+            break;
+          }
+        }
+      } catch (kpErr) { console.error("[KeywordPromotion/SendBlue] Error:", kpErr); }
+
+      // AI Classification
+      let category = "Wants More Info" as import("../../drizzle/schema").ReplyCategory;
+      let confidence = "low" as "high" | "medium" | "low";
+      try {
+        const classification = await classifyReply(body, lead.name);
+        category = classification.category;
+        confidence = classification.confidence;
+        if (savedMsg) await createMessageClassification({ messageId: savedMsg.id, category, confidence });
+      } catch (classErr) { console.error("[SendBlue Webhook] Classification error:", classErr); }
+
+      // Auto-Flow
+      try {
+        const rule = await getFlowRuleByCategory(lead.orgId, category);
+        if (rule && rule.autoSend && rule.templateId) {
+          const flowTemplate = await getFlowTemplateById(rule.templateId);
+          if (flowTemplate && flowTemplate.isActive) {
+            const replyBody = renderTemplate(flowTemplate.body, { name: lead.name, company: lead.company, link: undefined });
+            const orgConfig = await getOrgTwilioConfig(lead.orgId);
+            const { organizations } = await import("../../drizzle/schema");
+            const { eq } = await import("drizzle-orm");
+            const orgRows = await db.select().from(organizations).where(eq(organizations.id, lead.orgId)).limit(1);
+            const org = orgRows[0];
+            if (org?.smsProvider === "sendblue" && orgConfig?.sendblueApiKeyId && orgConfig?.sendblueApiSecret && orgConfig?.sendblueFromNumber) {
+              const { sendSendblue } = await import("../sendblue");
+              const result = await sendSendblue({ apiKeyId: orgConfig.sendblueApiKeyId, apiSecret: orgConfig.sendblueApiSecret, fromNumber: orgConfig.sendblueFromNumber }, lead.phone, replyBody);
+              await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "outbound", body: replyBody, twilioSid: result.message_handle ?? null, twilioStatus: result.status ?? "sent" });
+            } else if (orgConfig?.accountSid) {
+              const result = await sendSmsWithConfig(lead.phone, replyBody, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
+              await createMessage({ orgId: lead.orgId, leadId: lead.id, direction: "outbound", body: replyBody, twilioSid: result.sid ?? null, twilioStatus: result.status ?? "sent" });
+            }
+          }
+        }
+      } catch (flowErr) { console.error("[Auto-Flow/SendBlue] Error:", flowErr); }
+
+      // Drip stop + re-enroll
+      try {
+        const stopReason = category === "Unsubscribe" ? "unsubscribed" : "replied";
+        await stopEnrollment(lead.id, stopReason);
+        const isDripTrigger = (DRIP_TRIGGER_CATEGORIES as readonly string[]).includes(category);
+        if (isDripTrigger) {
+          const seq = await getActiveDripSequenceByCategory(lead.orgId, category as import("../../drizzle/schema").DripTriggerCategory);
+          if (seq) {
+            const steps = await listDripSteps(seq.id);
+            const firstStep = steps[0];
+            await enrollLeadInSequence(lead.id, lead.orgId, seq.id, firstStep?.delayAmount ?? firstStep?.delayDays ?? 3, firstStep?.delayUnit ?? "days");
+          }
+        }
+      } catch (dripErr) { console.error("[Drip/SendBlue] Error:", dripErr); }
+
+      await notifyOwner({ title: `New reply from ${lead.name} [${category}]`, content: `Lead ${lead.name} replied via iMessage: "${body}"\n\nClassified as: ${category} (${confidence} confidence)` });
+    } catch (err) {
+      console.error("[SendBlue Webhook] Error:", err);
+    }
+  });
+
+  // ─── CRM Inbound Webhook ─────────────────────────────────────────────────────────────────
   app.post("/api/webhooks/crm/:secret", async (req, res) => {
     const { secret } = req.params;
     const rawPayload = JSON.stringify(req.body);

@@ -763,3 +763,19 @@
 - [x] UI: DNC warning in ConversationPanel header when lead is flagged
 - [x] UI: "Check DNC" button in ConversationPanel lead details section
 - [x] UI: DNC Registry nav item in sidebar (ShieldCheck icon)
+
+## SendBlue iMessage Integration (Blue Bubble SMS)
+- [x] Create server/sendblue.ts helper: sendSendblue(), isSendblueConfigured(), parseSendblueWebhook()
+- [x] DB: add sendblueApiKeyId, sendblueApiSecret, sendblueFromNumber columns to org_twilio_config table (reuse existing config table)
+- [x] tRPC: org.saveSendblueConfig -- save SendBlue API key ID, secret, from number
+- [x] tRPC: org.getSendblueConfig -- return masked credentials + isConfigured flag
+- [x] UI: SendBlue (iMessage) tab in Settings page with API key fields and provider toggle (Twilio / SendBlue)
+- [x] DB: add smsProvider column to organizations table (enum: twilio | sendblue, default twilio)
+- [x] tRPC: org.setSmsProvider -- switch active provider for the org
+- [x] Update sms.send procedure: route through SendBlue if org smsProvider = sendblue
+- [x] Update sms.sendBulk procedure: route through SendBlue if org smsProvider = sendblue
+- [ ] Update drip scheduler: route through SendBlue if org smsProvider = sendblue
+- [x] Add POST /api/webhooks/sendblue inbound handler (mirrors Twilio webhook handler)
+- [x] Wire SendBlue inbound webhook into AI classifier + auto-flow engine
+- [ ] Show provider badge (iMessage / SMS) on message bubbles in ConversationPanel
+- [ ] Update sidebar status dot for SMS provider (show SendBlue status when active)

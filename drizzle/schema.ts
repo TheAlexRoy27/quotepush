@@ -90,6 +90,7 @@ export const organizations = mysqlTable("organizations", {
   trialEndsAt: timestamp("trialEndsAt"),
   customLogoUrl: varchar("customLogoUrl", { length: 512 }),
   lightLogoUrl: varchar("lightLogoUrl", { length: 512 }),
+  smsProvider: mysqlEnum("smsProvider", ["twilio", "sendblue"]).default("twilio").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -370,6 +371,10 @@ export const orgTwilioConfigs = mysqlTable("org_twilio_configs", {
   accountSid: varchar("accountSid", { length: 64 }).notNull(),
   authToken: varchar("authToken", { length: 64 }).notNull(),
   phoneNumber: varchar("phoneNumber", { length: 32 }).notNull(),
+  // SendBlue iMessage provider credentials
+  sendblueApiKeyId: varchar("sendblueApiKeyId", { length: 128 }),
+  sendblueApiSecret: varchar("sendblueApiSecret", { length: 128 }),
+  sendblueFromNumber: varchar("sendblueFromNumber", { length: 32 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

@@ -308,6 +308,200 @@ function TwilioTab() {
   );
 }
 
+// ─── SendBlue Tab ────────────────────────────────────────────────────────────
+
+function SendBlueTab() {
+  const { data: config, isLoading } = trpc.org.getSendblueConfig.useQuery();
+  const utils = trpc.useUtils();
+  const [apiKeyId, setApiKeyId] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+  const [fromNumber, setFromNumber] = useState("");
+  const [showSecret, setShowSecret] = useState(false);
+
+  useEffect(() => {
+    if (config) {
+      setApiKeyId(config.apiKeyId ?? "");
+      setFromNumber(config.fromNumber ?? "");
+    }
+  }, [config]);
+
+  const saveConfig = trpc.org.saveSendblueConfig.useMutation({
+    onSuccess: () => {
+      toast.success("SendBlue credentials saved!", { description: "iMessage provider is now configured." });
+      utils.org.getSendblueConfig.invalidate();
+      setApiSecret("");
+    },
+    onError: (e) => toast.error("Save failed", { description: e.message }),
+  });
+
+  const setProvider = trpc.org.setSmsProvider.useMutation({
+    onSuccess: (_, vars) => {
+      toast.success(`SMS provider switched to ${vars.provider === "sendblue" ? "SendBlue (iMessage)" : "Twilio"}`);
+      utils.org.getSendblueConfig.invalidate();
+    },
+    onError: (e) => toast.error("Switch failed", { description: e.message }),
+  });
+
+  const activeProvider = config?.smsProvider ?? "twilio";
+
+  if (isLoading) return <div className="py-12 text-center text-muted-foreground text-sm">Loading...</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Provider Toggle */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">Active SMS Provider</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Choose which service sends and receives texts for your org.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            variant={activeProvider === "twilio" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setProvider.mutate({ provider: "twilio" })}
+            disabled={setProvider.isPending}
+          >
+            Twilio (SMS/MMS)
+          </Button>
+          <Button
+            variant={activeProvider === "sendblue" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setProvider.mutate({ provider: "sendblue" })}
+            disabled={setProvider.isPending || !config?.isConfigured}
+          >
+            SendBlue (iMessage)
+          </Button>
+        </div>
+        {activeProvider === "sendblue" && (
+          <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 rounded-lg px-3 py-2">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            SendBlue is active. Outbound texts will send as iMessage when the recipient has an iPhone.
+          </div>
+        )}
+        {!config?.isConfigured && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">Configure your SendBlue credentials below before switching providers.</p>
+        )}
+      </div>
+
+      {/* SendBlue Credentials */}
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">SendBlue Credentials</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Get your API keys from the{" "}
+              <a href="https://app.sendblue.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+                SendBlue Dashboard <ExternalLink className="h-3 w-3" />
+              </a>
+            </p>
+          </div>
+          {config?.isConfigured ? (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Configured
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
+              <XCircle className="h-3.5 w-3.5" /> Not Configured
+            </span>
+          )}
+        </div>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium flex items-center gap-1">
+              <Key className="h-3.5 w-3.5 text-muted-foreground" /> API Key ID
+              <FieldHelp text="Your SendBlue API Key ID. Found in your SendBlue dashboard under API Keys." />
+            </Label>
+            <Input
+              value={apiKeyId}
+              onChange={(e) => setApiKeyId(e.target.value)}
+              placeholder="sb_key_..."
+              className="font-mono text-sm"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium flex items-center gap-1">
+              <Key className="h-3.5 w-3.5 text-muted-foreground" /> API Secret Key
+              <FieldHelp text="Your SendBlue API Secret. Treat this like a password and never share it." />
+            </Label>
+            <div className="relative">
+              <Input
+                type={showSecret ? "text" : "password"}
+                value={apiSecret}
+                onChange={(e) => setApiSecret(e.target.value)}
+                placeholder={config?.isConfigured ? "Leave blank to keep existing secret" : "Enter your API Secret"}
+                className="font-mono text-sm pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowSecret((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {config?.isConfigured && <p className="text-xs text-muted-foreground">Leave blank to keep your existing secret.</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium flex items-center gap-1">
+              <Phone className="h-3.5 w-3.5 text-muted-foreground" /> From Number
+              <FieldHelp text="The phone number assigned to your SendBlue account. Must be in E.164 format, e.g. +15551234567." />
+            </Label>
+            <Input
+              value={fromNumber}
+              onChange={(e) => setFromNumber(e.target.value)}
+              placeholder="+15551234567"
+              className="font-mono text-sm"
+            />
+          </div>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => {
+            if (!apiKeyId.trim() || !fromNumber.trim()) return toast.error("API Key ID and From Number are required.");
+            if (!apiSecret.trim() && !config?.isConfigured) return toast.error("API Secret is required.");
+            saveConfig.mutate({
+              apiKeyId: apiKeyId.trim(),
+              apiSecret: apiSecret.trim() || "__keep__",
+              fromNumber: fromNumber.trim(),
+            });
+          }}
+          disabled={saveConfig.isPending}
+          className="gap-1.5"
+        >
+          {saveConfig.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+          Save SendBlue Config
+        </Button>
+      </div>
+
+      {/* Inbound webhook info */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-foreground">Inbound Webhook (Receive Replies)</h2>
+        <p className="text-xs text-muted-foreground">Configure this URL in your SendBlue dashboard so lead replies are captured automatically.</p>
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+          <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          <code className="text-xs font-mono text-primary break-all flex-1">{`${window.location.origin}/api/webhooks/sendblue`}</code>
+          <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/sendblue`); toast.success("Webhook URL copied!"); }} className="text-muted-foreground hover:text-foreground shrink-0">
+            <Copy className="h-4 w-4" />
+          </button>
+        </div>
+        <ol className="space-y-1.5 text-xs text-muted-foreground list-decimal list-inside">
+          <li>Log in to your <a href="https://app.sendblue.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">SendBlue Dashboard</a></li>
+          <li>Go to Settings and find the Webhooks section</li>
+          <li>Paste the URL above as your inbound message webhook</li>
+          <li>Save and test by having a lead reply to your SendBlue number</li>
+        </ol>
+      </div>
+
+      {/* Info box */}
+      <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground text-sm">How SendBlue works</p>
+        <p>SendBlue sends messages as iMessage when the recipient has an iPhone with iMessage enabled. If they do not, it automatically falls back to standard SMS. You can see which protocol was used via the provider badge on each message bubble in the conversation view.</p>
+        <p>You need a SendBlue account and at least one phone line provisioned. Visit <a href="https://sendblue.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">sendblue.com</a> to sign up.</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── All Accounts Tab (owner-only) ────────────────────────────────────────────
 
 function AllAccountsTab() {
@@ -420,6 +614,7 @@ export default function SettingsPage() {
         <div className="overflow-x-auto -mx-1 px-1 mb-6">
           <TabsList className="w-max min-w-full">
             <TabsTrigger value="twilio" className="text-xs sm:text-sm whitespace-nowrap">Twilio / SMS</TabsTrigger>
+            <TabsTrigger value="sendblue" className="text-xs sm:text-sm whitespace-nowrap">SendBlue (iMessage)</TabsTrigger>
             <TabsTrigger value="webhook" className="text-xs sm:text-sm whitespace-nowrap">CRM Webhook</TabsTrigger>
             <TabsTrigger value="autopromote" className="text-xs sm:text-sm whitespace-nowrap">Auto-Promote</TabsTrigger>
             {isOwner && (
@@ -431,6 +626,10 @@ export default function SettingsPage() {
 
         <TabsContent value="twilio">
           <TwilioTab />
+        </TabsContent>
+
+        <TabsContent value="sendblue">
+          <SendBlueTab />
         </TabsContent>
 
         <TabsContent value="billing">

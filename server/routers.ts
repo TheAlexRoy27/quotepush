@@ -64,6 +64,7 @@ import { notifyOwner } from "./_core/notification";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { systemRouter } from "./_core/systemRouter";
 import { isTwilioConfigured, renderTemplate, sendSms, sendSmsWithConfig } from "./twilio";
+import { sendSendblue } from "./sendblue";
 import { createCheckoutSession, createPortalSession } from "./billing";
 import { PLANS } from "./products";
 import {
@@ -105,7 +106,7 @@ import {
   deleteDripStep,
   seedDefaultDripSequences,
 } from "./dripDb";
-import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials, users, leadDripEnrollments, appointments, dncNumbers } from "../drizzle/schema";
+import { DRIP_TRIGGER_CATEGORIES, REPLY_CATEGORIES, leads, messages, messageClassifications, ownerCredentials, users, leadDripEnrollments, appointments, dncNumbers, organizations, orgTwilioConfigs } from "../drizzle/schema";
 import { SignJWT } from "jose";
 import { ENV } from "./_core/env";
 import bcrypt from "bcryptjs";
@@ -674,9 +675,59 @@ const orgRouter = router({
       await upsertOrgTwilioConfig(orgId, input.accountSid, input.authToken, input.phoneNumber);
       return { success: true };
     }),
+  // SendBlue iMessage config
+  getSendblueConfig: protectedProcedure.query(async ({ ctx }) => {
+    const orgId = await requireOrgId(ctx.user.id);
+    const config = await getOrgTwilioConfig(orgId);
+    const org = await getOrganizationById(orgId);
+    return {
+      apiKeyId: config?.sendblueApiKeyId ?? null,
+      fromNumber: config?.sendblueFromNumber ?? null,
+      isConfigured: !!(config?.sendblueApiKeyId && config?.sendblueApiSecret && config?.sendblueFromNumber),
+      smsProvider: org?.smsProvider ?? "twilio",
+    };
+  }),
+  saveSendblueConfig: protectedProcedure
+    .input(z.object({
+      apiKeyId: z.string().min(1),
+      apiSecret: z.string().min(1),
+      fromNumber: z.string().min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      // Upsert into org_twilio_configs (reuse same table)
+      const existing = await getOrgTwilioConfig(orgId);
+      if (existing) {
+        await db.update(orgTwilioConfigs)
+          .set({ sendblueApiKeyId: input.apiKeyId, sendblueApiSecret: input.apiSecret, sendblueFromNumber: input.fromNumber })
+          .where(eq(orgTwilioConfigs.orgId, orgId));
+      } else {
+        // Create a placeholder row so SendBlue config can be stored even without Twilio
+        await db.insert(orgTwilioConfigs).values({
+          orgId,
+          accountSid: "",
+          authToken: "",
+          phoneNumber: "",
+          sendblueApiKeyId: input.apiKeyId,
+          sendblueApiSecret: input.apiSecret,
+          sendblueFromNumber: input.fromNumber,
+        });
+      }
+      return { success: true };
+    }),
+  setSmsProvider: protectedProcedure
+    .input(z.object({ provider: z.enum(["twilio", "sendblue"]) }))
+    .mutation(async ({ ctx, input }) => {
+      const orgId = await requireOrgId(ctx.user.id);
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.update(organizations).set({ smsProvider: input.provider }).where(eq(organizations.id, orgId));
+      return { success: true };
+    }),
 });
-
-// ─── Leads Router ─────────────────────────────────────────────────────────────
+// ─── Leads Router ──────────────────────────────────────────────────────────────
 
 const leadsRouter = router({
   list: protectedProcedure
@@ -1041,11 +1092,17 @@ const smsRouter = router({
 
       const body = renderTemplate(template.body, { name: lead.name, company: lead.company, link: input.schedulingLink });
 
-      let twilioSid: string | undefined;
+        let twilioSid: string | undefined;
       let twilioStatus: string | undefined;
       const orgConfig = await getOrgTwilioConfig(orgId);
-
-      if (orgConfig?.accountSid) {
+      // Determine active provider
+      const orgRows = await (await getDb())!.select().from(organizations).where(eq(organizations.id, orgId)).limit(1);
+      const activeProvider = orgRows[0]?.smsProvider ?? "twilio";
+      if (activeProvider === "sendblue" && orgConfig?.sendblueApiKeyId && orgConfig?.sendblueApiSecret && orgConfig?.sendblueFromNumber) {
+        const result = await sendSendblue({ apiKeyId: orgConfig.sendblueApiKeyId, apiSecret: orgConfig.sendblueApiSecret, fromNumber: orgConfig.sendblueFromNumber }, lead.phone, body);
+        twilioSid = result.message_handle ?? undefined;
+        twilioStatus = result.status ?? "sent";
+      } else if (orgConfig?.accountSid) {
         const result = await sendSmsWithConfig(lead.phone, body, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
         twilioSid = result.sid;
         twilioStatus = result.status;
@@ -1054,11 +1111,9 @@ const smsRouter = router({
         twilioSid = result.sid;
         twilioStatus = result.status;
       }
-
       await createMessage({ orgId, leadId: lead.id, direction: "outbound", body, twilioSid: twilioSid ?? null, twilioStatus: twilioStatus ?? "simulated" });
       await updateLead(lead.id, { status: "Sent" });
-
-      return { success: true, simulated: !orgConfig?.accountSid && !isTwilioConfigured() };
+      return { success: true, simulated: !orgConfig?.accountSid && !isTwilioConfigured() && activeProvider !== "sendblue" };
     }),
 
   sendBulk: protectedProcedure
@@ -1069,9 +1124,10 @@ const smsRouter = router({
       const template = await getDefaultTemplate(orgId);
       if (!template) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No SMS template found" });
 
-      const orgConfig = await getOrgTwilioConfig(orgId);
+        const orgConfig = await getOrgTwilioConfig(orgId);
+      const orgRows2 = await (await getDb())!.select().from(organizations).where(eq(organizations.id, orgId)).limit(1);
+      const activeProvider2 = orgRows2[0]?.smsProvider ?? "twilio";
       const results = [];
-
       for (const lead of pendingLeads) {
         // Skip opted-out leads
         if ((lead as any).optedOut) {
@@ -1081,27 +1137,24 @@ const smsRouter = router({
         const body = renderTemplate(template.body, { name: lead.name, company: lead.company, link: input?.schedulingLink });
         let twilioSid: string | undefined;
         let twilioStatus: string | undefined;
-
-        if (orgConfig?.accountSid) {
-          try {
+        try {
+          if (activeProvider2 === "sendblue" && orgConfig?.sendblueApiKeyId && orgConfig?.sendblueApiSecret && orgConfig?.sendblueFromNumber) {
+            const result = await sendSendblue({ apiKeyId: orgConfig.sendblueApiKeyId, apiSecret: orgConfig.sendblueApiSecret, fromNumber: orgConfig.sendblueFromNumber }, lead.phone, body);
+            twilioSid = result.message_handle ?? undefined;
+            twilioStatus = result.status ?? "sent";
+          } else if (orgConfig?.accountSid) {
             const result = await sendSmsWithConfig(lead.phone, body, orgConfig.accountSid, orgConfig.authToken, orgConfig.phoneNumber);
             twilioSid = result.sid;
             twilioStatus = result.status;
-          } catch (e) {
-            results.push({ leadId: lead.id, success: false, error: String(e) });
-            continue;
-          }
-        } else if (isTwilioConfigured()) {
-          try {
+          } else if (isTwilioConfigured()) {
             const result = await sendSms(lead.phone, body);
             twilioSid = result.sid;
             twilioStatus = result.status;
-          } catch (e) {
-            results.push({ leadId: lead.id, success: false, error: String(e) });
-            continue;
           }
+        } catch (e) {
+          results.push({ leadId: lead.id, success: false, error: String(e) });
+          continue;
         }
-
         await createMessage({ orgId, leadId: lead.id, direction: "outbound", body, twilioSid: twilioSid ?? null, twilioStatus: twilioStatus ?? "simulated" });
         await updateLead(lead.id, { status: "Sent" });
         results.push({ leadId: lead.id, success: true });
