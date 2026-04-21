@@ -141,7 +141,7 @@ export default function DashboardLayout({
           {/* Logo + headline */}
           <div className="flex flex-col items-center gap-5">
             <img
-              src="/manus-storage/quotepush-logo-v8_02f60d5e.png"
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-solid-bg-6YMVrpTYpKqVsDtRobnWMb.webp"
               alt="QuotePush.io"
               className="h-36 w-36 drop-shadow-xl"
             />
@@ -364,7 +364,7 @@ function DashboardLayoutContent({
                   aria-label="Go to home"
                 >
                   <img
-                    src="/manus-storage/quotepush-logo-v8_02f60d5e.png"
+                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-solid-bg-6YMVrpTYpKqVsDtRobnWMb.webp"
                     alt="QuotePush.io"
                     className="h-12 w-12 shrink-0 object-contain"
                   />
@@ -379,7 +379,7 @@ function DashboardLayoutContent({
                   aria-label="Go to home"
                 >
                   <img
-                    src="/manus-storage/quotepush-logo-v8_02f60d5e.png"
+                    src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-solid-bg-6YMVrpTYpKqVsDtRobnWMb.webp"
                     alt="QuotePush.io"
                     className="h-12 w-12 object-contain"
                   />

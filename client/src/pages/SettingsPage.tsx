@@ -283,7 +283,7 @@ function TwilioTab() {
       <div className="bg-card border border-border rounded-xl p-5 space-y-3">
         <div className="flex items-center gap-2 mb-1">
           <img
-            src="/manus-storage/quotepush-logo-v8_02f60d5e.png"
+            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-solid-bg-6YMVrpTYpKqVsDtRobnWMb.webp"
             alt="QuotePush.io"
             className="h-5 w-5 rounded"
           />
