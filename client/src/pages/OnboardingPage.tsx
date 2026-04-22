@@ -37,7 +37,7 @@ export default function OnboardingPage() {
           <div className="flex justify-center">
             <div className="relative">
               <img
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-solid-bg-6YMVrpTYpKqVsDtRobnWMb.webp"
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-circular-J9g6d4eXYnmJPk7xPp7dcK.webp"
                 alt="QuotePush.io"
                 className="h-16 w-16 rounded-2xl shadow-lg"
               />
