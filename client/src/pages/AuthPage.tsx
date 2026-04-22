@@ -313,7 +313,7 @@ export default function AuthPage() {
         {/* Logo */}
         <div className="text-center space-y-3">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-circular-J9g6d4eXYnmJPk7xPp7dcK.webp"
+            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-circular-transparent-dX4mHHcypQdw2p9NYtLX3G.webp"
             alt="QuotePush.io"
             className="h-24 w-24 rounded-3xl shadow-xl mx-auto"
           />
