@@ -53,7 +53,7 @@ export default function AcceptInvitePage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-circular-transparent-dX4mHHcypQdw2p9NYtLX3G.webp"
+            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663548851963/Q7eUYZ7wbDUp67BwzgNDrw/quotepush-logo-circular-clean-gqNjbcgcaMehWzyuRDWAGC.webp"
             alt="QuotePush.io"
             className="h-14 w-14 rounded-2xl shadow-lg mx-auto mb-4"
           />
